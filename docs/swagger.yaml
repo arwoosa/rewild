@@ -1,0 +1,155 @@
+definitions:
+  models.RefRewildingTypes:
+    properties:
+      ref_rewilding_types_id:
+        type: string
+      ref_rewilding_types_name:
+        type: string
+    type: object
+  models.Rewilding:
+    properties:
+      rewilding_area:
+        type: string
+      rewilding_city:
+        type: string
+      rewilding_id:
+        type: string
+      rewilding_lat:
+        $ref: '#/definitions/primitive.Decimal128'
+      rewilding_lng:
+        $ref: '#/definitions/primitive.Decimal128'
+      rewilding_name:
+        type: string
+      rewilding_rating:
+        type: integer
+      rewilding_type:
+        type: string
+      rewilding_type_data:
+        $ref: '#/definitions/models.RefRewildingTypes'
+    type: object
+  models.Users:
+    properties:
+      users_avatar:
+        type: string
+      users_created_at:
+        type: integer
+      users_id:
+        type: string
+      users_is_subscribed:
+        type: boolean
+      users_name:
+        type: string
+      users_object:
+        type: string
+      users_setting_language:
+        type: string
+      users_setting_vis_achievement_journal:
+        type: integer
+      users_setting_vis_collab_log:
+        type: integer
+      users_setting_vis_events:
+        type: integer
+      users_setting_vis_follow:
+        type: integer
+      users_source:
+        type: integer
+      users_source_id:
+        type: string
+    type: object
+  primitive.Decimal128:
+    type: object
+  repository.AuthGoogleRequest:
+    properties:
+      credential:
+        type: string
+    type: object
+  repository.AuthOOSA:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/models.Users'
+    type: object
+  structs.Message:
+    properties:
+      message:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: This is OOSA's API. Generate the swagger documentation by running `swag
+    init --parseDependency`
+  title: OOSA API
+  version: "1.0"
+paths:
+  /auth:
+    get:
+      description: Get the current logged in detail
+      operationId: authenticate-read
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Users'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.Message'
+      security:
+      - ApiKeyAuth: []
+      summary: Auth Detail
+      tags:
+      - Authentication
+  /auth/google:
+    post:
+      description: Authenticate (Google)
+      operationId: authenticate-google
+      parameters:
+      - description: Request Parmeter
+        in: body
+        name: Request
+        required: true
+        schema:
+          $ref: '#/definitions/repository.AuthGoogleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repository.AuthOOSA'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.Message'
+      summary: Authenticate (Google)
+      tags:
+      - Authentication
+  /rewilding:
+    get:
+      description: Retrieve all rewilding
+      operationId: rewilding
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Rewilding'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.Message'
+      summary: Rewilding
+      tags:
+      - Rewilding
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
