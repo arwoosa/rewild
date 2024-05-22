@@ -39,3 +39,25 @@ func AuthMiddleware() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+func CheckIfAuth(c *gin.Context) {
+	reqToken := c.Request.Header.Get("Authorization")
+	if reqToken == "" {
+		return
+	}
+
+	splitToken := strings.Split(reqToken, "Bearer ")
+	reqToken = splitToken[1]
+
+	user, err := auth.VerifyToken(reqToken)
+
+	if err != nil {
+		return
+	}
+
+	if helpers.MongoZeroID(user.UsersId) {
+		return
+	}
+
+	c.Set("user", &user)
+}

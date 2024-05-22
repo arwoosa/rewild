@@ -72,7 +72,7 @@ func (r RewildingRegisterPhotoRepository) Create(c *gin.Context) {
 	mimeType := mimetype.Detect(b)
 
 	switch mimeType.String() {
-	case "image/heic":
+	case "image/heic_":
 	case "image/jpeg":
 	case "image/png":
 
@@ -81,10 +81,18 @@ func (r RewildingRegisterPhotoRepository) Create(c *gin.Context) {
 		return
 	}
 
+	cloudflare := CloudflareRepository{}
+	cloudflareResponse, postErr := cloudflare.Post(c, file)
+	if postErr != nil {
+		helpers.ResponseBadRequestError(c, postErr.Error())
+		return
+	}
+	fileName := cloudflare.ImageDelivery(cloudflareResponse.Result.Id, "public")
+
 	RwPhoto := models.RewildingPhotos{
 		RewildingPhotosID:   primitive.NewObjectID(),
-		RewildingPhotosData: b,
-		// RewildingPhotosPath:   item.Name,
+		RewildingPhotosPath: fileName,
+		//RewildingPhotosData: b,
 	}
 
 	Rewilding.RewildingPhotos = append(Rewilding.RewildingPhotos, RwPhoto)

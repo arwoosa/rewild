@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
+	"oosa_rewild/internal/middleware"
 	"oosa_rewild/internal/models"
 	"time"
 
@@ -35,7 +36,16 @@ type RewildingRequest struct {
 // @Router /rewilding [get]
 func (r RewildingRepository) Retrieve(c *gin.Context) {
 	var results []models.Rewilding
-	cursor, err := config.DB.Collection("Rewilding").Find(context.TODO(), bson.D{})
+	owner := c.Query("owner")
+
+	filter := bson.M{}
+
+	if owner != "" {
+		middleware.CheckIfAuth(c)
+		userDetail := helpers.GetAuthUser(c)
+		filter["rewilding_created_by"] = userDetail.UsersId
+	}
+	cursor, err := config.DB.Collection("Rewilding").Find(context.TODO(), filter)
 	if err != nil {
 		panic(err)
 	}

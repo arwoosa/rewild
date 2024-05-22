@@ -16,7 +16,8 @@ import (
 
 type EventReferenceLinksRepository struct{}
 type EventReferenceLinksRequest struct {
-	EventReferenceLinksLink string `json:"event_reference_links_link" validate:"required"`
+	EventReferenceLinksLink  string `json:"event_reference_links_link" validate:"required"`
+	EventReferenceLinksTitle string `json:"event_reference_links_title" validate:"required"`
 }
 
 func (r EventReferenceLinksRepository) Retrieve(c *gin.Context) {
@@ -136,4 +137,5 @@ func (r EventReferenceLinksRepository) Delete(c *gin.Context) {
 
 func (r EventReferenceLinksRepository) ProcessData(c *gin.Context, EventReferenceLinks *models.EventReferenceLinks, payload EventReferenceLinksRequest) {
 	EventReferenceLinks.EventReferenceLinksLink = payload.EventReferenceLinksLink
+	EventReferenceLinks.EventReferenceLinksTitle = payload.EventReferenceLinksTitle
 }

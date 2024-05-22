@@ -15,6 +15,7 @@ func EventRoutes(r *gin.Engine) *gin.Engine {
 	repoSchedule := repository.EventScheduleRepository{}
 	repoAccounting := repository.EventAccountingRepository{}
 	repoParticipants := repository.EventParticipantsRepository{}
+	repoInvitation := repository.EventInvitationMessageRepository{}
 
 	main := r.Group("/event", middleware.AuthMiddleware())
 	{
@@ -71,6 +72,11 @@ func EventRoutes(r *gin.Engine) *gin.Engine {
 		// participants.GET("/:accountingId", repoParticipants.Read)
 		// participants.PUT("/:accountingId", repoParticipants.Update)
 		participants.DELETE("/:participantId", repoParticipants.Delete)
+	}
+
+	invitation := detail.Group("/invitation", middleware.AuthMiddleware())
+	{
+		invitation.PUT("", repoInvitation.Update)
 	}
 
 	return r

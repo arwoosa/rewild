@@ -21,6 +21,7 @@ func ResponseNoData(c *gin.Context, message string) {
 }
 
 func ResponseBadRequestError(c *gin.Context, message string) {
+	// 400
 	c.JSON(http.StatusBadRequest, structs.Message{Message: message})
 }
 
@@ -30,5 +31,6 @@ func ResponseNotFound(c *gin.Context, message string) {
 }
 
 func ResponseError(c *gin.Context, message string) {
+	// 500
 	c.JSON(http.StatusInternalServerError, structs.Message{Message: message})
 }

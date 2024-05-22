@@ -14,6 +14,7 @@ func RegisterRoutes() *gin.Engine {
 	RewildingRoutes(r)
 	RewildingRegisterRoutes(r)
 	PocketListRoutes(r)
+	EventUserRoutes(r)
 	EventRoutes(r)
 	EventInvitationRoutes(r)
 	CollaborativeLogRoutes(r)

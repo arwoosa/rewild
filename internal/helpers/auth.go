@@ -7,8 +7,11 @@ import (
 )
 
 func GetAuthUser(c *gin.Context) models.Users {
-	user, _ := c.Get("user")
-	userDetail := user.(*models.Users)
-
-	return *userDetail
+	user, exists := c.Get("user")
+	if exists {
+		userDetail := user.(*models.Users)
+		return *userDetail
+	} else {
+		return models.Users{}
+	}
 }

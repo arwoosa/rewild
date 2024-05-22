@@ -18,6 +18,7 @@ import (
 type EventRepository struct{}
 type EventRequest struct {
 	EventsDateTime  string `json:"events_date_time" validate:"required,datetime=2006-01-02 15:04:05"`
+	EventsDeadline  string `json:"events_deadline" validate:"required,datetime=2006-01-02 15:04:05"`
 	EventsName      string `json:"events_name" validate:"required"`
 	EventsPlace     string `json:"events_place" validate:"required_without=EventsRewilding"`
 	EventsRewilding string `json:"events_rewilding" validate:"required_without=EventsPlace"`
@@ -83,6 +84,7 @@ func (r EventRepository) Create(c *gin.Context) {
 
 	insert := models.Events{
 		EventsDate:      helpers.StringToPrimitiveDateTime(payload.EventsDateTime),
+		EventsDeadline:  helpers.StringToPrimitiveDateTime(payload.EventsDeadline),
 		EventsName:      payload.EventsName,
 		EventsRewilding: helpers.StringToPrimitiveObjId(payload.EventsRewilding),
 		EventsPlace:     payload.EventsPlace,
@@ -152,6 +154,7 @@ func (r EventRepository) ProcessData(c *gin.Context, Events *models.Events, payl
 	lng := helpers.FloatToDecimal128(payload.EventsLng)
 
 	Events.EventsDate = helpers.StringToPrimitiveDateTime(payload.EventsDateTime)
+	Events.EventsDeadline = helpers.StringToPrimitiveDateTime(payload.EventsDeadline)
 	Events.EventsName = payload.EventsName
 	Events.EventsRewilding = helpers.StringToPrimitiveObjId(payload.EventsRewilding)
 	Events.EventsPlace = payload.EventsPlace
