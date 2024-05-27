@@ -79,7 +79,7 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 
 	var ecc riimage.MediaContext
 	switch mimeType.String() {
-	case "image/heic":
+	case "image/heic_":
 		ecc, _ = hemp.NewHeicExifMediaParser().ParseBytes(b)
 	case "image/jpeg":
 		ecc, _ = jis.NewJpegMediaParser().ParseBytes(b)
@@ -133,10 +133,18 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 		lng = deg.Decimal()
 	}
 
+	cloudflare := CloudflareRepository{}
+	cloudflareResponse, postErr := cloudflare.Post(c, file)
+	if postErr != nil {
+		helpers.ResponseBadRequestError(c, postErr.Error())
+		return
+	}
+	fileName := cloudflare.ImageDelivery(cloudflareResponse.Result.Id, "public")
+
 	userDetail := helpers.GetAuthUser(c)
 	insert := models.EventPolaroids{
-		EventPolaroidsEvent: Events.EventsId,
-		// EventPolaroidsUrl: ,
+		EventPolaroidsEvent:     Events.EventsId,
+		EventPolaroidsUrl:       fileName,
 		EventPolaroidsLat:       helpers.FloatToDecimal128(lat),
 		EventPolaroidsLng:       helpers.FloatToDecimal128(lng),
 		EventPolaroidsCreatedBy: userDetail.UsersId,

@@ -3,15 +3,32 @@ package repository
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"mime/multipart"
 	"net/http"
 	"oosa_rewild/internal/config"
+	"oosa_rewild/internal/helpers"
 
 	"github.com/gin-gonic/gin"
 )
+
+type CloudflareResponse struct {
+	Errors   []string         `json:"errors"`
+	Messages []string         `json:"messages"`
+	Result   CloudflareResult `json:"result"`
+	Success  bool             `json:"success"`
+}
+
+type CloudflareResult struct {
+	Filename          string   `json:"filename"`
+	Id                string   `json:"id"`
+	RequireSignedUrLs bool     `json:"requireSignedURLs"`
+	Uploaded          string   `json:"uploaded"`
+	Variants          []string `json:"variants"`
+}
 
 type CloudflareRepository struct{}
 
@@ -60,13 +77,6 @@ func (r CloudflareRepository) Retrieve(c *gin.Context) {
 }
 
 func (r CloudflareRepository) Upload(c *gin.Context) {
-	endpoint := "https://api.cloudflare.com/client/v4/accounts/" + config.APP.ClourdlareImageAccountId + "/images/v1"
-	var (
-		buffer = new(bytes.Buffer)
-		writer = multipart.NewWriter(buffer)
-	)
-
-	// The file cannot be received.
 	file, fileErr := c.FormFile("photo")
 	if fileErr != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -74,12 +84,29 @@ func (r CloudflareRepository) Upload(c *gin.Context) {
 		})
 		return
 	}
+	clourflareResponse, postErr := r.Post(c, file)
+
+	// The file cannot be received.
+	if postErr != nil {
+		helpers.ResponseBadRequestError(c, postErr.Error())
+		return
+	}
+	c.JSON(200, clourflareResponse.Result)
+}
+
+func (r CloudflareRepository) Post(c *gin.Context, file *multipart.FileHeader) (CloudflareResponse, error) {
+	var cloudflareResponse CloudflareResponse
+	endpoint := "https://api.cloudflare.com/client/v4/accounts/" + config.APP.ClourdlareImageAccountId + "/images/v1"
+	var (
+		buffer = new(bytes.Buffer)
+		writer = multipart.NewWriter(buffer)
+	)
 
 	part, err := writer.CreateFormFile("file", file.Filename)
 
 	if err != nil {
 		log.Println(err)
-		return
+		return cloudflareResponse, errors.New("can't create file")
 	}
 
 	uploadedFile, err := file.Open()
@@ -88,7 +115,7 @@ func (r CloudflareRepository) Upload(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Unable to open file",
 		})
-		return
+		return cloudflareResponse, errors.New("unable to open file")
 	}
 	b, _ := io.ReadAll(uploadedFile)
 	part.Write(b)
@@ -100,7 +127,7 @@ func (r CloudflareRepository) Upload(c *gin.Context) {
 	req, err := http.NewRequest("POST", endpoint, buffer)
 	if err != nil {
 		log.Fatal(err)
-		return
+		return cloudflareResponse, err
 	}
 
 	req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -113,7 +140,7 @@ func (r CloudflareRepository) Upload(c *gin.Context) {
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Fatal(err)
-		return
+		return cloudflareResponse, err
 	}
 
 	defer resp.Body.Close()
@@ -122,12 +149,11 @@ func (r CloudflareRepository) Upload(c *gin.Context) {
 		log.Fatal(err)
 	}
 
-	var responseRaw map[string]interface{}
-	json.Unmarshal(body, &responseRaw)
+	json.Unmarshal(body, &cloudflareResponse)
 
-	if responseRaw["success"] != nil && responseRaw["success"] == true {
-		fmt.Println("SUCCESS!", responseRaw["result"])
+	if cloudflareResponse.Success == true {
+		fmt.Println("SUCCESS!", cloudflareResponse.Result)
 	}
 
-	c.JSON(200, responseRaw)
+	return cloudflareResponse, nil
 }

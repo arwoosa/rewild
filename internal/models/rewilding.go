@@ -24,6 +24,6 @@ type Rewilding struct {
 
 type RewildingPhotos struct {
 	RewildingPhotosID   primitive.ObjectID `bson:"_id,omitempty" json:"rewilding_photos_id"`
-	RewildingPhotosPath string             `bson:"rewilding_photos_path,omitempty" json:"-"`
+	RewildingPhotosPath string             `bson:"rewilding_photos_path,omitempty" json:"rewilding_photos_path,omitempty"`
 	RewildingPhotosData []byte             `bson:"rewilding_photos_data,omitempty" json:"-"`
 }
