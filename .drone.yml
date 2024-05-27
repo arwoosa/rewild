@@ -1,0 +1,18 @@
+---
+kind: pipeline
+type: exec
+name: default
+
+platform:
+  os: darwin
+  arch: amd64
+
+steps:
+- name: dev-build-docker-image
+  commands:
+  - docker build -t oosa-rewild:dev .
+  - restart_arwoosa.sh
+  when:
+    branch:
+    - dev
+...
