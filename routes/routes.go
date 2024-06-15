@@ -20,6 +20,7 @@ func RegisterRoutes() *gin.Engine {
 	CollaborativeLogRoutes(r)
 	FlickrRoutes(r)
 	CloudfareRoutes(r)
+	LinkRoutes(r)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return r
