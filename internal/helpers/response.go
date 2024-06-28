@@ -15,6 +15,11 @@ import (
 500 -> Server errors
 */
 
+func ResponseSuccessMessage(c *gin.Context, message string) {
+	// 200
+	c.JSON(http.StatusOK, structs.Message{Message: message})
+}
+
 func ResponseNoData(c *gin.Context, message string) {
 	// 204
 	c.JSON(http.StatusNoContent, structs.Message{Message: message})

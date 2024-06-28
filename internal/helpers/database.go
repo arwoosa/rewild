@@ -26,7 +26,7 @@ func StringToPrimitiveDateTime(value string) primitive.DateTime {
 }
 
 func StringToDateTime(value string) time.Time {
-	date, _ := time.Parse("2006-01-02 15:04:05", value)
+	date, _ := time.Parse("2006-01-02T15:04:05Z07:00", value)
 	return date
 }
 

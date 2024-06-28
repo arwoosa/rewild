@@ -16,7 +16,7 @@ import (
 
 type EventScheduleRepository struct{}
 type EventScheduleRequest struct {
-	EventSchedulesDatetime    string `json:"event_schedules_datetime" validate:"required,datetime=2006-01-02 15:04:05"`
+	EventSchedulesDatetime    string `json:"event_schedules_datetime" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
 	EventSchedulesDescription string `json:"event_schedules_description" validate:"required"`
 	// #TODO: Datetime: RFC-3339 2024
 	// RFC3339     = "2006-01-02T15:04:05Z07:00" 2024-03-24T00:00:00+08:00

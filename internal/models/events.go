@@ -15,7 +15,7 @@ type Events struct {
 	EventsParticipantLimit  int                  `bson:"events_participant_limit,omitempty" json:"events_participant_limit"`
 	EventsPaymentRequired   int                  `bson:"events_payment_required,omitempty" json:"events_payment_required"`
 	EventsPaymentFee        float64              `bson:"events_payment_fee,omitempty" json:"events_payment_fee"`
-	EventsRequiresApproval  int                  `bson:"events_requires_approval,omitempty" json:"events_requires_approval"`
+	EventsRequiresApproval  *int                 `bson:"events_requires_approval,omitempty" json:"events_requires_approval"`
 	EventsQuestionnaireLink string               `bson:"events_questionnaire_link,omitempty" json:"events_questionnaire_link"`
 	EventsLat               primitive.Decimal128 `bson:"events_lat,omitempty" json:"events_lat"`
 	EventsLng               primitive.Decimal128 `bson:"events_lng,omitempty" json:"events_lng"`
