@@ -151,7 +151,7 @@ func (r CloudflareRepository) Post(c *gin.Context, file *multipart.FileHeader) (
 
 	json.Unmarshal(body, &cloudflareResponse)
 
-	if cloudflareResponse.Success == true {
+	if cloudflareResponse.Success {
 		fmt.Println("SUCCESS!", cloudflareResponse.Result)
 	}
 
