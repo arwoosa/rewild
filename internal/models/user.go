@@ -17,5 +17,6 @@ type Users struct {
 	UsersSettingVisCollabLog          int                `bson:"users_setting_vis_collab_log,omitempty" json:"users_setting_vis_collab_log"`
 	UsersSettingVisFollow             int                `bson:"users_setting_vis_follow,omitempty" json:"users_setting_vis_follow"`
 	UsersIsSubscribed                 bool               `bson:"users_is_subscribed,omitempty" json:"users_is_subscribed"`
+	UsersIsBusiness                   bool               `bson:"users_is_business,omitempty" json:"users_is_business"`
 	UsersCreatedAt                    primitive.DateTime `bson:"users_created_at,omitempty" json:"users_created_at"`
 }
