@@ -17,17 +17,21 @@ import (
 
 type EventRepository struct{}
 type EventRequest struct {
-	EventsDateTime  string `json:"events_date_time" validate:"required,datetime=2006-01-02 15:04:05"`
+	EventsDate      string `json:"events_date" validate:"required,datetime=2006-01-02 15:04:05"`
+	EventsDateEnd   string `json:"events_date_end" validate:"required,datetime=2006-01-02 15:04:05"`
 	EventsDeadline  string `json:"events_deadline" validate:"required,datetime=2006-01-02 15:04:05"`
 	EventsName      string `json:"events_name" validate:"required"`
 	EventsPlace     string `json:"events_place" validate:"required_without=EventsRewilding"`
 	EventsRewilding string `json:"events_rewilding" validate:"required_without=EventsPlace"`
 	// EventsType             string  `json:"events_type" validate:"required"`
+	EventsParticipantLimit int     `json:"events_participant_limit" validate:"required"`
 	EventsPaymentRequired  int     `json:"events_payment_required" validate:"required"`
 	EventsPaymentFee       float64 `json:"events_payment_fee" validate:"required"`
 	EventsRequiresApproval int     `json:"events_requires_approval" validate:"required"`
 	EventsLat              float64 `json:"events_lat" validate:"required_without_all=EventsPlace EventsRewilding"`
 	EventsLng              float64 `json:"events_lng" validate:"required_without_all=EventsPlace EventsRewilding"`
+	EventsMeetingPointLat  float64 `json:"events_meeting_point_lat" validate:"required"`
+	EventsMeetingPointLng  float64 `json:"events_meeting_point_lng" validate:"required"`
 }
 
 func (r EventRepository) Retrieve(c *gin.Context) {
@@ -60,6 +64,9 @@ func (r EventRepository) Create(c *gin.Context) {
 	lat := helpers.FloatToDecimal128(payload.EventsLat)
 	lng := helpers.FloatToDecimal128(payload.EventsLng)
 
+	meetingLat := helpers.FloatToDecimal128(payload.EventsMeetingPointLat)
+	meetingLng := helpers.FloatToDecimal128(payload.EventsMeetingPointLng)
+
 	if payload.EventsPlace != "" {
 		rewildingId := service.GoogleToRewilding(c, payload.EventsPlace)
 		if helpers.MongoZeroID(rewildingId) {
@@ -83,17 +90,21 @@ func (r EventRepository) Create(c *gin.Context) {
 	}
 
 	insert := models.Events{
-		EventsDate:      helpers.StringToPrimitiveDateTime(payload.EventsDateTime),
+		EventsDate:      helpers.StringToPrimitiveDateTime(payload.EventsDate),
+		EventsDateEnd:   helpers.StringToPrimitiveDateTime(payload.EventsDateEnd),
 		EventsDeadline:  helpers.StringToPrimitiveDateTime(payload.EventsDeadline),
 		EventsName:      payload.EventsName,
 		EventsRewilding: helpers.StringToPrimitiveObjId(payload.EventsRewilding),
 		EventsPlace:     payload.EventsPlace,
 		//EventsType:             "",
+		EventsParticipantLimit: payload.EventsParticipantLimit,
 		EventsPaymentRequired:  payload.EventsPaymentRequired,
 		EventsPaymentFee:       payload.EventsPaymentFee,
 		EventsRequiresApproval: payload.EventsRequiresApproval,
 		EventsLat:              lat,
 		EventsLng:              lng,
+		EventsMeetingPointLat:  meetingLat,
+		EventsMeetingPointLng:  meetingLng,
 		EventsCreatedBy:        userDetail.UsersId,
 		EventsCreatedAt:        primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -153,7 +164,7 @@ func (r EventRepository) ProcessData(c *gin.Context, Events *models.Events, payl
 	lat := helpers.FloatToDecimal128(payload.EventsLat)
 	lng := helpers.FloatToDecimal128(payload.EventsLng)
 
-	Events.EventsDate = helpers.StringToPrimitiveDateTime(payload.EventsDateTime)
+	Events.EventsDate = helpers.StringToPrimitiveDateTime(payload.EventsDate)
 	Events.EventsDeadline = helpers.StringToPrimitiveDateTime(payload.EventsDeadline)
 	Events.EventsName = payload.EventsName
 	Events.EventsRewilding = helpers.StringToPrimitiveObjId(payload.EventsRewilding)

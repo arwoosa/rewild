@@ -49,10 +49,23 @@ func (r CollaborativeLogAlbumLinkRepository) Create(c *gin.Context) {
 		return
 	}
 
+	allowedString := []string{"forms.gle", "docs.google.com", "surveycake.com"}
+
 	userDetail := helpers.GetAuthUser(c)
 	var payload CollaborativeLogAlbumLinkRequest
 	validateError := helpers.Validate(c, &payload)
 	if validateError != nil {
+		return
+	}
+	url, err := helpers.GetDomain(payload.EventAlbumLinkAlbumUrl)
+
+	if err != nil {
+		helpers.ResponseBadRequestError(c, err.Error())
+		return
+	}
+
+	if !helpers.StringInSlice(url, allowedString) {
+		helpers.ResponseBadRequestError(c, "目前支援的有: Google Photo, iCloud, flickr, Mega Passed domain: "+url)
 		return
 	}
 

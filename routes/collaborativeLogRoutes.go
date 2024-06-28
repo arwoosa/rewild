@@ -11,6 +11,7 @@ func CollaborativeLogRoutes(r *gin.Engine) *gin.Engine {
 	repo := repository.CollaborativeLogRepository{}
 	repoAlbumLink := repository.CollaborativeLogAlbumLinkRepository{}
 	repoPolaroid := repository.CollaborativeLogPolaroidRepository{}
+	repoQuestionnaire := repository.CollaborativeLogQuestionnaireRepository{}
 
 	main := r.Group("/collaborative-log", middleware.AuthMiddleware())
 	{
@@ -37,6 +38,11 @@ func CollaborativeLogRoutes(r *gin.Engine) *gin.Engine {
 		// albumLink.GET("/:messageBoardId", repoAlbumLink.Read)
 		// albumLink.PUT("/:messageBoardId", repoAlbumLink.Update)
 		// albumLink.DELETE("/:messageBoardId", repoAlbumLink.Delete)
+	}
+
+	questionnaire := detail.Group("/questionnaire", middleware.AuthMiddleware())
+	{
+		questionnaire.POST("", middleware.AuthBusinessUserMiddleware(), repoQuestionnaire.Create)
 	}
 
 	/*detail := main.Group("/:id", middleware.AuthMiddleware())
