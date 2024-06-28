@@ -17,17 +17,17 @@ import (
 
 type EventRepository struct{}
 type EventRequest struct {
-	EventsDate      string `json:"events_date" validate:"required,datetime=2006-01-02 15:04:05"`
-	EventsDateEnd   string `json:"events_date_end" validate:"required,datetime=2006-01-02 15:04:05"`
-	EventsDeadline  string `json:"events_deadline" validate:"required,datetime=2006-01-02 15:04:05"`
+	EventsDate      string `json:"events_date" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
+	EventsDateEnd   string `json:"events_date_end" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
+	EventsDeadline  string `json:"events_deadline" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
 	EventsName      string `json:"events_name" validate:"required"`
 	EventsPlace     string `json:"events_place" validate:"required_without=EventsRewilding"`
 	EventsRewilding string `json:"events_rewilding" validate:"required_without=EventsPlace"`
 	// EventsType             string  `json:"events_type" validate:"required"`
 	EventsParticipantLimit int     `json:"events_participant_limit" validate:"required"`
-	EventsPaymentRequired  int     `json:"events_payment_required" validate:"required"`
+	EventsPaymentRequired  int     `json:"events_payment_required" default:"0"`
 	EventsPaymentFee       float64 `json:"events_payment_fee" validate:"required"`
-	EventsRequiresApproval int     `json:"events_requires_approval" validate:"required"`
+	EventsRequiresApproval int     `json:"events_requires_approval" default:"0"`
 	EventsLat              float64 `json:"events_lat" validate:"required_without_all=EventsPlace EventsRewilding"`
 	EventsLng              float64 `json:"events_lng" validate:"required_without_all=EventsPlace EventsRewilding"`
 	EventsMeetingPointLat  float64 `json:"events_meeting_point_lat" validate:"required"`
@@ -100,7 +100,7 @@ func (r EventRepository) Create(c *gin.Context) {
 		EventsParticipantLimit: payload.EventsParticipantLimit,
 		EventsPaymentRequired:  payload.EventsPaymentRequired,
 		EventsPaymentFee:       payload.EventsPaymentFee,
-		EventsRequiresApproval: payload.EventsRequiresApproval,
+		EventsRequiresApproval: &payload.EventsRequiresApproval,
 		EventsLat:              lat,
 		EventsLng:              lng,
 		EventsMeetingPointLat:  meetingLat,
@@ -171,7 +171,7 @@ func (r EventRepository) ProcessData(c *gin.Context, Events *models.Events, payl
 	Events.EventsPlace = payload.EventsPlace
 	Events.EventsPaymentRequired = payload.EventsPaymentRequired
 	Events.EventsPaymentFee = payload.EventsPaymentFee
-	Events.EventsRequiresApproval = payload.EventsRequiresApproval
+	Events.EventsRequiresApproval = &payload.EventsRequiresApproval
 	Events.EventsLat = lat
 	Events.EventsLng = lng
 }
