@@ -21,12 +21,14 @@ func EventRoutes(r *gin.Engine) *gin.Engine {
 	{
 		main.GET("", repo.Retrieve)
 		main.POST("", repo.Create)
+		main.OPTIONS("", repo.Options)
 	}
 
 	detail := main.Group("/:id", middleware.AuthMiddleware())
 	{
 		detail.GET("", repo.Read)
 		detail.PUT("", repo.Update)
+		detail.DELETE("", repo.Delete)
 	}
 
 	messageBoard := detail.Group("/message-board", middleware.AuthMiddleware())

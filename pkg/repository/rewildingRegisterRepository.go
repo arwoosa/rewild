@@ -157,5 +157,5 @@ func (r RewildingRegisterRepository) Options(c *gin.Context) {
 		return
 	}
 	cursor.All(context.TODO(), &RefRewildingTypes)
-	c.JSON(http.StatusOK, RefRewildingTypes)
+	c.JSON(http.StatusOK, gin.H{"rewilding_types": RefRewildingTypes})
 }
