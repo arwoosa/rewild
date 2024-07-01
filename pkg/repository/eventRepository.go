@@ -37,7 +37,8 @@ type EventRequest struct {
 func (r EventRepository) Retrieve(c *gin.Context) {
 	var results []models.Events
 	filter := bson.M{
-		"events_date": bson.M{"$gte": primitive.NewDateTimeFromTime(time.Now())},
+		"events_date":    bson.M{"$gte": primitive.NewDateTimeFromTime(time.Now())},
+		"events_deleted": bson.M{"$exists": false},
 	}
 	cursor, err := config.DB.Collection("Events").Find(context.TODO(), filter)
 	cursor.All(context.TODO(), &results)
@@ -128,6 +129,24 @@ func (r EventRepository) Read(c *gin.Context) {
 	}
 }
 
+func (r EventRepository) Delete(c *gin.Context) {
+	var Events models.Events
+	err := r.ReadOne(c, &Events)
+
+	// TODO: What are the rules of allowing delete
+
+	isDeleted := 1
+	Events.EventsDeleted = &isDeleted
+	Events.EventsDeletedAt = primitive.NewDateTimeFromTime(time.Now())
+
+	if err == nil {
+		filters := bson.D{{Key: "_id", Value: Events.EventsId}}
+		upd := bson.D{{Key: "$set", Value: Events}}
+		config.DB.Collection("Events").UpdateOne(context.TODO(), filters, upd)
+		c.JSON(http.StatusOK, Events)
+	}
+}
+
 func (r EventRepository) ReadOne(c *gin.Context, Events *models.Events) error {
 	id, _ := primitive.ObjectIDFromHex(c.Param("id"))
 	filter := bson.D{{Key: "_id", Value: id}}
@@ -174,4 +193,14 @@ func (r EventRepository) ProcessData(c *gin.Context, Events *models.Events, payl
 	Events.EventsRequiresApproval = &payload.EventsRequiresApproval
 	Events.EventsLat = lat
 	Events.EventsLng = lng
+}
+
+func (r EventRepository) Options(c *gin.Context) {
+	var RefRewildingTypes []models.RefRewildingTypes
+	cursor, err := config.DB.Collection("RefRewildingTypes").Find(context.TODO(), bson.D{})
+	if err != nil {
+		return
+	}
+	cursor.All(context.TODO(), &RefRewildingTypes)
+	c.JSON(http.StatusOK, gin.H{"rewilding_types": RefRewildingTypes})
 }

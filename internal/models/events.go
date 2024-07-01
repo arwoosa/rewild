@@ -21,6 +21,8 @@ type Events struct {
 	EventsLng               primitive.Decimal128 `bson:"events_lng,omitempty" json:"events_lng"`
 	EventsMeetingPointLat   primitive.Decimal128 `bson:"events_meeting_point_lat,omitempty" json:"events_meeting_point_lat"`
 	EventsMeetingPointLng   primitive.Decimal128 `bson:"events_meeting_point_lng,omitempty" json:"events_meeting_point_lng"`
+	EventsDeleted           *int                 `bson:"events_deleted,omitempty" json:"events_deleted,omitempty"`
+	EventsDeletedAt         primitive.DateTime   `bson:"events_deleted_at,omitempty" json:"events_deleted_at,omitempty"`
 	EventsCreatedBy         primitive.ObjectID   `bson:"events_created_by,omitempty" json:"events_created_by"`
 	EventsCreatedAt         primitive.DateTime   `bson:"events_created_at,omitempty" json:"events_created_at"`
 	EventsUpdatedBy         primitive.ObjectID   `bson:"events_updated_by,omitempty" json:"events_updated_by"`
