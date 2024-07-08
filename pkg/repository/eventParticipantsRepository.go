@@ -30,13 +30,31 @@ func GetEventParticipantStatus(status string) int64 {
 }
 
 func (r EventParticipantsRepository) Retrieve(c *gin.Context) {
+	eventId := helpers.StringToPrimitiveObjId(c.Param("id"))
 	err := EventRepository{}.ReadOne(c, &models.Events{})
 	if err != nil {
 		return
 	}
 
+	agg := mongo.Pipeline{
+		bson.D{{
+			Key: "$match", Value: bson.M{"event_participants_event": eventId},
+		}},
+		bson.D{{
+			Key: "$lookup", Value: bson.M{
+				"from":         "Users",
+				"localField":   "event_participants_user",
+				"foreignField": "_id",
+				"as":           "event_participants_user_detail",
+			},
+		}},
+		bson.D{{
+			Key: "$unwind", Value: "$event_participants_user_detail",
+		}},
+	}
+
 	var results []models.EventParticipants
-	cursor, err := config.DB.Collection("EventParticipants").Find(context.TODO(), bson.D{})
+	cursor, err := config.DB.Collection("EventParticipants").Aggregate(context.TODO(), agg)
 	cursor.All(context.TODO(), &results)
 
 	if err != nil {

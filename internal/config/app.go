@@ -25,7 +25,12 @@ type AppConfig struct {
 	ClourdlareImageDeliveryUrl string
 }
 
+type AppLimit struct {
+	PocketList int
+}
+
 var APP AppConfig
+var APP_LIMIT AppLimit
 
 func InitialiseConfig() {
 	dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
@@ -49,4 +54,6 @@ func InitialiseConfig() {
 	APP.ClourdlareImageAccountId = os.Getenv("CLOURDLARE_IMAGE_ACCOUNT_ID")
 	APP.ClourdlareImageAccountHash = os.Getenv("CLOURDLARE_IMAGE_ACCOUNT_HASH")
 	APP.ClourdlareImageDeliveryUrl = os.Getenv("CLOURDLARE_IMAGE_DELIVERY_URL")
+
+	APP_LIMIT.PocketList = 100
 }
