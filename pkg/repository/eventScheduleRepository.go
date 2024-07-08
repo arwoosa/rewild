@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
@@ -12,10 +11,15 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type EventScheduleRepository struct{}
+
 type EventScheduleRequest struct {
+	Schedule []EventScheduleRequestItem `json:"schedule" validate:"required"`
+}
+type EventScheduleRequestItem struct {
 	EventSchedulesDatetime    string `json:"event_schedules_datetime" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
 	EventSchedulesDescription string `json:"event_schedules_description" validate:"required"`
 	// #TODO: Datetime: RFC-3339 2024
@@ -23,13 +27,31 @@ type EventScheduleRequest struct {
 }
 
 func (r EventScheduleRepository) Retrieve(c *gin.Context) {
+	eventId := helpers.StringToPrimitiveObjId(c.Param("id"))
 	err := EventRepository{}.ReadOne(c, &models.Events{})
 	if err != nil {
 		return
 	}
 
+	agg := mongo.Pipeline{
+		bson.D{{
+			Key: "$match", Value: bson.M{"event_schedules_event": eventId},
+		}},
+		bson.D{{
+			Key: "$lookup", Value: bson.M{
+				"from":         "Users",
+				"localField":   "event_schedules_created_by",
+				"foreignField": "_id",
+				"as":           "event_schedules_created_by_user",
+			},
+		}},
+		bson.D{{
+			Key: "$unwind", Value: "$event_schedules_created_by_user",
+		}},
+	}
+
 	var results []models.EventSchedules
-	cursor, err := config.DB.Collection("EventSchedules").Find(context.TODO(), bson.D{})
+	cursor, err := config.DB.Collection("EventSchedules").Aggregate(context.TODO(), agg)
 	cursor.All(context.TODO(), &results)
 
 	if err != nil {
@@ -56,23 +78,30 @@ func (r EventScheduleRepository) Create(c *gin.Context) {
 		return
 	}
 
-	insert := models.EventSchedules{
-		EventSchedulesEvent:     helpers.StringToPrimitiveObjId(c.Param("id")),
-		EventSchedulesCreatedBy: userDetail.UsersId,
-		EventSchedulesCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+	eventId := helpers.StringToPrimitiveObjId(c.Param("id"))
+	eventSchedule := []interface{}{}
+
+	filters := bson.M{
+		"event_schedules_event": eventId,
 	}
 
-	r.ProcessData(c, &insert, payload)
+	config.DB.Collection("EventSchedules").DeleteMany(context.TODO(), filters)
 
-	result, err := config.DB.Collection("EventSchedules").InsertOne(context.TODO(), insert)
-	if err != nil {
-		fmt.Println("ERROR", err.Error())
-		return
+	for _, v := range payload.Schedule {
+		scheduleTime := helpers.StringToDateTime(v.EventSchedulesDatetime)
+
+		eventSchedule = append(eventSchedule, models.EventSchedules{
+			EventSchedulesEvent:       helpers.StringToPrimitiveObjId(c.Param("id")),
+			EventSchedulesCreatedBy:   userDetail.UsersId,
+			EventSchedulesCreatedAt:   primitive.NewDateTimeFromTime(time.Now()),
+			EventSchedulesDatetime:    primitive.NewDateTimeFromTime(scheduleTime),
+			EventSchedulesDescription: v.EventSchedulesDescription,
+		})
 	}
 
-	var EventSchedules models.EventSchedules
-	config.DB.Collection("EventSchedules").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&EventSchedules)
-	c.JSON(http.StatusOK, EventSchedules)
+	config.DB.Collection("EventSchedules").InsertMany(context.TODO(), eventSchedule)
+
+	r.Retrieve(c)
 }
 
 func (r EventScheduleRepository) Read(c *gin.Context) {
@@ -105,7 +134,7 @@ func (r EventScheduleRepository) Update(c *gin.Context) {
 		return
 	}
 
-	var payload EventScheduleRequest
+	var payload EventScheduleRequestItem
 	validateError := helpers.Validate(c, &payload)
 	if validateError != nil {
 		return
@@ -137,7 +166,7 @@ func (r EventScheduleRepository) Delete(c *gin.Context) {
 	}
 }
 
-func (r EventScheduleRepository) ProcessData(c *gin.Context, EventSchedules *models.EventSchedules, payload EventScheduleRequest) {
+func (r EventScheduleRepository) ProcessData(c *gin.Context, EventSchedules *models.EventSchedules, payload EventScheduleRequestItem) {
 	time := helpers.StringToDateTime(payload.EventSchedulesDatetime)
 	EventSchedules.EventSchedulesDatetime = primitive.NewDateTimeFromTime(time)
 	EventSchedules.EventSchedulesDescription = payload.EventSchedulesDescription

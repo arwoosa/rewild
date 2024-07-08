@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type EventMessageBoardRepository struct{}
@@ -21,13 +22,31 @@ type EventMessageBoardRequest struct {
 }
 
 func (r EventMessageBoardRepository) Retrieve(c *gin.Context) {
+	eventId := helpers.StringToPrimitiveObjId(c.Param("id"))
 	err := EventRepository{}.ReadOne(c, &models.Events{})
 	if err != nil {
 		return
 	}
 
+	agg := mongo.Pipeline{
+		bson.D{{
+			Key: "$match", Value: bson.M{"event_message_board_event": eventId},
+		}},
+		bson.D{{
+			Key: "$lookup", Value: bson.M{
+				"from":         "Users",
+				"localField":   "event_message_board_created_by",
+				"foreignField": "_id",
+				"as":           "event_message_board_created_by_user",
+			},
+		}},
+		bson.D{{
+			Key: "$unwind", Value: "$event_message_board_created_by_user",
+		}},
+	}
+
 	var results []models.EventMessageBoard
-	cursor, err := config.DB.Collection("EventMessageBoard").Find(context.TODO(), bson.D{})
+	cursor, err := config.DB.Collection("EventMessageBoard").Aggregate(context.TODO(), agg)
 	cursor.All(context.TODO(), &results)
 
 	if err != nil {

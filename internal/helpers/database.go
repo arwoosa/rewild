@@ -3,6 +3,7 @@ package helpers
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +14,12 @@ import (
 func FloatToDecimal128(float float64) primitive.Decimal128 {
 	formatted, _ := primitive.ParseDecimal128(fmt.Sprint(float))
 	return formatted
+}
+
+func Decimal128ToFloat(decimal128 primitive.Decimal128) float64 {
+	decimalString := decimal128.String()
+	float, _ := strconv.ParseFloat(decimalString, 64)
+	return float
 }
 
 func StringToPrimitiveObjId(value string) primitive.ObjectID {

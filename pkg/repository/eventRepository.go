@@ -62,11 +62,11 @@ func (r EventRepository) Create(c *gin.Context) {
 		return
 	}
 
-	lat := helpers.FloatToDecimal128(payload.EventsLat)
-	lng := helpers.FloatToDecimal128(payload.EventsLng)
+	// lat := helpers.FloatToDecimal128(payload.EventsLat)
+	// lng := helpers.FloatToDecimal128(payload.EventsLng)
 
-	meetingLat := helpers.FloatToDecimal128(payload.EventsMeetingPointLat)
-	meetingLng := helpers.FloatToDecimal128(payload.EventsMeetingPointLng)
+	// meetingLat := helpers.FloatToDecimal128(payload.EventsMeetingPointLat)
+	// meetingLng := helpers.FloatToDecimal128(payload.EventsMeetingPointLng)
 
 	if payload.EventsPlace != "" {
 		rewildingId := service.GoogleToRewilding(c, payload.EventsPlace)
@@ -83,32 +83,36 @@ func (r EventRepository) Create(c *gin.Context) {
 			helpers.ResultEmpty(c, err)
 			return
 		}
-		lat = rewildingData.RewildingLat
-		lng = rewildingData.RewildingLng
+		lat := rewildingData.RewildingLat
+		lng := rewildingData.RewildingLng
 		if rewildingData.RewildingPlaceId != "" {
 			payload.EventsPlace = rewildingData.RewildingPlaceId
 		}
+		payload.EventsLat = helpers.Decimal128ToFloat(lat)
+		payload.EventsLng = helpers.Decimal128ToFloat(lng)
 	}
 
 	insert := models.Events{
-		EventsDate:      helpers.StringToPrimitiveDateTime(payload.EventsDate),
-		EventsDateEnd:   helpers.StringToPrimitiveDateTime(payload.EventsDateEnd),
-		EventsDeadline:  helpers.StringToPrimitiveDateTime(payload.EventsDeadline),
-		EventsName:      payload.EventsName,
-		EventsRewilding: helpers.StringToPrimitiveObjId(payload.EventsRewilding),
-		EventsPlace:     payload.EventsPlace,
-		//EventsType:             "",
-		EventsParticipantLimit: payload.EventsParticipantLimit,
-		EventsPaymentRequired:  payload.EventsPaymentRequired,
-		EventsPaymentFee:       payload.EventsPaymentFee,
-		EventsRequiresApproval: &payload.EventsRequiresApproval,
-		EventsLat:              lat,
-		EventsLng:              lng,
-		EventsMeetingPointLat:  meetingLat,
-		EventsMeetingPointLng:  meetingLng,
-		EventsCreatedBy:        userDetail.UsersId,
-		EventsCreatedAt:        primitive.NewDateTimeFromTime(time.Now()),
+		// EventsDate:      helpers.StringToPrimitiveDateTime(payload.EventsDate),
+		// EventsDateEnd:   helpers.StringToPrimitiveDateTime(payload.EventsDateEnd),
+		// EventsDeadline:  helpers.StringToPrimitiveDateTime(payload.EventsDeadline),
+		// EventsName:      payload.EventsName,
+		// EventsRewilding: helpers.StringToPrimitiveObjId(payload.EventsRewilding),
+		// EventsPlace: payload.EventsPlace,
+		// EventsType:             "",
+		// EventsParticipantLimit: payload.EventsParticipantLimit,
+		// EventsPaymentRequired:  payload.EventsPaymentRequired,
+		// EventsPaymentFee:       payload.EventsPaymentFee,
+		// EventsRequiresApproval: &payload.EventsRequiresApproval,
+		// EventsLat: lat,
+		// EventsLng: lng,
+		// EventsMeetingPointLat: meetingLat,
+		// EventsMeetingPointLng: meetingLng,
+		EventsCreatedBy: userDetail.UsersId,
+		EventsCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
+
+	r.ProcessData(c, &insert, payload)
 
 	result, err := config.DB.Collection("Events").InsertOne(context.TODO(), insert)
 	if err != nil {
@@ -180,10 +184,19 @@ func (r EventRepository) Update(c *gin.Context) {
 }
 
 func (r EventRepository) ProcessData(c *gin.Context, Events *models.Events, payload EventRequest) {
-	lat := helpers.FloatToDecimal128(payload.EventsLat)
-	lng := helpers.FloatToDecimal128(payload.EventsLng)
+	eventsLat := payload.EventsLat
+	eventsLng := payload.EventsLng
+	meetingPointLat := payload.EventsMeetingPointLat
+	meetingPointLng := payload.EventsMeetingPointLng
 
-	Events.EventsDate = helpers.StringToPrimitiveDateTime(payload.EventsDate)
+	eventDate := helpers.StringToPrimitiveDateTime(payload.EventsDate)
+	eventDateEnd := helpers.StringToPrimitiveDateTime(payload.EventsDateEnd)
+	eventDurationSecond := eventDateEnd.Time().Sub(eventDate.Time()).Seconds()
+
+	eventStatisticDistance := (helpers.Haversine(eventsLat, eventsLng, meetingPointLat, meetingPointLng) * 100000) / 70
+
+	Events.EventsDate = eventDate
+	Events.EventsDateEnd = eventDateEnd
 	Events.EventsDeadline = helpers.StringToPrimitiveDateTime(payload.EventsDeadline)
 	Events.EventsName = payload.EventsName
 	Events.EventsRewilding = helpers.StringToPrimitiveObjId(payload.EventsRewilding)
@@ -191,8 +204,14 @@ func (r EventRepository) ProcessData(c *gin.Context, Events *models.Events, payl
 	Events.EventsPaymentRequired = payload.EventsPaymentRequired
 	Events.EventsPaymentFee = payload.EventsPaymentFee
 	Events.EventsRequiresApproval = &payload.EventsRequiresApproval
-	Events.EventsLat = lat
-	Events.EventsLng = lng
+	Events.EventsMeetingPointLat = helpers.FloatToDecimal128(meetingPointLat)
+	Events.EventsMeetingPointLng = helpers.FloatToDecimal128(meetingPointLng)
+	Events.EventsLat = helpers.FloatToDecimal128(eventsLat)
+	Events.EventsLng = helpers.FloatToDecimal128(eventsLng)
+	Events.EventsParticipantLimit = payload.EventsParticipantLimit
+
+	Events.EventsStatisticDistance = helpers.FloatToDecimal128(eventStatisticDistance)
+	Events.EventsStatisticTime = eventDurationSecond
 }
 
 func (r EventRepository) Options(c *gin.Context) {

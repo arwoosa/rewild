@@ -21,7 +21,7 @@ func EventRoutes(r *gin.Engine) *gin.Engine {
 	{
 		main.GET("", repo.Retrieve)
 		main.POST("", repo.Create)
-		main.OPTIONS("", repo.Options)
+		main.GET("/references", repo.Options)
 	}
 
 	detail := main.Group("/:id", middleware.AuthMiddleware())
