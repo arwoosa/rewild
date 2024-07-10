@@ -20,6 +20,7 @@ type Rewilding struct {
 	RewildingApplyOfficial *bool                `bson:"rewilding_apply_official,omitempty" json:"rewilding_apply_official"`
 	RewildingCreatedBy     primitive.ObjectID   `bson:"rewilding_created_by,omitempty" json:"rewilding_created_by"`
 	RewildingCreatedAt     primitive.DateTime   `bson:"rewilding_created_at,omitempty" json:"rewilding_created_at"`
+	RewildingCreatedByUser *UsersAgg            `bson:"rewilding_created_by_user,omitempty" json:"rewilding_created_by_user,omitempty"`
 }
 
 type RewildingPhotos struct {
