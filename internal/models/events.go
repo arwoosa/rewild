@@ -10,7 +10,7 @@ type Events struct {
 	EventsName                 string               `bson:"events_name,omitempty" json:"events_name"`
 	EventsRewilding            primitive.ObjectID   `bson:"events_rewilding,omitempty" json:"events_rewilding"`
 	EventsPlace                string               `bson:"events_place,omitempty" json:"events_place"`
-	EventsType                 string               `bson:"events_type,omitempty" json:"events_type"`
+	EventsType                 string               `bson:"events_type,omitempty" json:"events_type,omitempty"`
 	EventsInvitationMessage    string               `bson:"events_invitation_message,omitempty" json:"events_invitation_message"`
 	EventsParticipantLimit     int                  `bson:"events_participant_limit,omitempty" json:"events_participant_limit"`
 	EventsPaymentRequired      int                  `bson:"events_payment_required,omitempty" json:"events_payment_required"`
@@ -24,10 +24,12 @@ type Events struct {
 	EventsStatisticTime        float64              `bson:"events_statistic_time,omitempty" json:"events_statistic_time"`
 	EventsStatisticDistance    primitive.Decimal128 `bson:"events_statistic_distance,omitempty" json:"events_statistic_distance"`
 	EventsStatisticMemberCount int                  `bson:"events_statistic_member_count,omitempty" json:"events_statistic_member_count"`
+	EventsPhoto                string               `bson:"events_photo,omitempty" json:"events_photo"`
 	EventsDeleted              *int                 `bson:"events_deleted,omitempty" json:"events_deleted,omitempty"`
 	EventsDeletedAt            primitive.DateTime   `bson:"events_deleted_at,omitempty" json:"events_deleted_at,omitempty"`
 	EventsCreatedBy            primitive.ObjectID   `bson:"events_created_by,omitempty" json:"events_created_by"`
 	EventsCreatedAt            primitive.DateTime   `bson:"events_created_at,omitempty" json:"events_created_at"`
 	EventsUpdatedBy            primitive.ObjectID   `bson:"events_updated_by,omitempty" json:"events_updated_by"`
 	EventsUpdatedAt            primitive.DateTime   `bson:"events_updated_at,omitempty" json:"events_updated_at"`
+	EventsCreatedByUser        *UsersAgg            `bson:"events_created_by_user,omitempty" json:"events_created_by_user,omitempty"`
 }
