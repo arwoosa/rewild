@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type RewildingRepository struct{}
@@ -24,6 +25,16 @@ type RewildingRequest struct {
 	RewildingName                 string  `json:"rewilding_name" validate:"required"`
 	RewildingLat                  float64 `json:"rewilding_lat"  validate:"required"`
 	RewildingLng                  float64 `json:"rewilding_lng"  validate:"required"`
+}
+
+type RewildingFormDataRequest struct {
+	RewildingType                 string  `form:"rewilding_type"`
+	RewildingApplyOfficial        bool    `form:"rewilding_apply_official"`
+	RewildingReferenceInformation string  `form:"rewilding_reference_information"`
+	RewildingPocketList           string  `form:"rewilding_pocket_list"`
+	RewildingName                 string  `form:"rewilding_name" validate:"required"`
+	RewildingLat                  float64 `form:"rewilding_lat"  validate:"required"`
+	RewildingLng                  float64 `form:"rewilding_lng"  validate:"required"`
 }
 
 // @Summary Rewilding
@@ -38,14 +49,32 @@ func (r RewildingRepository) Retrieve(c *gin.Context) {
 	var results []models.Rewilding
 	owner := c.Query("owner")
 
-	filter := bson.M{}
+	agg := mongo.Pipeline{
+		bson.D{{
+			Key: "$lookup", Value: bson.M{
+				"from":         "Users",
+				"localField":   "rewilding_created_by",
+				"foreignField": "_id",
+				"as":           "rewilding_created_by_user",
+			},
+		}},
+		bson.D{{
+			Key: "$unwind", Value: bson.M{
+				"path":                       "$rewilding_created_by_user",
+				"preserveNullAndEmptyArrays": true,
+			},
+		}},
+	}
 
 	if owner != "" {
 		middleware.CheckIfAuth(c)
 		userDetail := helpers.GetAuthUser(c)
-		filter["rewilding_created_by"] = userDetail.UsersId
+		agg = append(agg, bson.D{{
+			Key: "$match", Value: bson.M{"rewilding_created_by": userDetail.UsersId},
+		}})
+		//filter["rewilding_created_by"] = userDetail.UsersId
 	}
-	cursor, err := config.DB.Collection("Rewilding").Find(context.TODO(), filter)
+	cursor, err := config.DB.Collection("Rewilding").Aggregate(context.TODO(), agg)
 	if err != nil {
 		panic(err)
 	}
@@ -72,8 +101,8 @@ func (r RewildingRepository) Read(c *gin.Context) {
 
 func (r RewildingRepository) Create(c *gin.Context) {
 	userDetail := helpers.GetAuthUser(c)
-	var payload RewildingRequest
-	validateError := helpers.Validate(c, &payload)
+	var payload RewildingFormDataRequest
+	validateError := helpers.ValidateForm(c, &payload)
 	if validateError != nil {
 		return
 	}
@@ -87,6 +116,29 @@ func (r RewildingRepository) Create(c *gin.Context) {
 		rewildingApplyOfficial = true
 	}
 
+	form, _ := c.MultipartForm()
+	files := form.File["rewilding_photo[]"]
+	var RewildingPhotos []models.RewildingPhotos
+
+	for _, file := range files {
+		_, validateErr := helpers.ValidatePhoto(c, file, true)
+
+		if validateErr == nil {
+			cloudflare := CloudflareRepository{}
+			cloudflareResponse, postErr := cloudflare.Post(c, file)
+			if postErr != nil {
+				helpers.ResponseBadRequestError(c, postErr.Error())
+				return
+			}
+			fileName := cloudflare.ImageDelivery(cloudflareResponse.Result.Id, "public")
+			RwPhoto := models.RewildingPhotos{
+				RewildingPhotosID:   primitive.NewObjectID(),
+				RewildingPhotosPath: fileName,
+			}
+			RewildingPhotos = append(RewildingPhotos, RwPhoto)
+		}
+	}
+
 	insert := models.Rewilding{
 		RewildingApplyOfficial: &rewildingApplyOfficial,
 		RewildingType:          helpers.StringToPrimitiveObjId(payload.RewildingType),
@@ -95,6 +147,7 @@ func (r RewildingRepository) Create(c *gin.Context) {
 		RewildingLng:           lng,
 		RewildingCreatedBy:     userDetail.UsersId,
 		RewildingCreatedAt:     primitive.NewDateTimeFromTime(time.Now()),
+		RewildingPhotos:        RewildingPhotos,
 	}
 
 	result, err := config.DB.Collection("Rewilding").InsertOne(context.TODO(), insert)
