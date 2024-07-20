@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type CollaborativeLogAlbumLinkRepository struct{}
@@ -28,7 +29,25 @@ func (r CollaborativeLogAlbumLinkRepository) Retrieve(c *gin.Context) {
 	}
 
 	var EventAlbumLink []models.EventAlbumLink
-	cursor, err := config.DB.Collection("EventAlbumLink").Find(context.TODO(), bson.D{})
+	agg := mongo.Pipeline{
+		bson.D{{
+			Key: "$match", Value: bson.M{
+				"event_album_link_event": Events.EventsId,
+			},
+		}},
+		bson.D{{
+			Key: "$lookup", Value: bson.M{
+				"from":         "Users",
+				"localField":   "event_album_link_created_by",
+				"foreignField": "_id",
+				"as":           "event_album_link_created_by_user",
+			},
+		}},
+		bson.D{{
+			Key: "$unwind", Value: "$event_album_link_created_by_user",
+		}},
+	}
+	cursor, err := config.DB.Collection("EventAlbumLink").Aggregate(context.TODO(), agg)
 	cursor.All(context.TODO(), &EventAlbumLink)
 
 	if err != nil {

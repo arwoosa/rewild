@@ -20,6 +20,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type CollaborativeLogPolaroidRepository struct{}
@@ -36,7 +37,25 @@ func (r CollaborativeLogPolaroidRepository) Retrieve(c *gin.Context) {
 	}
 
 	var EventPolaroids []models.EventPolaroids
-	cursor, err := config.DB.Collection("EventPolaroids").Find(context.TODO(), bson.D{})
+	agg := mongo.Pipeline{
+		bson.D{{
+			Key: "$match", Value: bson.M{
+				"event_polaroids_event": Events.EventsId,
+			},
+		}},
+		bson.D{{
+			Key: "$lookup", Value: bson.M{
+				"from":         "Users",
+				"localField":   "event_polaroids_created_by",
+				"foreignField": "_id",
+				"as":           "event_polaroids_created_by_user",
+			},
+		}},
+		bson.D{{
+			Key: "$unwind", Value: "$event_polaroids_created_by_user",
+		}},
+	}
+	cursor, err := config.DB.Collection("EventPolaroids").Aggregate(context.TODO(), agg)
 	cursor.All(context.TODO(), &EventPolaroids)
 
 	if err != nil {
