@@ -61,6 +61,18 @@ func (r CollaborativeLogRepository) Retrieve(c *gin.Context) {
 			bson.D{{
 				Key: "$match", Value: bson.M{"events_date": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}},
 			}},
+			bson.D{{
+				Key: "$lookup", Value: bson.M{
+					"from":         "Users",
+					"localField":   "events_created_by",
+					"foreignField": "_id",
+					"as":           "events_created_by_user",
+				},
+			}},
+			bson.D{{
+				Key: "$unwind", Value: "$events_created_by_user",
+			}},
+			bson.D{{Key: "$limit", Value: 1}},
 		}
 
 		cursor, err := config.DB.Collection("EventParticipants").Aggregate(context.TODO(), agg)

@@ -13,6 +13,7 @@ func AuthRoutes(r *gin.Engine) *gin.Engine {
 	main := r.Group("/auth")
 	{
 		main.GET("", middleware.AuthMiddleware(), repo.Auth)
+		main.GET("test-badge", middleware.AuthMiddleware(), repo.TestBadge)
 	}
 
 	return r

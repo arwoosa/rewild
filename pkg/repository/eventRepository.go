@@ -7,6 +7,7 @@ import (
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
 	"oosa_rewild/internal/models"
+	"oosa_rewild/pkg/openweather"
 	"oosa_rewild/pkg/service"
 	"time"
 
@@ -127,6 +128,7 @@ func (r EventRepository) Create(c *gin.Context) {
 		payload.EventsLng = helpers.Decimal128ToFloat(lng)
 	}
 
+	openWeather := openweather.OpenWeatherRepository{}.Forecast(c, payload.EventsLat, payload.EventsLng)
 	insert := models.Events{
 		// EventsDate:      helpers.StringToPrimitiveDateTime(payload.EventsDate),
 		// EventsDateEnd:   helpers.StringToPrimitiveDateTime(payload.EventsDateEnd),
@@ -143,6 +145,7 @@ func (r EventRepository) Create(c *gin.Context) {
 		// EventsLng: lng,
 		// EventsMeetingPointLat: meetingLat,
 		// EventsMeetingPointLng: meetingLng,
+		EventsCityId:    openWeather.City.Id,
 		EventsCreatedBy: userDetail.UsersId,
 		EventsCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -178,10 +181,35 @@ func (r EventRepository) Create(c *gin.Context) {
 }
 
 func (r EventRepository) Read(c *gin.Context) {
-	var Events models.Events
-	err := r.ReadOne(c, &Events)
+	var Events []models.Events
+	id, _ := primitive.ObjectIDFromHex(c.Param("id"))
+	agg := mongo.Pipeline{
+		bson.D{{
+			Key: "$match", Value: bson.M{"_id": id},
+		}},
+		bson.D{{
+			Key: "$lookup", Value: bson.M{
+				"from":         "Users",
+				"localField":   "events_created_by",
+				"foreignField": "_id",
+				"as":           "events_created_by_user",
+			},
+		}},
+		bson.D{{
+			Key: "$unwind", Value: "$events_created_by_user",
+		}},
+		bson.D{{Key: "$limit", Value: 1}},
+	}
+
+	cursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), agg)
+	cursor.All(context.TODO(), &Events)
+	// err := r.ReadOne(c, &Events)
 	if err == nil {
-		c.JSON(http.StatusOK, Events)
+		if len(Events) == 0 {
+			helpers.ResponseNoData(c, "No data")
+		} else {
+			c.JSON(http.StatusOK, Events[0])
+		}
 	}
 }
 

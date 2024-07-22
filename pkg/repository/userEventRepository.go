@@ -45,11 +45,24 @@ func (r UserEventRepository) Retrieve(c *gin.Context) {
 
 	filterStage := bson.D{{Key: "$match", Value: match}}
 
-	cursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), mongo.Pipeline{
+	pipeline := mongo.Pipeline{
 		lookupStage,
 		unwindStage,
 		filterStage,
-	})
+		bson.D{{
+			Key: "$lookup", Value: bson.M{
+				"from":         "Users",
+				"localField":   "events_created_by",
+				"foreignField": "_id",
+				"as":           "events_created_by_user",
+			},
+		}},
+		bson.D{{
+			Key: "$unwind", Value: "$events_created_by_user",
+		}},
+	}
+
+	cursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), pipeline)
 	cursor.All(context.TODO(), &results)
 
 	if err != nil {

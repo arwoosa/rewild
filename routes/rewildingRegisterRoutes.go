@@ -15,7 +15,7 @@ func RewildingRegisterRoutes(r *gin.Engine) *gin.Engine {
 	{
 		rewildingRegister.GET("", repoRegisterRewilding.Retrieve)
 		rewildingRegister.POST("", repoRegisterRewilding.Create)
-		rewildingRegister.OPTIONS("", repoRegisterRewilding.Options)
+		rewildingRegister.GET("/references", repoRegisterRewilding.Options)
 	}
 
 	rewildingRegisterDetail := rewildingRegister.Group("/:id")
