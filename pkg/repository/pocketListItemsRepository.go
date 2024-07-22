@@ -7,6 +7,7 @@ import (
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
 	"oosa_rewild/internal/models"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -110,6 +111,7 @@ func (r PocketListItemsRepository) Create(c *gin.Context) {
 		PocketListItemsMst:       helpers.StringToPrimitiveObjId(pocketListId),
 		PocketListItemsRewilding: rewildingId,
 		PocketListItemsName:      payload.PocketListItemsPlaceName,
+		PocketListItemsCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	result, err := config.DB.Collection("PocketListItems").InsertOne(context.TODO(), insert)

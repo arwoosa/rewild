@@ -10,5 +10,5 @@ type EventPolaroids struct {
 	EventPolaroidsLng           primitive.Decimal128 `bson:"event_polaroids_lng,omitempty" json:"event_polaroids_lng"`
 	EventPolaroidsCreatedBy     primitive.ObjectID   `bson:"event_polaroids_created_by,omitempty" json:"event_polaroids_created_by"`
 	EventPolaroidsCreatedAt     primitive.DateTime   `bson:"event_polaroids_created_at,omitempty" json:"event_polaroids_created_at"`
-	EventPolaroidsCreatedByUser *UsersAgg            `bson:"event_polaroids_created_by_user,omitempty" json:"event_polaroids_created_by_user"`
+	EventPolaroidsCreatedByUser *UsersAgg            `bson:"event_polaroids_created_by_user,omitempty" json:"event_polaroids_created_by_user,omitempty"`
 }

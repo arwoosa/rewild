@@ -14,5 +14,5 @@ type EventParticipants struct {
 	EventParticipantsPaymentResponse string             `bson:"event_participants_payment_response,omitempty" json:"event_participants_payment_response"`
 	EventParticipantsCreatedBy       primitive.ObjectID `bson:"event_participants_created_by,omitempty" json:"event_participants_created_by"`
 	EventParticipantsCreatedAt       primitive.DateTime `bson:"event_participants_created_at,omitempty" json:"event_participants_created_at"`
-	EventParticipantsUserDetail      *UsersAgg          `bson:"event_participants_user_detail,omitempty" json:"event_participants_user_detail"`
+	EventParticipantsUserDetail      *UsersAgg          `bson:"event_participants_user_detail,omitempty" json:"event_participants_user_detail,omitempty"`
 }
