@@ -16,6 +16,10 @@ func FloatToDecimal128(float float64) primitive.Decimal128 {
 	return formatted
 }
 
+func FloatToString(float float64) string {
+	return strconv.FormatFloat(float, 'f', -1, 64)
+}
+
 func Decimal128ToFloat(decimal128 primitive.Decimal128) float64 {
 	decimalString := decimal128.String()
 	float, _ := strconv.ParseFloat(decimalString, 64)

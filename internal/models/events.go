@@ -10,6 +10,7 @@ type Events struct {
 	EventsName                 string               `bson:"events_name,omitempty" json:"events_name"`
 	EventsRewilding            primitive.ObjectID   `bson:"events_rewilding,omitempty" json:"events_rewilding"`
 	EventsPlace                string               `bson:"events_place,omitempty" json:"events_place"`
+	EventsCityId               int                  `bson:"events_city_id,omitempty" json:"events_city_id"`
 	EventsType                 string               `bson:"events_type,omitempty" json:"events_type,omitempty"`
 	EventsInvitationMessage    string               `bson:"events_invitation_message,omitempty" json:"events_invitation_message"`
 	EventsParticipantLimit     int                  `bson:"events_participant_limit,omitempty" json:"events_participant_limit"`

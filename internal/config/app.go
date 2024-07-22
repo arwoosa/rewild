@@ -23,6 +23,8 @@ type AppConfig struct {
 	ClourdlareImageAccountId   string
 	ClourdlareImageAccountHash string
 	ClourdlareImageDeliveryUrl string
+	OpenWeather                string
+	OpenWeatherApiKey          string
 }
 
 type AppLimit struct {
@@ -54,6 +56,8 @@ func InitialiseConfig() {
 	APP.ClourdlareImageAccountId = os.Getenv("CLOURDLARE_IMAGE_ACCOUNT_ID")
 	APP.ClourdlareImageAccountHash = os.Getenv("CLOURDLARE_IMAGE_ACCOUNT_HASH")
 	APP.ClourdlareImageDeliveryUrl = os.Getenv("CLOURDLARE_IMAGE_DELIVERY_URL")
+	APP.OpenWeather = os.Getenv("OPENWEATHER_API_BASE_URL")
+	APP.OpenWeatherApiKey = os.Getenv("OPENWEATHER_API_KEY")
 
 	APP_LIMIT.PocketList = 100
 }

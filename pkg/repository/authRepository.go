@@ -10,3 +10,8 @@ func (t AuthRepository) Auth(c *gin.Context) {
 	user, _ := c.Get("user")
 	c.JSON(200, user)
 }
+
+func (t AuthRepository) TestBadge(c *gin.Context) {
+	user, _ := c.Get("user")
+	c.JSON(200, user)
+}
