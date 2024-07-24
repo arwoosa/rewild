@@ -92,6 +92,14 @@ func (r EventParticipantsRepository) Create(c *gin.Context) {
 		return
 	}
 
+	var EventInvitationCheck models.Users
+	checkUser := config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "_id", Value: invitedUser}}).Decode(&EventInvitationCheck)
+
+	if checkUser == mongo.ErrNoDocuments {
+		helpers.ResultMessageSuccess(c, "User not found")
+		return
+	}
+
 	insert := models.EventParticipants{
 		EventParticipantsEvent:     eventId,
 		EventParticipantsUser:      invitedUser,

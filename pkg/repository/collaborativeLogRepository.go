@@ -83,10 +83,25 @@ func (r CollaborativeLogRepository) Retrieve(c *gin.Context) {
 		}
 		cursor.All(context.TODO(), &results)
 	} else {
-		filter := bson.M{
-			"events_date": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())},
+		agg := mongo.Pipeline{
+			bson.D{{
+				Key: "$match", Value: bson.M{"events_date": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}},
+			}},
+			bson.D{{
+				Key: "$lookup", Value: bson.M{
+					"from":         "Users",
+					"localField":   "events_created_by",
+					"foreignField": "_id",
+					"as":           "events_created_by_user",
+				},
+			}},
+			bson.D{{
+				Key: "$unwind", Value: "$events_created_by_user",
+			}},
+			bson.D{{Key: "$limit", Value: 1}},
 		}
-		cursor, err := config.DB.Collection("Events").Find(context.TODO(), filter)
+
+		cursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), agg)
 		cursor.All(context.TODO(), &results)
 
 		if err != nil {

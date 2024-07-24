@@ -79,7 +79,6 @@ func (r EventMessageBoardRepository) Create(c *gin.Context) {
 		// EventMessageBoardCategory
 		EventMessageBoardCreatedBy: userDetail.UsersId,
 		EventMessageBoardCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		EventMessageBoardIsPinned:  0,
 	}
 
 	r.ProcessData(c, &insert, payload)
@@ -165,4 +164,7 @@ func (r EventMessageBoardRepository) ProcessData(c *gin.Context, EventMessageBoa
 	if payload.EventMessageBoardAnnouncement != "" {
 		EventMessageBoard.EventMessageBoardAnnouncement = payload.EventMessageBoardAnnouncement
 	}
+
+	isPinned := 0
+	EventMessageBoard.EventMessageBoardIsPinned = &isPinned
 }

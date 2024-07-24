@@ -29,7 +29,7 @@ func Validate(c *gin.Context, arr interface{}) error {
 			//errs = append(errs, translatedErr)
 			errorList = append(errorList, e.Error())
 		}
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Validation error! Please check your inputs!", "data": errorList})
+		c.JSON(http.StatusBadRequest, gin.H{"code": -2, "message": "Validation error! Please check your inputs!", "data": errorList, "validation": "oosa_api"})
 		return err
 	}
 
