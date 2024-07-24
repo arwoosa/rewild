@@ -135,7 +135,8 @@ func (r EventAccountingRepository) Update(c *gin.Context) {
 		filters := bson.D{{Key: "_id", Value: EventAccounting.EventAccountingId}, {Key: "event_accounting_event", Value: EventAccounting.EventAccountingEvent}}
 		upd := bson.D{{Key: "$set", Value: EventAccounting}}
 		config.DB.Collection("EventAccounting").UpdateOne(context.TODO(), filters, upd)
-		c.JSON(http.StatusOK, EventAccounting)
+		r.Read(c)
+		// c.JSON(http.StatusOK, EventAccounting)
 	}
 }
 

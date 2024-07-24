@@ -9,5 +9,5 @@ type EventAlbumLink struct {
 	EventAlbumLinkVisibility    int64              `bson:"event_album_link_visibility,omitempty" json:"event_album_link_visibility"`
 	EventAlbumLinkCreatedBy     primitive.ObjectID `bson:"event_album_link_created_by,omitempty" json:"event_album_link_created_by"`
 	EventAlbumLinkCreatedAt     primitive.DateTime `bson:"event_album_link_created_at,omitempty" json:"event_album_link_created_at"`
-	EventAlbumLinkCreatedByUser *UsersAgg          `bson:"event_album_link_created_by_user,omitempty" json:"event_album_link_created_by_user"`
+	EventAlbumLinkCreatedByUser *UsersAgg          `bson:"event_album_link_created_by_user,omitempty" json:"event_album_link_created_by_user,omitempty"`
 }

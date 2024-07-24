@@ -20,15 +20,15 @@ type EventInvitationRequest struct {
 
 func (r EventInvitationRepository) Retrieve(c *gin.Context) {
 	userDetail := helpers.GetAuthUser(c)
+	fmt.Print("EventInvitationRepository: Retrieve")
 	var results []models.EventParticipants
 	filter := bson.D{
 		{Key: "event_participants_user", Value: userDetail.UsersId},
 		{Key: "event_participants_status", Value: GetEventParticipantStatus("PENDING")},
 	}
+	fmt.Println(filter)
 	cursor, err := config.DB.Collection("EventParticipants").Find(context.TODO(), filter)
 	cursor.All(context.TODO(), &results)
-
-	fmt.Println(filter)
 
 	if err != nil {
 		return

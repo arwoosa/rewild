@@ -9,8 +9,8 @@ type EventMessageBoard struct {
 	EventMessageBoardStatus        int                `bson:"event_message_board_status,omitempty" json:"event_message_board_status,omitempty"`
 	EventMessageBoardCategory      primitive.ObjectID `bson:"event_message_board_category,omitempty" json:"event_message_board_category,omitempty"`
 	EventMessageBoardAnnouncement  string             `bson:"event_message_board_announcement,omitempty" json:"event_message_board_announcement,omitempty"`
-	EventMessageBoardCreatedBy     primitive.ObjectID `bson:"event_message_board_created_by,omitempty" json:"event_message_board_created_by,omitempty"`
-	EventMessageBoardCreatedAt     primitive.DateTime `bson:"event_message_board_created_at,omitempty" json:"event_message_board_created_at,omitempty"`
-	EventMessageBoardIsPinned      int                `bson:"event_message_board_is_pinned,omitempty" json:"event_message_board_is_pinned,omitempty"`
+	EventMessageBoardCreatedBy     primitive.ObjectID `bson:"event_message_board_created_by,omitempty" json:"event_message_board_created_by"`
+	EventMessageBoardCreatedAt     primitive.DateTime `bson:"event_message_board_created_at,omitempty" json:"event_message_board_created_at"`
+	EventMessageBoardIsPinned      *int               `bson:"event_message_board_is_pinned,omitempty" json:"event_message_board_is_pinned"`
 	EventMessageBoardCreatedByUser *UsersAgg          `bson:"event_message_board_created_by_user,omitempty" json:"event_message_board_created_by_user,omitempty"`
 }

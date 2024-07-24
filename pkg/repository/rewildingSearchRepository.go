@@ -152,7 +152,16 @@ func (r RewildingSearchRepository) Create(c *gin.Context) {
 	}
 
 	result, _ := config.DB.Collection("Rewilding").InsertOne(context.TODO(), insert)
-	fmt.Println(result.InsertedID)
+
+	var Rewilding models.Rewilding
+	err := config.DB.Collection("Rewilding").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&Rewilding)
+
+	if err != nil {
+		helpers.ResultEmpty(c, err)
+		return
+	}
+
+	c.JSON(200, Rewilding)
 }
 
 func (r RewildingSearchRepository) Read(c *gin.Context) {
