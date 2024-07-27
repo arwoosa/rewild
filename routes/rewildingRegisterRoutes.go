@@ -14,7 +14,7 @@ func RewildingRegisterRoutes(r *gin.Engine) *gin.Engine {
 	rewildingRegister := r.Group("/rewilding-register", middleware.AuthMiddleware())
 	{
 		rewildingRegister.GET("", repoRegisterRewilding.Retrieve)
-		rewildingRegister.POST("", repoRegisterRewilding.Create)
+		// rewildingRegister.POST("", repoRegisterRewilding.Create)
 		rewildingRegister.GET("/references", repoRegisterRewilding.Options)
 	}
 
