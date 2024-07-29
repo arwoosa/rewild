@@ -48,6 +48,16 @@ func ResultEmpty(c *gin.Context, err error) {
 	}
 }
 
+func ResultNotFound(c *gin.Context, err error, message string) {
+	if err == mongo.ErrNoDocuments {
+		if message == "" {
+			message = err.Error()
+		}
+		ResponseNotFound(c, message)
+		return
+	}
+}
+
 func ResultMessageSuccess(c *gin.Context, message string) {
 	c.JSON(http.StatusOK, gin.H{"message": message})
 }

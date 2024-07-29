@@ -1,3 +1,9 @@
+# CHANGELOG 1.1.2
+## Changes
+- Removal of duplicated reference endpoint in rewilding and event in favour for one general references endpoint
+- Changes in datatype for Lat and Lng fields
+- Removal of POST rewilding-register
+
 # CHANGELOG 1.1.1
 ## Changes
 - Changes in validation messagge

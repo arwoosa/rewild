@@ -9,6 +9,7 @@ import (
 	"oosa_rewild/internal/helpers"
 	"oosa_rewild/internal/models"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -39,6 +40,7 @@ func (r RewildingSearchRepository) Retrieve(c *gin.Context) {
 	reqLat := c.Query("lat")
 	reqLng := c.Query("lng")
 	reqSearch := c.Query("search")
+	reqType := c.Query("type")
 
 	if (reqLat == "" || reqLng == "") && reqSearch == "" {
 		// Search by Lat and Lng
@@ -58,14 +60,26 @@ func (r RewildingSearchRepository) Retrieve(c *gin.Context) {
 		return
 	}
 
+	var RefRewildingTypes models.RefRewildingTypes
+	var includedTypes []string
+	if reqType != "" {
+		filter := bson.D{{Key: "ref_rewilding_types_key", Value: reqType}}
+		err := config.DB.Collection("RefRewildingTypes").FindOne(context.TODO(), filter).Decode(&RefRewildingTypes)
+		if err != nil {
+			if helpers.MongoZeroID(RefRewildingTypes.RefRewildingTypesId) {
+				helpers.ResponseError(c, "Unsupported type")
+				return
+			}
+		}
+
+		filteredTypes := strings.Split(RefRewildingTypes.RefRewildingTypesGoogle, ",")
+		includedTypes = append(includedTypes, filteredTypes...)
+	}
+
 	placesService := helpers.GooglePlacesInitialise(c)
 	if placesService == nil {
 		log.Fatalf("error %s", err)
 	}
-
-	var includedTypes []string
-
-	includedTypes = append(includedTypes, "hiking_area", "national_park")
 
 	if reqSearch != "" {
 		// Search by keyword
@@ -125,8 +139,8 @@ func (r RewildingSearchRepository) Create(c *gin.Context) {
 		return
 	}
 
-	lat, _ := primitive.ParseDecimal128(fmt.Sprint(payload.RewildingLat))
-	lng, _ := primitive.ParseDecimal128(fmt.Sprint(payload.RewildingLng))
+	lat := payload.RewildingLat
+	lng := payload.RewildingLng
 
 	geocode := helpers.GoogleMapsGeocode(c, payload.RewildingLat, payload.RewildingLng)
 	elevation := helpers.GoogleMapsElevation(c, payload.RewildingLat, payload.RewildingLng)
@@ -182,8 +196,8 @@ func (r RewildingSearchRepository) Update(c *gin.Context) {
 	var payload RewildingSearchRequest
 	helpers.Validate(c, &payload)
 
-	lat, _ := primitive.ParseDecimal128(fmt.Sprint(payload.RewildingLat))
-	lng, _ := primitive.ParseDecimal128(fmt.Sprint(payload.RewildingLng))
+	lat := payload.RewildingLat
+	lng := payload.RewildingLng
 
 	/*Cache References*/
 	var RewildingTypeData models.RefRewildingTypes
