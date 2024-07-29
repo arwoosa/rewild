@@ -133,8 +133,8 @@ func (r RewildingRegisterRepository) Update(c *gin.Context) {
 }
 
 func (r RewildingRegisterRepository) ProcessData(c *gin.Context, Rewilding *models.Rewilding, payload RewildingRegisterRequest) {
-	lat, _ := primitive.ParseDecimal128(fmt.Sprint(payload.RewildingLat))
-	lng, _ := primitive.ParseDecimal128(fmt.Sprint(payload.RewildingLng))
+	lat := payload.RewildingLat
+	lng := payload.RewildingLng
 
 	rewildingApplyOfficial := false
 

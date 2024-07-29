@@ -113,7 +113,7 @@ func (r PocketListRepository) ReadById(c *gin.Context, PocketList *models.Pocket
 	filter := bson.D{{Key: "_id", Value: id}}
 	err := config.DB.Collection("PocketLists").FindOne(context.TODO(), filter).Decode(&PocketList)
 	if err != nil {
-		helpers.ResultEmpty(c, err)
+		helpers.ResultNotFound(c, err, "Pocket list not found")
 	}
 	return err
 }

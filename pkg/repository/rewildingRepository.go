@@ -83,6 +83,13 @@ func (r RewildingRepository) Retrieve(c *gin.Context) {
 		helpers.ResponseNoData(c, "No Data")
 		return
 	}
+
+	for key, v := range results {
+		if v.RewildingPhotos == nil {
+			results[key].RewildingPhotos = make([]models.RewildingPhotos, 0)
+		}
+	}
+
 	c.JSON(http.StatusOK, results)
 }
 
@@ -96,6 +103,10 @@ func (r RewildingRepository) Read(c *gin.Context) {
 		return
 	}
 
+	if Rewilding.RewildingPhotos == nil {
+		Rewilding.RewildingPhotos = make([]models.RewildingPhotos, 0)
+	}
+
 	c.JSON(200, Rewilding)
 }
 
@@ -107,8 +118,8 @@ func (r RewildingRepository) Create(c *gin.Context) {
 		return
 	}
 
-	lat, _ := primitive.ParseDecimal128(fmt.Sprint(payload.RewildingLat))
-	lng, _ := primitive.ParseDecimal128(fmt.Sprint(payload.RewildingLng))
+	lat := payload.RewildingLat
+	lng := payload.RewildingLng
 
 	rewildingApplyOfficial := false
 
@@ -179,11 +190,6 @@ func (r RewildingRepository) Create(c *gin.Context) {
 }
 
 func (r RewildingRepository) Options(c *gin.Context) {
-	var RefRewildingTypes []models.RefRewildingTypes
-	cursor, err := config.DB.Collection("RefRewildingTypes").Find(context.TODO(), bson.D{})
-	if err != nil {
-		return
-	}
-	cursor.All(context.TODO(), &RefRewildingTypes)
+	RefRewildingTypes := helpers.RefRewildingTypes()
 	c.JSON(http.StatusOK, gin.H{"rewilding_types": RefRewildingTypes})
 }

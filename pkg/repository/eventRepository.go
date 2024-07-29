@@ -124,8 +124,8 @@ func (r EventRepository) Create(c *gin.Context) {
 		if rewildingData.RewildingPlaceId != "" {
 			payload.EventsPlace = rewildingData.RewildingPlaceId
 		}
-		payload.EventsLat = helpers.Decimal128ToFloat(lat)
-		payload.EventsLng = helpers.Decimal128ToFloat(lng)
+		payload.EventsLat = lat
+		payload.EventsLng = lng
 	}
 
 	openWeather := openweather.OpenWeatherRepository{}.Forecast(c, payload.EventsLat, payload.EventsLng)
@@ -177,6 +177,16 @@ func (r EventRepository) Create(c *gin.Context) {
 
 	var Events models.Events
 	config.DB.Collection("Events").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&Events)
+
+	// Create participant records
+	insertParticipant := models.EventParticipants{
+		EventParticipantsEvent:     Events.EventsId,
+		EventParticipantsUser:      userDetail.UsersId,
+		EventParticipantsStatus:    GetEventParticipantStatus("ACCEPTED"),
+		EventParticipantsCreatedBy: userDetail.UsersId,
+		EventParticipantsCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+	}
+	config.DB.Collection("EventParticipants").InsertOne(context.TODO(), insertParticipant)
 	c.JSON(http.StatusOK, Events)
 }
 
@@ -236,6 +246,7 @@ func (r EventRepository) ReadOne(c *gin.Context, Events *models.Events) error {
 	filter := bson.D{{Key: "_id", Value: id}}
 	err := config.DB.Collection("Events").FindOne(context.TODO(), filter).Decode(&Events)
 	if err != nil {
+		fmt.Println(err.Error())
 		helpers.ResultEmpty(c, err)
 	}
 	return err
@@ -284,13 +295,13 @@ func (r EventRepository) ProcessData(c *gin.Context, Events *models.Events, payl
 	Events.EventsPaymentRequired = payload.EventsPaymentRequired
 	Events.EventsPaymentFee = payload.EventsPaymentFee
 	Events.EventsRequiresApproval = &payload.EventsRequiresApproval
-	Events.EventsMeetingPointLat = helpers.FloatToDecimal128(meetingPointLat)
-	Events.EventsMeetingPointLng = helpers.FloatToDecimal128(meetingPointLng)
-	Events.EventsLat = helpers.FloatToDecimal128(eventsLat)
-	Events.EventsLng = helpers.FloatToDecimal128(eventsLng)
+	Events.EventsMeetingPointLat = meetingPointLat
+	Events.EventsMeetingPointLng = meetingPointLng
+	Events.EventsLat = eventsLat
+	Events.EventsLng = eventsLng
 	Events.EventsParticipantLimit = payload.EventsParticipantLimit
 
-	Events.EventsStatisticDistance = helpers.FloatToDecimal128(eventStatisticDistance)
+	Events.EventsStatisticDistance = eventStatisticDistance
 	Events.EventsStatisticTime = eventDurationSecond
 }
 
@@ -315,22 +326,17 @@ func (r EventRepository) ProcessDataForm(c *gin.Context, Events *models.Events, 
 	Events.EventsPaymentRequired = payload.EventsPaymentRequired
 	Events.EventsPaymentFee = payload.EventsPaymentFee
 	Events.EventsRequiresApproval = &payload.EventsRequiresApproval
-	Events.EventsMeetingPointLat = helpers.FloatToDecimal128(meetingPointLat)
-	Events.EventsMeetingPointLng = helpers.FloatToDecimal128(meetingPointLng)
-	Events.EventsLat = helpers.FloatToDecimal128(eventsLat)
-	Events.EventsLng = helpers.FloatToDecimal128(eventsLng)
+	Events.EventsMeetingPointLat = meetingPointLat
+	Events.EventsMeetingPointLng = meetingPointLng
+	Events.EventsLat = eventsLat
+	Events.EventsLng = eventsLng
 	Events.EventsParticipantLimit = payload.EventsParticipantLimit
 
-	Events.EventsStatisticDistance = helpers.FloatToDecimal128(eventStatisticDistance)
+	Events.EventsStatisticDistance = eventStatisticDistance
 	Events.EventsStatisticTime = eventDurationSecond
 }
 
 func (r EventRepository) Options(c *gin.Context) {
-	var RefRewildingTypes []models.RefRewildingTypes
-	cursor, err := config.DB.Collection("RefRewildingTypes").Find(context.TODO(), bson.D{})
-	if err != nil {
-		return
-	}
-	cursor.All(context.TODO(), &RefRewildingTypes)
+	RefRewildingTypes := helpers.RefRewildingTypes()
 	c.JSON(http.StatusOK, gin.H{"rewilding_types": RefRewildingTypes})
 }

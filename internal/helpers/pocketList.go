@@ -20,6 +20,6 @@ func GetPocketList(c *gin.Context, id primitive.ObjectID) models.PocketLists {
 func GetPocketListItem(c *gin.Context, id primitive.ObjectID) (models.PocketListItems, error) {
 	var PocketListItems models.PocketListItems
 	err := config.DB.Collection("PocketListItems").FindOne(context.TODO(), bson.D{{Key: "_id", Value: id}}).Decode(&PocketListItems)
-	ResultEmpty(c, err)
+	ResultNotFound(c, err, "Pocket list item not found")
 	return PocketListItems, err
 }
