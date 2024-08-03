@@ -109,7 +109,6 @@ func (r PocketListRepository) ReadOne(c *gin.Context, PocketList *models.PocketL
 }
 
 func (r PocketListRepository) ReadById(c *gin.Context, PocketList *models.PocketLists, id primitive.ObjectID) error {
-	fmt.Println("ReadById", id)
 	filter := bson.D{{Key: "_id", Value: id}}
 	err := config.DB.Collection("PocketLists").FindOne(context.TODO(), filter).Decode(&PocketList)
 	if err != nil {

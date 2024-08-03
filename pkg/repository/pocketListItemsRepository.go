@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -27,8 +28,23 @@ type PocketListItemsUpdateRequest struct {
 func (r PocketListItemsRepository) Retrieve(c *gin.Context) {
 	var results []models.PocketListItems
 	rewildingId := helpers.StringToPrimitiveObjId(c.Param("id"))
-	filters := bson.D{
-		{Key: "pocket_list_items_mst", Value: rewildingId},
+	agg := mongo.Pipeline{
+		bson.D{{
+			Key: "$match", Value: bson.M{
+				"pocket_list_items_mst": rewildingId,
+			},
+		}},
+		bson.D{{
+			Key: "$lookup", Value: bson.M{
+				"from":         "Rewilding",
+				"localField":   "pocket_list_items_rewilding",
+				"foreignField": "_id",
+				"as":           "pocket_list_items_rewilding_detail",
+			},
+		}},
+		bson.D{{
+			Key: "$unwind", Value: "$pocket_list_items_rewilding_detail",
+		}},
 	}
 
 	err := PocketListRepository{}.ReadOne(c, &models.PocketLists{}, "")
@@ -36,7 +52,7 @@ func (r PocketListItemsRepository) Retrieve(c *gin.Context) {
 		return
 	}
 
-	cursor, err := config.DB.Collection("PocketListItems").Find(context.TODO(), filters)
+	cursor, err := config.DB.Collection("PocketListItems").Aggregate(context.TODO(), agg)
 	if err != nil {
 		panic(err)
 	}
@@ -68,7 +84,10 @@ func (r PocketListItemsRepository) Create(c *gin.Context) {
 	}
 
 	/* Create Rewilding */
-	area := helpers.GooglePlacesV1GetArea(places.AddressComponents, "administrative_area_level_1")
+	location := helpers.GooglePlacesV1ToLocationArray(places.AddressComponents)
+	area, _ := helpers.GooglePlacesV1GetArea(places.AddressComponents, "administrative_area_level_1")
+	_, countryCode := helpers.GooglePlacesV1GetArea(places.AddressComponents, "country")
+
 	elevation := helpers.GoogleMapsElevation(c, places.Location.Latitude, places.Location.Longitude)
 
 	rewilding, inDB := helpers.GetRewildByPlaceId(places.Id)
@@ -79,9 +98,11 @@ func (r PocketListItemsRepository) Create(c *gin.Context) {
 
 		upsert := bson.D{{Key: "$set", Value: bson.D{
 			{Key: "rewilding_area", Value: area},
+			{Key: "rewilding_location", Value: location},
+			{Key: "rewilding_country_code", Value: countryCode},
 			{Key: "rewilding_name", Value: places.DisplayName.Text},
-			{Key: "rewilding_lat", Value: helpers.FloatToDecimal128(places.Location.Latitude)},
-			{Key: "rewilding_lng", Value: helpers.FloatToDecimal128(places.Location.Longitude)},
+			{Key: "rewilding_lat", Value: places.Location.Latitude},
+			{Key: "rewilding_lng", Value: places.Location.Longitude},
 			{Key: "rewilding_place_id", Value: places.Id},
 			{Key: "rewilding_elevation", Value: elevation.Elevation},
 			{Key: "rewilding_photos", Value: RewildingPhotos},
@@ -143,7 +164,7 @@ func (r PocketListItemsRepository) Read(c *gin.Context) {
 }
 
 func (r PocketListItemsRepository) Update(c *gin.Context) {
-	// pocketListId := c.Param("id")
+	pocketListId := c.Param("id")
 	pocketListItemId := c.Param("itemsId")
 	var payload PocketListItemsUpdateRequest
 	validateError := helpers.Validate(c, &payload)
@@ -170,12 +191,16 @@ func (r PocketListItemsRepository) Update(c *gin.Context) {
 			filters := bson.D{{Key: "_id", Value: PocketListItems.PocketListItemsId}}
 			upd := bson.D{{Key: "$set", Value: PocketListItems}}
 			config.DB.Collection("PocketListItems").UpdateOne(context.TODO(), filters, upd)
+
+			PocketListRepository{}.UpdateCount(c, pocketListId)
+			PocketListRepository{}.UpdateCount(c, payload.PocketListItemsMst)
 		}
 		helpers.ResultMessageSuccess(c, "Pocket list item record updated")
 	}
 }
 
 func (r PocketListItemsRepository) Delete(c *gin.Context) {
+	pocketListId := c.Param("id")
 	err := PocketListRepository{}.ReadOne(c, &models.PocketLists{}, "")
 	if err != nil {
 		return
@@ -186,6 +211,7 @@ func (r PocketListItemsRepository) Delete(c *gin.Context) {
 	if err == nil {
 		filters := bson.D{{Key: "_id", Value: PocketListItems.PocketListItemsId}}
 		config.DB.Collection("PocketListItems").DeleteOne(context.TODO(), filters)
+		PocketListRepository{}.UpdateCount(c, pocketListId)
 		helpers.ResultMessageSuccess(c, "Pocket list item record deleted")
 	}
 }

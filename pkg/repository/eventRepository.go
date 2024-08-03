@@ -187,6 +187,10 @@ func (r EventRepository) Create(c *gin.Context) {
 		EventParticipantsCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 	config.DB.Collection("EventParticipants").InsertOne(context.TODO(), insertParticipant)
+
+	// Create badge record
+	helpers.BadgeEvents(c, Events.EventsId)
+
 	c.JSON(http.StatusOK, Events)
 }
 
