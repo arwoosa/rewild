@@ -74,6 +74,7 @@ func (r RewildingRepository) Retrieve(c *gin.Context) {
 		}})
 		//filter["rewilding_created_by"] = userDetail.UsersId
 	}
+
 	cursor, err := config.DB.Collection("Rewilding").Aggregate(context.TODO(), agg)
 	if err != nil {
 		panic(err)
@@ -121,6 +122,13 @@ func (r RewildingRepository) Create(c *gin.Context) {
 	lat := payload.RewildingLat
 	lng := payload.RewildingLng
 
+	geocode := helpers.GoogleMapsGeocode(c, payload.RewildingLat, payload.RewildingLng)
+	// elevation := helpers.GoogleMapsElevation(c, payload.RewildingLat, payload.RewildingLng)
+
+	location := helpers.GooglePlacesToLocationArray(geocode.AddressComponents)
+	area, _ := helpers.GooglePlacesGetArea(geocode.AddressComponents, "administrative_area_level_1")
+	_, countryCode := helpers.GooglePlacesGetArea(geocode.AddressComponents, "country")
+
 	rewildingApplyOfficial := false
 
 	if payload.RewildingApplyOfficial {
@@ -153,12 +161,16 @@ func (r RewildingRepository) Create(c *gin.Context) {
 	insert := models.Rewilding{
 		RewildingApplyOfficial: &rewildingApplyOfficial,
 		RewildingType:          helpers.StringToPrimitiveObjId(payload.RewildingType),
+		RewildingArea:          area,
+		RewildingLocation:      location,
+		RewildingCountryCode:   countryCode,
 		RewildingName:          payload.RewildingName,
 		RewildingLat:           lat,
 		RewildingLng:           lng,
-		RewildingCreatedBy:     userDetail.UsersId,
-		RewildingCreatedAt:     primitive.NewDateTimeFromTime(time.Now()),
-		RewildingPhotos:        RewildingPhotos,
+		//RewildingElevation:     elevation.Elevation,
+		RewildingCreatedBy: userDetail.UsersId,
+		RewildingCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		RewildingPhotos:    RewildingPhotos,
 	}
 
 	result, err := config.DB.Collection("Rewilding").InsertOne(context.TODO(), insert)

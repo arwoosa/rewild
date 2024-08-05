@@ -12,11 +12,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func BadgeAllocate(c *gin.Context, badgeCode string) {
+var (
+	BADGE_REWILDING = 1
+	BADGE_FRIENDS   = 2
+	BADGE_SOCIAL    = 3
+)
+
+func BadgeAllocate(c *gin.Context, badgeCode string, badgeSource int, badgeReference primitive.ObjectID) {
 	badgeDetail := BadgeDetail(badgeCode)
 	userDetail := GetAuthUser(c)
 
 	var UserBadges models.UserBadges
+
 	if badgeDetail.BadgesIsOnce {
 		filter := bson.D{
 			{Key: "user_badges_user", Value: userDetail.UsersId},
@@ -24,7 +31,7 @@ func BadgeAllocate(c *gin.Context, badgeCode string) {
 		}
 		config.DB.Collection("UserBadges").FindOne(context.TODO(), filter).Decode(&UserBadges)
 
-		if !MongoZeroID(userDetail.UsersId) {
+		if !MongoZeroID(UserBadges.UserBadgesId) {
 			fmt.Println("This badge is only received once")
 			return
 		}
@@ -34,6 +41,10 @@ func BadgeAllocate(c *gin.Context, badgeCode string) {
 		UserBadgesUser:      userDetail.UsersId,
 		UserBadgesBadge:     badgeDetail.BadgesId,
 		UserBadgesCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+	}
+
+	if badgeSource == BADGE_REWILDING {
+		insert.UserBadgesRewilding = badgeReference
 	}
 
 	_, err := config.DB.Collection("UserBadges").InsertOne(context.TODO(), insert)
@@ -48,4 +59,10 @@ func BadgeDetail(badgeCode string) models.Badges {
 	filter := bson.D{{Key: "badges_code", Value: badgeCode}}
 	config.DB.Collection("Badges").FindOne(context.TODO(), filter).Decode(&results)
 	return results
+}
+
+func BadgeEvents(c *gin.Context, eventId primitive.ObjectID) {
+	userDetail := GetAuthUser(c)
+	fmt.Println(userDetail)
+	BadgeAllocate(c, "N1", BADGE_REWILDING, eventId)
 }

@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
 	"oosa_rewild/internal/models"
@@ -39,7 +38,7 @@ func (r RewildingPhotoRepository) Read(c *gin.Context) {
 	id, _ := primitive.ObjectIDFromHex(c.Param("id"))
 	photosId, _ := primitive.ObjectIDFromHex(c.Param("photosId"))
 	var Rewilding models.Rewilding
-	fmt.Println(photosId)
+
 	filter := bson.D{
 		{Key: "_id", Value: id},
 		{Key: "rewilding_photos._id", Value: photosId},

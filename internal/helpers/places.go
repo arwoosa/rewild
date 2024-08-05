@@ -46,24 +46,48 @@ func GoogleGeocoding(c *gin.Context) {
 	//placesService := GooglePlacesInitialise(c)
 }
 
-func GooglePlacesGetArea(addresses []maps.AddressComponent, addressType string) string {
-	var area string
+func GooglePlacesGetArea(addresses []maps.AddressComponent, addressType string) (string, string) {
+	longName := ""
+	shortName := ""
 	for _, val := range addresses {
 		if StringInSlice(addressType, val.Types) {
-			area = val.LongName
+			shortName = val.ShortName
+			longName = val.LongName
 		}
 	}
-	return area
+	return longName, shortName
 }
 
-func GooglePlacesV1GetArea(addresses []*places.GoogleMapsPlacesV1PlaceAddressComponent, addressType string) string {
-	var area string
+func GooglePlacesToLocationArray(addresses []maps.AddressComponent) []string {
+	loc := []string{}
+	key := []string{"administrative_area_level_2", "administrative_area_level_1", "country"}
+	for _, v := range key {
+		longName, _ := GooglePlacesGetArea(addresses, v)
+		loc = append(loc, longName)
+	}
+	return loc
+}
+
+func GooglePlacesV1GetArea(addresses []*places.GoogleMapsPlacesV1PlaceAddressComponent, addressType string) (string, string) {
+	longName := ""
+	shortName := ""
 	for _, val := range addresses {
 		if StringInSlice(addressType, val.Types) {
-			area = val.LongText
+			shortName = val.ShortText
+			longName = val.LongText
 		}
 	}
-	return area
+	return longName, shortName
+}
+
+func GooglePlacesV1ToLocationArray(addresses []*places.GoogleMapsPlacesV1PlaceAddressComponent) []string {
+	loc := []string{}
+	key := []string{"administrative_area_level_1", "administrative_area_level_2", "country"}
+	for _, v := range key {
+		longName, _ := GooglePlacesV1GetArea(addresses, v)
+		loc = append(loc, longName)
+	}
+	return loc
 }
 
 func GooglePlacePhoto(c *gin.Context, photoName string) *places.GoogleMapsPlacesV1PhotoMedia {

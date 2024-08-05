@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"oosa_rewild/internal/config"
@@ -62,6 +61,7 @@ func (r RewildingSearchRepository) Retrieve(c *gin.Context) {
 
 	var RefRewildingTypes models.RefRewildingTypes
 	var includedTypes []string
+	// isWaterType := false
 	if reqType != "" {
 		filter := bson.D{{Key: "ref_rewilding_types_key", Value: reqType}}
 		err := config.DB.Collection("RefRewildingTypes").FindOne(context.TODO(), filter).Decode(&RefRewildingTypes)
@@ -72,8 +72,12 @@ func (r RewildingSearchRepository) Retrieve(c *gin.Context) {
 			}
 		}
 
-		filteredTypes := strings.Split(RefRewildingTypes.RefRewildingTypesGoogle, ",")
-		includedTypes = append(includedTypes, filteredTypes...)
+		if RefRewildingTypes.RefRewildingTypesKey == "water_related" {
+			// isWaterType = true
+		} else {
+			filteredTypes := strings.Split(RefRewildingTypes.RefRewildingTypesGoogle, ",")
+			includedTypes = append(includedTypes, filteredTypes...)
+		}
 	}
 
 	placesService := helpers.GooglePlacesInitialise(c)
@@ -145,7 +149,9 @@ func (r RewildingSearchRepository) Create(c *gin.Context) {
 	geocode := helpers.GoogleMapsGeocode(c, payload.RewildingLat, payload.RewildingLng)
 	elevation := helpers.GoogleMapsElevation(c, payload.RewildingLat, payload.RewildingLng)
 
-	area := helpers.GooglePlacesGetArea(geocode.AddressComponents, "administrative_area_level_1")
+	location := helpers.GooglePlacesToLocationArray(geocode.AddressComponents)
+	area, _ := helpers.GooglePlacesGetArea(geocode.AddressComponents, "administrative_area_level_1")
+	_, countryCode := helpers.GooglePlacesGetArea(geocode.AddressComponents, "country")
 
 	/*Cache References*/
 	var RewildingTypeData models.RefRewildingTypes
@@ -153,16 +159,18 @@ func (r RewildingSearchRepository) Create(c *gin.Context) {
 	config.DB.Collection("RefRewildingTypes").FindOne(context.TODO(), bson.D{{Key: "_id", Value: typeId}}).Decode(&RewildingTypeData)
 
 	insert := models.Rewilding{
-		RewildingType:      helpers.StringToPrimitiveObjId(payload.RewildingType),
-		RewildingTypeData:  RewildingTypeData,
-		RewildingCity:      payload.RewildingCity,
-		RewildingArea:      area,
-		RewildingName:      payload.RewildingName,
-		RewildingLat:       lat,
-		RewildingLng:       lng,
-		RewildingElevation: elevation.Elevation,
-		RewildingCreatedBy: userDetail.UsersId,
-		RewildingCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		RewildingType:        helpers.StringToPrimitiveObjId(payload.RewildingType),
+		RewildingTypeData:    RewildingTypeData,
+		RewildingCity:        payload.RewildingCity,
+		RewildingArea:        area,
+		RewildingLocation:    location,
+		RewildingCountryCode: countryCode,
+		RewildingName:        payload.RewildingName,
+		RewildingLat:         lat,
+		RewildingLng:         lng,
+		RewildingElevation:   elevation.Elevation,
+		RewildingCreatedBy:   userDetail.UsersId,
+		RewildingCreatedAt:   primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	result, _ := config.DB.Collection("Rewilding").InsertOne(context.TODO(), insert)
@@ -212,10 +220,10 @@ func (r RewildingSearchRepository) Update(c *gin.Context) {
 	Rewilding.RewildingTypeData = RewildingTypeData
 	Rewilding.RewildingCity = payload.RewildingCity
 	Rewilding.RewildingArea = payload.RewildingArea
+	// Rewilding.RewildingLocation = []string{}
 	Rewilding.RewildingName = payload.RewildingName
 	Rewilding.RewildingLat = lat
 	Rewilding.RewildingLng = lng
 
-	result, _ := config.DB.Collection("Rewilding").ReplaceOne(context.TODO(), bson.D{{Key: "_id", Value: Rewilding.RewildingID}}, Rewilding)
-	fmt.Println(result)
+	config.DB.Collection("Rewilding").ReplaceOne(context.TODO(), bson.D{{Key: "_id", Value: Rewilding.RewildingID}}, Rewilding)
 }
