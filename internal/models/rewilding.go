@@ -10,6 +10,8 @@ type Rewilding struct {
 	RewildingTypeData      RefRewildingTypes  `bson:"rewilding_type_data,omitempty" json:"rewilding_type_data"`
 	RewildingCity          string             `bson:"rewilding_city,omitempty" json:"rewilding_city"`
 	RewildingArea          string             `bson:"rewilding_area,omitempty" json:"rewilding_area"`
+	RewildingLocation      []string           `bson:"rewilding_location,omitempty" json:"rewilding_location"`
+	RewildingCountryCode   string             `bson:"rewilding_country_code,omitempty" json:"rewilding_country_code,omitempty"`
 	RewildingName          string             `bson:"rewilding_name,omitempty" json:"rewilding_name"`
 	RewildingRating        int                `bson:"rewilding_rating,omitempty" json:"rewilding_rating"`
 	RewildingLat           float64            `bson:"rewilding_lat,omitempty" json:"rewilding_lat"`

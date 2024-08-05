@@ -9,7 +9,7 @@ import (
 type TestRepository struct{}
 
 func (r TestRepository) CreateBadge(c *gin.Context) {
-	helpers.BadgeAllocate(c, "R2")
+	// helpers.BadgeAllocate(c, "R2")
 }
 
 func (r TestRepository) CreateNotification(c *gin.Context) {

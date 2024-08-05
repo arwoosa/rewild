@@ -13,7 +13,7 @@ func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		reqToken := c.Request.Header.Get("Authorization")
 		if reqToken == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "AUTH01-REWILDING: You are not authorized to access this resource"})
+			c.JSON(http.StatusUnauthorized, gin.H{"message": "AUTH01-REWILDING: You are not authorized to access this resource"})
 			c.Abort()
 			return
 		}
@@ -24,13 +24,13 @@ func AuthMiddleware() gin.HandlerFunc {
 		user, err := auth.VerifyToken(reqToken)
 
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "AUTH02-REWILDING: You are not authorized to access this resource"})
+			c.JSON(http.StatusUnauthorized, gin.H{"message": "AUTH02-REWILDING: You are not authorized to access this resource"})
 			c.Abort()
 			return
 		}
 
 		if helpers.MongoZeroID(user.UsersId) {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "AUTH03-REWILDING: You are not authorized to access this resource"})
+			c.JSON(http.StatusUnauthorized, gin.H{"message": "AUTH03-REWILDING: You are not authorized to access this resource"})
 			c.Abort()
 			return
 		}

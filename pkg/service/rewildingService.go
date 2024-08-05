@@ -25,27 +25,36 @@ func GoogleToRewilding(c *gin.Context, googlePlaceId string) primitive.ObjectID 
 	}
 
 	/* Create Rewilding */
-	area := helpers.GooglePlacesV1GetArea(places.AddressComponents, "administrative_area_level_1")
+	location := helpers.GooglePlacesV1ToLocationArray(places.AddressComponents)
+	area, _ := helpers.GooglePlacesV1GetArea(places.AddressComponents, "administrative_area_level_1")
+	_, countryCode := helpers.GooglePlacesV1GetArea(places.AddressComponents, "country")
+
 	elevation := helpers.GoogleMapsElevation(c, places.Location.Latitude, places.Location.Longitude)
 
 	rewilding, inDB := helpers.GetRewildByPlaceId(places.Id)
-	rewildingId := rewilding.RewildingID
+	var rewildingId primitive.ObjectID
+	if inDB {
+		rewildingId = rewilding.RewildingID
+	}
+
+	upsert := bson.D{{Key: "$set", Value: bson.D{
+		{Key: "rewilding_area", Value: area},
+		{Key: "rewilding_location", Value: location},
+		{Key: "rewilding_country_code", Value: countryCode},
+		{Key: "rewilding_name", Value: places.DisplayName.Text},
+		{Key: "rewilding_lat", Value: places.Location.Latitude},
+		{Key: "rewilding_lng", Value: places.Location.Longitude},
+		{Key: "rewilding_place_id", Value: places.Id},
+		{Key: "rewilding_elevation", Value: elevation.Elevation},
+	}}}
+
+	filters := bson.D{
+		{Key: "rewilding_place_id", Value: places.Id},
+	}
+	opts := options.Update().SetUpsert(true)
+	result, _ := config.DB.Collection("Rewilding").UpdateOne(context.TODO(), filters, upsert, opts)
 
 	if !inDB {
-		upsert := bson.D{{Key: "$set", Value: bson.D{
-			{Key: "rewilding_area", Value: area},
-			{Key: "rewilding_name", Value: places.DisplayName.Text},
-			{Key: "rewilding_lat", Value: helpers.FloatToDecimal128(places.Location.Latitude)},
-			{Key: "rewilding_lng", Value: helpers.FloatToDecimal128(places.Location.Longitude)},
-			{Key: "rewilding_place_id", Value: places.Id},
-			{Key: "rewilding_elevation", Value: elevation.Elevation},
-		}}}
-
-		filters := bson.D{
-			{Key: "rewilding_place_id", Value: places.Id},
-		}
-		opts := options.Update().SetUpsert(true)
-		result, _ := config.DB.Collection("Rewilding").UpdateOne(context.TODO(), filters, upsert, opts)
 		rewildingId = result.UpsertedID.(primitive.ObjectID)
 	}
 

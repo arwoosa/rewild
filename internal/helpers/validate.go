@@ -12,7 +12,7 @@ import (
 )
 
 func Validate(c *gin.Context, arr interface{}) error {
-	var errorList []string
+	errorList := []string{}
 	if err := c.Bind(&arr); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -2, "message": "Validation error! JSON does not match", "data": errorList, "validation": "oosa_api"})
 		return err
@@ -37,7 +37,7 @@ func Validate(c *gin.Context, arr interface{}) error {
 }
 
 func ValidateForm(c *gin.Context, payload interface{}) error {
-	var errorList []string
+	errorList := []string{}
 	if err := c.Bind(payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -2, "message": "Validation error! Form does not match", "data": errorList, "validation": "oosa_api"})
 		return err
@@ -62,7 +62,7 @@ func ValidateForm(c *gin.Context, payload interface{}) error {
 }
 
 func ValidateError(c *gin.Context, err error) error {
-	var errorList []string
+	errorList := []string{}
 	validationErrors := err.(validator.ValidationErrors)
 	for _, e := range validationErrors {
 		//translatedErr := fmt.Errorf(e.Translate(trans))

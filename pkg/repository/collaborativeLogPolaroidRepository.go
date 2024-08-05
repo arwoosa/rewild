@@ -164,8 +164,8 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 	insert := models.EventPolaroids{
 		EventPolaroidsEvent:     Events.EventsId,
 		EventPolaroidsUrl:       fileName,
-		EventPolaroidsLat:       helpers.FloatToDecimal128(lat),
-		EventPolaroidsLng:       helpers.FloatToDecimal128(lng),
+		EventPolaroidsLat:       lat,
+		EventPolaroidsLng:       lng,
 		EventPolaroidsCreatedBy: userDetail.UsersId,
 		EventPolaroidsCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}

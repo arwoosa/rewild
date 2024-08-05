@@ -1,3 +1,12 @@
+# CHANGELOG 1.1.3
+## Changes
+- Changes in validation errorlist
+- Changes in unauthorized HTTP Code 401 Unauthorised
+- Pocket list - Count on move/delete item
+- Pocket list - Join on rewilding to get detail
+- Pocket List - Location info on rewilding
+- Rewilding Search - Water type
+
 # CHANGELOG 1.1.2
 ## Changes
 - Removal of duplicated reference endpoint in rewilding and event in favour for one general references endpoint
