@@ -19,6 +19,8 @@ type Users struct {
 	UsersIsSubscribed                 bool               `bson:"users_is_subscribed,omitempty" json:"users_is_subscribed"`
 	UsersIsBusiness                   bool               `bson:"users_is_business,omitempty" json:"users_is_business"`
 	UsersCreatedAt                    primitive.DateTime `bson:"users_created_at,omitempty" json:"users_created_at"`
+	UsersEventCompleted               int                `bson:"users_event_completed,omitempty" json:"-"`
+	UsersEventScheduled               int                `bson:"users_event_scheduled,omitempty" json:"-"`
 }
 
 type UsersAgg struct {

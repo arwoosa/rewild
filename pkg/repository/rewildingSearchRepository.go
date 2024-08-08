@@ -158,19 +158,22 @@ func (r RewildingSearchRepository) Create(c *gin.Context) {
 	typeId, _ := primitive.ObjectIDFromHex(payload.RewildingType)
 	config.DB.Collection("RefRewildingTypes").FindOne(context.TODO(), bson.D{{Key: "_id", Value: typeId}}).Decode(&RewildingTypeData)
 
+	rewildingApplyOfficial := false
+
 	insert := models.Rewilding{
-		RewildingType:        helpers.StringToPrimitiveObjId(payload.RewildingType),
-		RewildingTypeData:    RewildingTypeData,
-		RewildingCity:        payload.RewildingCity,
-		RewildingArea:        area,
-		RewildingLocation:    location,
-		RewildingCountryCode: countryCode,
-		RewildingName:        payload.RewildingName,
-		RewildingLat:         lat,
-		RewildingLng:         lng,
-		RewildingElevation:   elevation.Elevation,
-		RewildingCreatedBy:   userDetail.UsersId,
-		RewildingCreatedAt:   primitive.NewDateTimeFromTime(time.Now()),
+		RewildingApplyOfficial: &rewildingApplyOfficial,
+		RewildingType:          helpers.StringToPrimitiveObjId(payload.RewildingType),
+		RewildingTypeData:      RewildingTypeData,
+		RewildingCity:          payload.RewildingCity,
+		RewildingArea:          area,
+		RewildingLocation:      location,
+		RewildingCountryCode:   countryCode,
+		RewildingName:          payload.RewildingName,
+		RewildingLat:           lat,
+		RewildingLng:           lng,
+		RewildingElevation:     elevation.Elevation,
+		RewildingCreatedBy:     userDetail.UsersId,
+		RewildingCreatedAt:     primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	result, _ := config.DB.Collection("Rewilding").InsertOne(context.TODO(), insert)

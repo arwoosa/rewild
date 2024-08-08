@@ -190,8 +190,26 @@ func (r EventRepository) Create(c *gin.Context) {
 
 	// Create badge record
 	helpers.BadgeEvents(c, Events.EventsId)
-
+	r.HandleParticipation(c, userDetail.UsersId, Events.EventsId)
 	c.JSON(http.StatusOK, Events)
+}
+
+func (r EventRepository) HandleParticipation(c *gin.Context, userId primitive.ObjectID, eventId primitive.ObjectID) {
+	filter := bson.D{{Key: "event_participants_user", Value: userId}}
+	count, _ := config.DB.Collection("EventParticipants").CountDocuments(context.TODO(), filter)
+
+	UpdateUser := models.Users{
+		UsersEventScheduled: int(count),
+	}
+	filters := bson.D{{Key: "_id", Value: userId}}
+	upd := bson.D{{Key: "$set", Value: UpdateUser}}
+	config.DB.Collection("Users").UpdateOne(context.TODO(), filters, upd)
+
+	expAvailable := map[int]int{1: 5, 2: 4, 3: 3, 4: 2, 5: 1}
+	expAwarded := expAvailable[int(count)]
+	if expAwarded > 0 {
+		helpers.ExpAward(c, helpers.EXP_REWILDING, expAwarded, eventId)
+	}
 }
 
 func (r EventRepository) Read(c *gin.Context) {
