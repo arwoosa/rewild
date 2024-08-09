@@ -1,3 +1,12 @@
+# CHANGELOG 1.1.4
+## Changes
+- Handling of breathing points on participation to event
+- Changes to schedule GET and POST structure to be the same
+- Changes to Rewilding Create to use same service
+- Show participants on user events
+- Bugfix pocketlist create rewilding
+- Removal of /auth routes as it does not belong to this project
+
 # CHANGELOG 1.1.3
 ## Changes
 - Changes in validation errorlist

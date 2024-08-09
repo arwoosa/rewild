@@ -10,7 +10,6 @@ import (
 
 func RegisterRoutes() *gin.Engine {
 	r := gin.Default()
-	AuthRoutes(r)
 	RewildingRoutes(r)
 	RewildingRegisterRoutes(r)
 	PocketListRoutes(r)

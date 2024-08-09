@@ -7,13 +7,13 @@ import (
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
 	"oosa_rewild/internal/models"
+	"oosa_rewild/pkg/service"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type PocketListItemsRepository struct{}
@@ -83,51 +83,7 @@ func (r PocketListItemsRepository) Create(c *gin.Context) {
 		return
 	}
 
-	/* Create Rewilding */
-	location := helpers.GooglePlacesV1ToLocationArray(places.AddressComponents)
-	area, _ := helpers.GooglePlacesV1GetArea(places.AddressComponents, "administrative_area_level_1")
-	_, countryCode := helpers.GooglePlacesV1GetArea(places.AddressComponents, "country")
-
-	elevation := helpers.GoogleMapsElevation(c, places.Location.Latitude, places.Location.Longitude)
-
-	rewilding, inDB := helpers.GetRewildByPlaceId(places.Id)
-	rewildingId := rewilding.RewildingID
-
-	if !inDB {
-		RewildingPhotos, _ := helpers.RewildSaveGooglePhotos(c, places.Photos)
-
-		upsert := bson.D{{Key: "$set", Value: bson.D{
-			{Key: "rewilding_area", Value: area},
-			{Key: "rewilding_location", Value: location},
-			{Key: "rewilding_country_code", Value: countryCode},
-			{Key: "rewilding_name", Value: places.DisplayName.Text},
-			{Key: "rewilding_lat", Value: places.Location.Latitude},
-			{Key: "rewilding_lng", Value: places.Location.Longitude},
-			{Key: "rewilding_place_id", Value: places.Id},
-			{Key: "rewilding_elevation", Value: elevation.Elevation},
-			{Key: "rewilding_photos", Value: RewildingPhotos},
-		}}}
-
-		filters := bson.D{
-			{Key: "rewilding_place_id", Value: places.Id},
-		}
-		opts := options.Update().SetUpsert(true)
-		result, _ := config.DB.Collection("Rewilding").UpdateOne(context.TODO(), filters, upsert, opts)
-		rewildingId = result.UpsertedID.(primitive.ObjectID)
-	} else {
-		if len(rewilding.RewildingPhotos) == 0 {
-			RewildingPhotos, _ := helpers.RewildSaveGooglePhotos(c, places.Photos)
-
-			filters := bson.D{
-				{Key: "rewilding_place_id", Value: places.Id},
-			}
-
-			rewilding.RewildingPhotos = RewildingPhotos
-			upd := bson.D{{Key: "$set", Value: rewilding}}
-			config.DB.Collection("Rewilding").UpdateOne(context.TODO(), filters, upd)
-		}
-	}
-
+	rewildingId := service.GoogleToRewilding(c, places.Id)
 	insert := models.PocketListItems{
 		PocketListItemsMst:       helpers.StringToPrimitiveObjId(pocketListId),
 		PocketListItemsRewilding: rewildingId,

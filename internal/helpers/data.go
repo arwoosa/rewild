@@ -3,6 +3,7 @@ package helpers
 import (
 	"net/url"
 	"strings"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -49,4 +50,11 @@ func GetDomain(link string) (string, error) {
 	}
 
 	return hostname, err
+}
+
+func TimeIsBetween(t, min, max time.Time) bool {
+	if min.After(max) {
+		min, max = max, min
+	}
+	return (t.Equal(min) || t.After(min)) && (t.Equal(max) || t.Before(max))
 }
