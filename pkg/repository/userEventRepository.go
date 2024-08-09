@@ -60,6 +60,7 @@ func (r UserEventRepository) Retrieve(c *gin.Context) {
 		bson.D{{
 			Key: "$unwind", Value: "$events_created_by_user",
 		}},
+		bson.D{{Key: "$limit", Value: 5}},
 	}
 
 	cursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), pipeline)
@@ -73,6 +74,44 @@ func (r UserEventRepository) Retrieve(c *gin.Context) {
 		helpers.ResponseNoData(c, "No Data")
 		return
 	}
+
+	for k, v := range results {
+		var EventParticipantsUser []models.UsersAgg
+		var EventParticipants []models.EventParticipants
+
+		agg := mongo.Pipeline{
+			bson.D{{
+				Key: "$match", Value: bson.M{
+					"event_participants_event":  v.EventsId,
+					"event_participants_status": 1,
+				},
+			}},
+			bson.D{{
+				Key: "$lookup", Value: bson.M{
+					"from":         "Users",
+					"localField":   "event_participants_user",
+					"foreignField": "_id",
+					"as":           "event_participants_user_detail",
+				},
+			}},
+			bson.D{{
+				Key: "$unwind", Value: "$event_participants_user_detail",
+			}},
+		}
+		cursor, _ := config.DB.Collection("EventParticipants").Aggregate(context.TODO(), agg)
+		cursor.All(context.TODO(), &EventParticipants)
+
+		if len(EventParticipants) == 0 {
+			EventParticipantsUser = make([]models.UsersAgg, 0)
+		} else {
+			for _, vU := range EventParticipants {
+				EventParticipantsUser = append(EventParticipantsUser, *vU.EventParticipantsUserDetail)
+			}
+		}
+
+		results[k].EventsParticipants = &EventParticipantsUser
+	}
+
 	c.JSON(http.StatusOK, results)
 }
 
