@@ -37,11 +37,8 @@ func GoogleToRewilding(c *gin.Context, googlePlaceId string) primitive.ObjectID 
 		rewildingId = rewilding.RewildingID
 	}
 
-<<<<<<< HEAD
-=======
 	RewildingPhotos, _ := helpers.RewildSaveGooglePhotos(c, places.Photos)
 
->>>>>>> main
 	upsert := bson.D{{Key: "$set", Value: bson.D{
 		{Key: "rewilding_area", Value: area},
 		{Key: "rewilding_location", Value: location},
@@ -51,11 +48,8 @@ func GoogleToRewilding(c *gin.Context, googlePlaceId string) primitive.ObjectID 
 		{Key: "rewilding_lng", Value: places.Location.Longitude},
 		{Key: "rewilding_place_id", Value: places.Id},
 		{Key: "rewilding_elevation", Value: elevation.Elevation},
-<<<<<<< HEAD
-=======
 		{Key: "rewilding_photos", Value: RewildingPhotos},
 		{Key: "rewilding_apply_official", Value: true},
->>>>>>> main
 	}}}
 
 	filters := bson.D{
