@@ -2,7 +2,6 @@ package helpers
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 	"oosa_rewild/internal/config"
@@ -40,7 +39,6 @@ func RewildSaveGooglePhotos(c *gin.Context, photos []*places.GoogleMapsPlacesV1P
 		defer resp.Body.Close()
 
 		data, _ := io.ReadAll(resp.Body)
-		fmt.Println(data)
 
 		RwPhoto := models.RewildingPhotos{
 			RewildingPhotosID:   primitive.NewObjectID(),
