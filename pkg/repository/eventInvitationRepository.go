@@ -26,7 +26,7 @@ func (r EventInvitationRepository) Retrieve(c *gin.Context) {
 		{Key: "event_participants_user", Value: userDetail.UsersId},
 		{Key: "event_participants_status", Value: GetEventParticipantStatus("PENDING")},
 	}
-	fmt.Println(filter)
+
 	cursor, err := config.DB.Collection("EventParticipants").Find(context.TODO(), filter)
 	cursor.All(context.TODO(), &results)
 

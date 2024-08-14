@@ -50,8 +50,6 @@ func GoogleMapsElevation(c *gin.Context, lat float64, lng float64) maps.Elevatio
 }
 
 func Haversine(lat1 float64, lon1 float64, lat2 float64, lon2 float64) float64 {
-
-	fmt.Println(lat1, lon1, lat2, lon2)
 	var R float64 = 6371
 	var x1 = lat2 - lat1
 	dLat := toRad(x1)

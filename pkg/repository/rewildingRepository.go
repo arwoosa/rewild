@@ -28,13 +28,13 @@ type RewildingRequest struct {
 }
 
 type RewildingFormDataRequest struct {
-	RewildingType                 string  `form:"rewilding_type"`
-	RewildingApplyOfficial        bool    `form:"rewilding_apply_official"`
-	RewildingReferenceInformation string  `form:"rewilding_reference_information"`
-	RewildingPocketList           string  `form:"rewilding_pocket_list"`
-	RewildingName                 string  `form:"rewilding_name" validate:"required"`
-	RewildingLat                  float64 `form:"rewilding_lat"  validate:"required"`
-	RewildingLng                  float64 `form:"rewilding_lng"  validate:"required"`
+	RewildingType                 string   `form:"rewilding_type"`
+	RewildingApplyOfficial        bool     `form:"rewilding_apply_official"`
+	RewildingReferenceInformation []string `form:"rewilding_reference_information"`
+	RewildingPocketList           []string `form:"rewilding_pocket_list"`
+	RewildingName                 string   `form:"rewilding_name" validate:"required"`
+	RewildingLat                  float64  `form:"rewilding_lat"  validate:"required"`
+	RewildingLng                  float64  `form:"rewilding_lng"  validate:"required"`
 }
 
 // @Summary Rewilding
@@ -123,7 +123,7 @@ func (r RewildingRepository) Create(c *gin.Context) {
 	lng := payload.RewildingLng
 
 	geocode := helpers.GoogleMapsGeocode(c, payload.RewildingLat, payload.RewildingLng)
-	// elevation := helpers.GoogleMapsElevation(c, payload.RewildingLat, payload.RewildingLng)
+	elevation := helpers.GoogleMapsElevation(c, payload.RewildingLat, payload.RewildingLng)
 
 	location := helpers.GooglePlacesToLocationArray(geocode.AddressComponents)
 	area, _ := helpers.GooglePlacesGetArea(geocode.AddressComponents, "administrative_area_level_1")
@@ -160,17 +160,27 @@ func (r RewildingRepository) Create(c *gin.Context) {
 
 	insert := models.Rewilding{
 		RewildingApplyOfficial: &rewildingApplyOfficial,
-		RewildingType:          helpers.StringToPrimitiveObjId(payload.RewildingType),
 		RewildingArea:          area,
 		RewildingLocation:      location,
 		RewildingCountryCode:   countryCode,
 		RewildingName:          payload.RewildingName,
 		RewildingLat:           lat,
 		RewildingLng:           lng,
-		//RewildingElevation:     elevation.Elevation,
-		RewildingCreatedBy: userDetail.UsersId,
-		RewildingCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		RewildingPhotos:    RewildingPhotos,
+		RewildingElevation:     elevation.Elevation,
+		RewildingCreatedBy:     userDetail.UsersId,
+		RewildingCreatedAt:     primitive.NewDateTimeFromTime(time.Now()),
+		RewildingPhotos:        RewildingPhotos,
+	}
+
+	var referenceLinks []models.RewildingReferenceLinks
+	if len(payload.RewildingReferenceInformation) > 0 {
+		for _, referenceInformation := range payload.RewildingReferenceInformation {
+			insRefLink := models.RewildingReferenceLinks{
+				RewildingReferenceLinksLink: referenceInformation,
+			}
+			referenceLinks = append(referenceLinks, insRefLink)
+		}
+		insert.RewildingReferenceLinks = referenceLinks
 	}
 
 	result, err := config.DB.Collection("Rewilding").InsertOne(context.TODO(), insert)
@@ -183,19 +193,22 @@ func (r RewildingRepository) Create(c *gin.Context) {
 	config.DB.Collection("Rewilding").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&Rewilding)
 
 	// Add to pocket list
-	if payload.RewildingPocketList != "" {
-		insert := models.PocketListItems{
-			PocketListItemsMst:       helpers.StringToPrimitiveObjId(payload.RewildingPocketList),
-			PocketListItemsRewilding: Rewilding.RewildingID,
-			PocketListItemsName:      Rewilding.RewildingName,
-		}
+	if len(payload.RewildingPocketList) > 0 {
+		for _, pocketListId := range payload.RewildingPocketList {
+			insert := models.PocketListItems{
+				PocketListItemsMst:       helpers.StringToPrimitiveObjId(pocketListId),
+				PocketListItemsRewilding: Rewilding.RewildingID,
+				PocketListItemsName:      Rewilding.RewildingName,
+			}
 
-		_, err := config.DB.Collection("PocketListItems").InsertOne(context.TODO(), insert)
-		if err != nil {
-			fmt.Println("ERROR", err.Error())
-			return
+			_, err := config.DB.Collection("PocketListItems").InsertOne(context.TODO(), insert)
+			if err != nil {
+				fmt.Println("ERROR", err.Error())
+				return
+			} else {
+				PocketListRepository{}.UpdateCount(c, pocketListId)
+			}
 		}
-		PocketListRepository{}.UpdateCount(c, payload.RewildingPocketList)
 	}
 
 	c.JSON(http.StatusOK, Rewilding)

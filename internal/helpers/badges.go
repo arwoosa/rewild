@@ -32,7 +32,6 @@ func BadgeAllocate(c *gin.Context, badgeCode string, badgeSource int, badgeRefer
 		config.DB.Collection("UserBadges").FindOne(context.TODO(), filter).Decode(&UserBadges)
 
 		if !MongoZeroID(UserBadges.UserBadgesId) {
-			fmt.Println("This badge is only received once")
 			return
 		}
 	}
@@ -62,7 +61,5 @@ func BadgeDetail(badgeCode string) models.Badges {
 }
 
 func BadgeEvents(c *gin.Context, eventId primitive.ObjectID) {
-	userDetail := GetAuthUser(c)
-	fmt.Println(userDetail)
 	BadgeAllocate(c, "N1", BADGE_REWILDING, eventId)
 }

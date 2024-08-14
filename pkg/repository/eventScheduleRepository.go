@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"net/http"
 	"oosa_rewild/internal/config"
@@ -157,7 +156,6 @@ func (r EventScheduleRepository) Create(c *gin.Context) {
 
 		for _, vSchedule := range v.Schedule {
 			fullDatetime := scheduleDate + "T" + vSchedule.EventSchedulesDatetime + "Z"
-			fmt.Println(fullDatetime)
 			scheduleTime := helpers.StringToDateTime(fullDatetime)
 
 			isValidDate := helpers.TimeIsBetween(scheduleTime, eventDateStart, eventDateEnd)
@@ -165,10 +163,6 @@ func (r EventScheduleRepository) Create(c *gin.Context) {
 			if !isValidDate {
 				errList = append(errList, scheduleDate+" "+vSchedule.EventSchedulesDatetime)
 			}
-			fmt.Println("isValidDate: ", isValidDate)
-			fmt.Println("scheduleTime: ", scheduleTime)
-			fmt.Println("eventDateStart: ", eventDateStart)
-			fmt.Println("eventDateEnd: ", eventDateEnd)
 
 			eventSchedule = append(eventSchedule, models.EventSchedules{
 				EventSchedulesEvent:       helpers.StringToPrimitiveObjId(c.Param("id")),

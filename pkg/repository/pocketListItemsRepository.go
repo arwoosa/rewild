@@ -97,7 +97,6 @@ func (r PocketListItemsRepository) Create(c *gin.Context) {
 		return
 	}
 
-	fmt.Println(result.InsertedID.(primitive.ObjectID))
 	data, err := helpers.GetPocketListItem(c, result.InsertedID.(primitive.ObjectID))
 
 	PocketListRepository{}.UpdateCount(c, pocketListId)

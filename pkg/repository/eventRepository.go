@@ -34,6 +34,7 @@ type EventRequest struct {
 	EventsLng              float64 `json:"events_lng" validate:"required_without_all=EventsPlace EventsRewilding"`
 	EventsMeetingPointLat  float64 `json:"events_meeting_point_lat" validate:"required"`
 	EventsMeetingPointLng  float64 `json:"events_meeting_point_lng" validate:"required"`
+	EventsMeetingPointName string  `form:"events_meeting_point_name" validate:"required"`
 }
 
 type EventFormDataRequest struct {
@@ -52,6 +53,7 @@ type EventFormDataRequest struct {
 	EventsLng              float64 `form:"events_lng" validate:"required_without_all=EventsPlace EventsRewilding"`
 	EventsMeetingPointLat  float64 `form:"events_meeting_point_lat" validate:"required"`
 	EventsMeetingPointLng  float64 `form:"events_meeting_point_lng" validate:"required"`
+	EventsMeetingPointName string  `form:"events_meeting_point_name" validate:"required"`
 }
 
 func (r EventRepository) Retrieve(c *gin.Context) {
@@ -87,7 +89,63 @@ func (r EventRepository) Retrieve(c *gin.Context) {
 		helpers.ResponseNoData(c, "No Data")
 		return
 	}
+
+	results = r.RetrieveParticipantDetails(results)
 	c.JSON(http.StatusOK, results)
+}
+
+func (r EventRepository) RetrieveParticipantDetails(results []models.Events) []models.Events {
+	for k, v := range results {
+		var EventParticipantsUser []models.UsersAgg
+		var EventParticipants []models.EventParticipants
+
+		agg := mongo.Pipeline{
+			bson.D{{
+				Key: "$match", Value: bson.M{
+					"event_participants_event":  v.EventsId,
+					"event_participants_status": 1,
+				},
+			}},
+			bson.D{{
+				Key: "$lookup", Value: bson.M{
+					"from":         "Users",
+					"localField":   "event_participants_user",
+					"foreignField": "_id",
+					"as":           "event_participants_user_detail",
+				},
+			}},
+			bson.D{{
+				Key: "$unwind", Value: "$event_participants_user_detail",
+			}},
+		}
+		cursor, _ := config.DB.Collection("EventParticipants").Aggregate(context.TODO(), agg)
+		cursor.All(context.TODO(), &EventParticipants)
+
+		maxSlice := 3
+		noOfParticipants := len(EventParticipants)
+		remaining := 0
+		if noOfParticipants == 0 {
+			EventParticipantsUser = make([]models.UsersAgg, 0)
+		} else {
+			for kU, vU := range EventParticipants {
+				if kU < maxSlice {
+					EventParticipantsUser = append(EventParticipantsUser, *vU.EventParticipantsUserDetail)
+				}
+			}
+		}
+
+		if noOfParticipants > maxSlice {
+			remaining = noOfParticipants - maxSlice
+		}
+
+		EventParticipantsList := models.EventParticipantObj{
+			LatestTreeUser: &EventParticipantsUser,
+			RemainNumber:   remaining,
+		}
+
+		results[k].EventsParticipants = EventParticipantsList
+	}
+	return results
 }
 
 func (r EventRepository) Create(c *gin.Context) {
@@ -268,7 +326,6 @@ func (r EventRepository) ReadOne(c *gin.Context, Events *models.Events) error {
 	filter := bson.D{{Key: "_id", Value: id}}
 	err := config.DB.Collection("Events").FindOne(context.TODO(), filter).Decode(&Events)
 	if err != nil {
-		fmt.Println(err.Error())
 		helpers.ResultEmpty(c, err)
 	}
 	return err
@@ -319,6 +376,7 @@ func (r EventRepository) ProcessData(c *gin.Context, Events *models.Events, payl
 	Events.EventsRequiresApproval = &payload.EventsRequiresApproval
 	Events.EventsMeetingPointLat = meetingPointLat
 	Events.EventsMeetingPointLng = meetingPointLng
+	Events.EventsMeetingPointName = payload.EventsMeetingPointName
 	Events.EventsLat = eventsLat
 	Events.EventsLng = eventsLng
 	Events.EventsParticipantLimit = payload.EventsParticipantLimit
@@ -350,6 +408,7 @@ func (r EventRepository) ProcessDataForm(c *gin.Context, Events *models.Events, 
 	Events.EventsRequiresApproval = &payload.EventsRequiresApproval
 	Events.EventsMeetingPointLat = meetingPointLat
 	Events.EventsMeetingPointLng = meetingPointLng
+	Events.EventsMeetingPointName = payload.EventsMeetingPointName
 	Events.EventsLat = eventsLat
 	Events.EventsLng = eventsLng
 	Events.EventsParticipantLimit = payload.EventsParticipantLimit

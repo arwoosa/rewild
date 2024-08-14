@@ -133,12 +133,11 @@ func (r PocketListRepository) UpdateCount(c *gin.Context, pocketListId string) {
 	var PocketLists models.PocketLists
 	r.ReadOne(c, &PocketLists, pocketListId)
 
-	fmt.Println("UpdateCount:INIT")
 	opts := options.Count().SetHint("_id_")
 	filter := bson.D{{Key: "pocket_list_items_mst", Value: helpers.StringToPrimitiveObjId(pocketListId)}}
 	count, err := config.DB.Collection("PocketListItems").CountDocuments(context.TODO(), filter, opts)
 	if err != nil {
-		fmt.Println("UpdateCount", err.Error())
+		fmt.Println("ERROR", err.Error())
 	}
 
 	PocketLists.PocketListsCount = int(count)
