@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"mime/multipart"
@@ -53,9 +52,6 @@ func (r CloudflareRepository) Retrieve(c *gin.Context) {
 	}
 
 	req.Header.Set("Authorization", "Bearer "+config.APP.CloudflareImageAuthToken)
-
-	fmt.Println("Endpoint: " + endpoint)
-	fmt.Println("Bearer " + config.APP.CloudflareImageAuthToken)
 
 	// Create Response
 	resp, err := client.Do(req)
@@ -133,9 +129,6 @@ func (r CloudflareRepository) Post(c *gin.Context, file *multipart.FileHeader) (
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	req.Header.Set("Authorization", "Bearer "+config.APP.CloudflareImageAuthToken)
 
-	fmt.Println("Endpoint: " + endpoint)
-	fmt.Println("Bearer " + config.APP.CloudflareImageAuthToken)
-
 	// Create Response
 	resp, err := client.Do(req)
 	if err != nil {
@@ -151,9 +144,9 @@ func (r CloudflareRepository) Post(c *gin.Context, file *multipart.FileHeader) (
 
 	json.Unmarshal(body, &cloudflareResponse)
 
-	if cloudflareResponse.Success {
+	/*if cloudflareResponse.Success {
 		fmt.Println("SUCCESS!", cloudflareResponse.Result)
-	}
+	}*/
 
 	return cloudflareResponse, nil
 }

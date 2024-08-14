@@ -1,3 +1,12 @@
+# CHANGELOG 1.1.5
+## Changes
+- Default type ["national_park", "hiking_area", "campground", "camping_cabin", "park", "playground"] (GET rewilding-search)
+- Addition of event_meeting_point_name (POST event | PUT event/{id})
+- ⁠Pocket List, Reference link as array (POST rewilding)
+- ⁠Adjust event_participants object (GET event | my/event)
+- Removal of rewilding_type (GET rewilding)
+- Clear unnecessary fmt.Println
+
 # CHANGELOG 1.1.4
 ## Changes
 - Handling of breathing points on participation to event

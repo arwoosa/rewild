@@ -143,7 +143,6 @@ func (r RewildingRegisterRepository) ProcessData(c *gin.Context, Rewilding *mode
 	}
 
 	Rewilding.RewildingApplyOfficial = &rewildingApplyOfficial
-	Rewilding.RewildingType = helpers.StringToPrimitiveObjId(payload.RewildingType)
 	Rewilding.RewildingName = payload.RewildingName
 	Rewilding.RewildingLat = lat
 	Rewilding.RewildingLng = lng

@@ -85,6 +85,10 @@ func (r RewildingSearchRepository) Retrieve(c *gin.Context) {
 		log.Fatalf("error %s", err)
 	}
 
+	if len(includedTypes) == 0 {
+		includedTypes = []string{"national_park", "hiking_area", "campground", "camping_cabin", "park", "playground"}
+	}
+
 	if reqSearch != "" {
 		// Search by keyword
 		req := places.GoogleMapsPlacesV1SearchTextRequest{
@@ -152,18 +156,10 @@ func (r RewildingSearchRepository) Create(c *gin.Context) {
 	location := helpers.GooglePlacesToLocationArray(geocode.AddressComponents)
 	area, _ := helpers.GooglePlacesGetArea(geocode.AddressComponents, "administrative_area_level_1")
 	_, countryCode := helpers.GooglePlacesGetArea(geocode.AddressComponents, "country")
-
-	/*Cache References*/
-	var RewildingTypeData models.RefRewildingTypes
-	typeId, _ := primitive.ObjectIDFromHex(payload.RewildingType)
-	config.DB.Collection("RefRewildingTypes").FindOne(context.TODO(), bson.D{{Key: "_id", Value: typeId}}).Decode(&RewildingTypeData)
-
 	rewildingApplyOfficial := false
 
 	insert := models.Rewilding{
 		RewildingApplyOfficial: &rewildingApplyOfficial,
-		RewildingType:          helpers.StringToPrimitiveObjId(payload.RewildingType),
-		RewildingTypeData:      RewildingTypeData,
 		RewildingCity:          payload.RewildingCity,
 		RewildingArea:          area,
 		RewildingLocation:      location,
@@ -210,17 +206,10 @@ func (r RewildingSearchRepository) Update(c *gin.Context) {
 	lat := payload.RewildingLat
 	lng := payload.RewildingLng
 
-	/*Cache References*/
-	var RewildingTypeData models.RefRewildingTypes
-	typeId, _ := primitive.ObjectIDFromHex(payload.RewildingType)
-	config.DB.Collection("RefRewildingTypes").FindOne(context.TODO(), bson.D{{Key: "_id", Value: typeId}}).Decode(&RewildingTypeData)
-
 	/*Find one*/
 	var Rewilding models.Rewilding
 	config.DB.Collection("Rewilding").FindOne(context.TODO(), bson.D{{Key: "_id", Value: id}}).Decode(&Rewilding)
 
-	Rewilding.RewildingType = helpers.StringToPrimitiveObjId(payload.RewildingType)
-	Rewilding.RewildingTypeData = RewildingTypeData
 	Rewilding.RewildingCity = payload.RewildingCity
 	Rewilding.RewildingArea = payload.RewildingArea
 	// Rewilding.RewildingLocation = []string{}
