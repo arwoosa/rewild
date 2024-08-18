@@ -34,7 +34,7 @@ type EventRequest struct {
 	EventsLng              float64 `json:"events_lng" validate:"required_without_all=EventsPlace EventsRewilding"`
 	EventsMeetingPointLat  float64 `json:"events_meeting_point_lat" validate:"required"`
 	EventsMeetingPointLng  float64 `json:"events_meeting_point_lng" validate:"required"`
-	EventsMeetingPointName string  `form:"events_meeting_point_name" validate:"required"`
+	EventsMeetingPointName string  `json:"events_meeting_point_name" validate:"required"`
 }
 
 type EventFormDataRequest struct {
@@ -349,6 +349,17 @@ func (r EventRepository) Update(c *gin.Context) {
 		filters := bson.D{{Key: "_id", Value: Events.EventsId}}
 		upd := bson.D{{Key: "$set", Value: Events}}
 		config.DB.Collection("Events").UpdateOne(context.TODO(), filters, upd)
+
+		ActiveParticipants := EventParticipantsRepository{}.ActiveParticipants(Events.EventsId)
+		c.JSON(200, ActiveParticipants)
+		for _, v := range ActiveParticipants {
+			NotificationMessage := models.NotificationMessage{
+				Message: "團主於{0}中更新了重要資訊! 點擊查看",
+				Data:    []map[string]interface{}{helpers.NotificationFormatEvent(Events)},
+			}
+			helpers.NotificationsCreate(c, helpers.NOTIFICATION_EVENT_INFO, v.EventParticipantsUser, NotificationMessage, Events.EventsId)
+		}
+
 		r.Read(c)
 	}
 }

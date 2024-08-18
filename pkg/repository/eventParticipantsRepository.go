@@ -116,6 +116,12 @@ func (r EventParticipantsRepository) Create(c *gin.Context) {
 
 	var EventParticipants models.EventParticipants
 	config.DB.Collection("EventParticipants").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&EventParticipants)
+
+	NotificationMessage := models.NotificationMessage{
+		Message: "你有一張來自{0}的邀請函",
+		Data:    []map[string]interface{}{helpers.NotificationFormatUser(userDetail)},
+	}
+	helpers.NotificationsCreate(c, helpers.NOTIFICATION_INVITATION, invitedUser, NotificationMessage, EventParticipants.EventParticipantsId)
 	c.JSON(http.StatusOK, EventParticipants)
 }
 
@@ -143,4 +149,15 @@ func (r EventParticipantsRepository) Delete(c *gin.Context) {
 		config.DB.Collection("EventParticipants").DeleteOne(context.TODO(), filters)
 		helpers.ResultMessageSuccess(c, "User removed from event")
 	}
+}
+
+func (r EventParticipantsRepository) ActiveParticipants(eventId primitive.ObjectID) []models.EventParticipants {
+	var ActiveParticipants []models.EventParticipants
+	activeParticipantsFilter := bson.D{
+		{Key: "event_participants_event", Value: eventId},
+		{Key: "event_participants_status", Value: GetEventParticipantStatus("ACCEPTED")},
+	}
+	cursor, _ := config.DB.Collection("EventParticipants").Find(context.TODO(), activeParticipantsFilter)
+	cursor.All(context.TODO(), &ActiveParticipants)
+	return ActiveParticipants
 }
