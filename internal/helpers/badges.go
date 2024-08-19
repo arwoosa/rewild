@@ -46,7 +46,13 @@ func BadgeAllocate(c *gin.Context, badgeCode string, badgeSource int, badgeRefer
 		insert.UserBadgesRewilding = badgeReference
 	}
 
-	_, err := config.DB.Collection("UserBadges").InsertOne(context.TODO(), insert)
+	result, err := config.DB.Collection("UserBadges").InsertOne(context.TODO(), insert)
+
+	NotificationMessage := models.NotificationMessage{
+		Message: "太棒了！恭喜你獲得了一枚新的徽章!",
+		Data:    []map[string]interface{}{NotificationFormatBadges(badgeDetail)},
+	}
+	NotificationsCreate(c, NOTIFICATION_BADGE_NEW, userDetail.UsersId, NotificationMessage, result.InsertedID.(primitive.ObjectID))
 	if err != nil {
 		fmt.Println("ERROR", err.Error())
 		return

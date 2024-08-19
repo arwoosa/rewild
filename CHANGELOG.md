@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.6
+## Changes
+- Changes to notifications
+
 # CHANGELOG 1.1.5
 ## Changes
 - Default type ["national_park", "hiking_area", "campground", "camping_cabin", "park", "playground"] (GET rewilding-search)
