@@ -94,6 +94,22 @@ func (r EventInvitationRepository) Update(c *gin.Context) {
 		return
 	}
 
+	ActiveParticipants := EventParticipantsRepository{}.ActiveParticipants(results.EventParticipantsEvent)
+
+	var Event models.Events
+	eventFilter := bson.D{
+		{Key: "_id", Value: results.EventParticipantsEvent},
+	}
+	config.DB.Collection("Events").FindOne(context.TODO(), eventFilter).Decode(&Event)
+
+	for _, v := range ActiveParticipants {
+		NotificationMessage := models.NotificationMessage{
+			Message: "{0}有新的夥伴加入!",
+			Data:    []map[string]interface{}{helpers.NotificationFormatEvent(Event)},
+		}
+		helpers.NotificationsCreate(c, helpers.NOTIFICATION_JOINING_NEW, v.EventParticipantsUser, NotificationMessage, results.EventParticipantsEvent)
+	}
+
 	results.EventParticipantsStatus = payload.EventParticipantsStatus
 	upd := bson.D{{Key: "$set", Value: results}}
 	config.DB.Collection("EventParticipants").UpdateOne(context.TODO(), filter, upd)
