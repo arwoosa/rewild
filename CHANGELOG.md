@@ -1,10 +1,16 @@
-<<<<<<< HEAD
-=======
+# CHANGELOG 1.1.7
+- POST/PUT event missing event type
+- Set events_participant_limit & events_payment_fee to 0
+- Fix PUT event/{id} response
+- POST event/{id}/schedule request and response changes
+- GET event/{id}/schedule response changes
+- DELETE event/{id}/schedule implement
+- DELETE rewilding/{rewildingId} implement
+
 # CHANGELOG 1.1.6
 ## Changes
 - Changes to notifications
 
->>>>>>> main
 # CHANGELOG 1.1.5
 ## Changes
 - Default type ["national_park", "hiking_area", "campground", "camping_cabin", "park", "playground"] (GET rewilding-search)

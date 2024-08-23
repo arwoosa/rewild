@@ -25,8 +25,8 @@ import (
 
 type CollaborativeLogPolaroidRepository struct{}
 type CollaborativeLogPolaroidRequest struct {
-	EventPolaroidsAlbumUrl   string `json:"event_album_link_album_url" validate:"required"`
-	EventPolaroidsVisibility int64  `json:"event_album_link_visibility" validate:"required"`
+	EventPolaroidsMessage string `form:"event_polaroids_message"`
+	EventPolaroidsTag     string `form:"event_polaroids_tag"`
 }
 
 func (r CollaborativeLogPolaroidRepository) Retrieve(c *gin.Context) {
@@ -70,13 +70,19 @@ func (r CollaborativeLogPolaroidRepository) Retrieve(c *gin.Context) {
 }
 
 func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
+	var payload CollaborativeLogPolaroidRequest
+	validateError := helpers.ValidateForm(c, &payload)
+	if validateError != nil {
+		return
+	}
+
 	var Events models.Events
 	err := CollaborativeLogRepository{}.ReadOne(c, &Events)
 	if err != nil {
 		return
 	}
 
-	file, fileErr := c.FormFile("polaroid_image")
+	file, fileErr := c.FormFile("event_polaroids_file")
 	if fileErr != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "No file is received",
@@ -152,20 +158,22 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 		lng = deg.Decimal()
 	}
 
-	cloudflare := CloudflareRepository{}
+	/*cloudflare := CloudflareRepository{}
 	cloudflareResponse, postErr := cloudflare.Post(c, file)
 	if postErr != nil {
 		helpers.ResponseBadRequestError(c, postErr.Error())
 		return
 	}
-	fileName := cloudflare.ImageDelivery(cloudflareResponse.Result.Id, "public")
+	fileName := cloudflare.ImageDelivery(cloudflareResponse.Result.Id, "public")*/
 
 	userDetail := helpers.GetAuthUser(c)
 	insert := models.EventPolaroids{
-		EventPolaroidsEvent:     Events.EventsId,
-		EventPolaroidsUrl:       fileName,
+		EventPolaroidsEvent: Events.EventsId,
+		// EventPolaroidsUrl:       fileName,
 		EventPolaroidsLat:       lat,
 		EventPolaroidsLng:       lng,
+		EventPolaroidsMessage:   payload.EventPolaroidsMessage,
+		EventPolaroidsTag:       payload.EventPolaroidsTag,
 		EventPolaroidsCreatedBy: userDetail.UsersId,
 		EventPolaroidsCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
