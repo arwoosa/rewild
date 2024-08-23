@@ -21,6 +21,8 @@ type Rewilding struct {
 	RewildingApplyOfficial  *bool                     `bson:"rewilding_apply_official,default:false" json:"rewilding_apply_official"`
 	RewildingCreatedBy      primitive.ObjectID        `bson:"rewilding_created_by,omitempty" json:"rewilding_created_by"`
 	RewildingCreatedAt      primitive.DateTime        `bson:"rewilding_created_at,omitempty" json:"rewilding_created_at"`
+	RewildingDeletedBy      *primitive.ObjectID       `bson:"rewilding_deleted_by,omitempty" json:"rewilding_deleted_by,omitempty"`
+	RewildingDeletedAt      *primitive.DateTime       `bson:"rewilding_deleted_at,omitempty" json:"rewilding_deleted_at,omitempty"`
 	RewildingCreatedByUser  *UsersAgg                 `bson:"rewilding_created_by_user,omitempty" json:"rewilding_created_by_user,omitempty"`
 }
 

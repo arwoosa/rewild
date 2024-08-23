@@ -66,13 +66,21 @@ func (r RewildingRepository) Retrieve(c *gin.Context) {
 		}},
 	}
 
-	if owner != "" {
+	if owner == "true" {
 		middleware.CheckIfAuth(c)
 		userDetail := helpers.GetAuthUser(c)
 		agg = append(agg, bson.D{{
-			Key: "$match", Value: bson.M{"rewilding_created_by": userDetail.UsersId},
+			Key: "$match", Value: bson.D{
+				{Key: "rewilding_created_by", Value: userDetail.UsersId},
+				{Key: "rewilding_deleted_at", Value: bson.M{"$exists": false}},
+			},
 		}})
-		//filter["rewilding_created_by"] = userDetail.UsersId
+	} else {
+		agg = append(agg, bson.D{{
+			Key: "$match", Value: bson.D{
+				{Key: "rewilding_deleted_at", Value: bson.M{"$exists": false}},
+			},
+		}})
 	}
 
 	cursor, err := config.DB.Collection("Rewilding").Aggregate(context.TODO(), agg)
@@ -212,6 +220,32 @@ func (r RewildingRepository) Create(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, Rewilding)
+}
+
+func (r RewildingRepository) Delete(c *gin.Context) {
+	userDetail := helpers.GetAuthUser(c)
+	id, _ := primitive.ObjectIDFromHex(c.Param("id"))
+	var Rewilding models.Rewilding
+	filter := bson.D{
+		{Key: "_id", Value: id},
+		{Key: "rewilding_created_by", Value: userDetail.UsersId},
+		{Key: "rewilding_deleted_at", Value: bson.M{"$exists": false}},
+	}
+	err := config.DB.Collection("Rewilding").FindOne(context.TODO(), filter).Decode(&Rewilding)
+	fmt.Println(userDetail.UsersId)
+	if err != nil {
+		helpers.ResultEmpty(c, err)
+		return
+	}
+
+	updFilter := bson.D{{Key: "_id", Value: id}}
+	currentTime := primitive.NewDateTimeFromTime(time.Now())
+	Rewilding.RewildingDeletedAt = &currentTime
+	Rewilding.RewildingDeletedBy = &userDetail.UsersId
+	upd := bson.D{{Key: "$set", Value: Rewilding}}
+	config.DB.Collection("Rewilding").UpdateOne(context.TODO(), updFilter, upd)
+
+	helpers.ResponseSuccessMessage(c, "Rewilding deleted")
 }
 
 func (r RewildingRepository) Options(c *gin.Context) {

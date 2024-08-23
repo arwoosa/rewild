@@ -19,16 +19,16 @@ import (
 
 type EventRepository struct{}
 type EventRequest struct {
-	EventsDate      string `json:"events_date" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
-	EventsDateEnd   string `json:"events_date_end" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
-	EventsDeadline  string `json:"events_deadline" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
-	EventsName      string `json:"events_name" validate:"required"`
-	EventsPlace     string `json:"events_place" validate:"required_without=EventsRewilding"`
-	EventsRewilding string `json:"events_rewilding" validate:"required_without=EventsPlace"`
-	// EventsType             string  `json:"events_type" validate:"required"`
-	EventsParticipantLimit int     `json:"events_participant_limit" validate:"required"`
+	EventsDate             string  `json:"events_date" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
+	EventsDateEnd          string  `json:"events_date_end" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
+	EventsDeadline         string  `json:"events_deadline" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
+	EventsName             string  `json:"events_name" validate:"required"`
+	EventsPlace            string  `json:"events_place" validate:"required_without=EventsRewilding"`
+	EventsRewilding        string  `json:"events_rewilding" validate:"required_without=EventsPlace"`
+	EventsType             string  `json:"events_type" validate:"required"`
+	EventsParticipantLimit int     `json:"events_participant_limit"`
 	EventsPaymentRequired  int     `json:"events_payment_required" default:"0"`
-	EventsPaymentFee       float64 `json:"events_payment_fee" validate:"required"`
+	EventsPaymentFee       float64 `json:"events_payment_fee"`
 	EventsRequiresApproval int     `json:"events_requires_approval" default:"0"`
 	EventsLat              float64 `json:"events_lat" validate:"required_without_all=EventsPlace EventsRewilding"`
 	EventsLng              float64 `json:"events_lng" validate:"required_without_all=EventsPlace EventsRewilding"`
@@ -38,16 +38,16 @@ type EventRequest struct {
 }
 
 type EventFormDataRequest struct {
-	EventsDate      string `form:"events_date" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
-	EventsDateEnd   string `form:"events_date_end" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
-	EventsDeadline  string `form:"events_deadline" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
-	EventsName      string `form:"events_name" validate:"required"`
-	EventsPlace     string `form:"events_place" validate:"required_without=EventsRewilding"`
-	EventsRewilding string `form:"events_rewilding" validate:"required_without=EventsPlace"`
-	// EventsType             string  `form:"events_type" validate:"required"`
-	EventsParticipantLimit int     `form:"events_participant_limit" validate:"required"`
+	EventsDate             string  `form:"events_date" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
+	EventsDateEnd          string  `form:"events_date_end" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
+	EventsDeadline         string  `form:"events_deadline" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
+	EventsName             string  `form:"events_name" validate:"required"`
+	EventsPlace            string  `form:"events_place" validate:"required_without=EventsRewilding"`
+	EventsRewilding        string  `form:"events_rewilding" validate:"required_without=EventsPlace"`
+	EventsType             string  `form:"events_type" validate:"required"`
+	EventsParticipantLimit int     `form:"events_participant_limit"`
 	EventsPaymentRequired  int     `form:"events_payment_required" default:"0"`
-	EventsPaymentFee       float64 `form:"events_payment_fee" validate:"required"`
+	EventsPaymentFee       float64 `form:"events_payment_fee"`
 	EventsRequiresApproval int     `form:"events_requires_approval" default:"0"`
 	EventsLat              float64 `form:"events_lat" validate:"required_without_all=EventsPlace EventsRewilding"`
 	EventsLng              float64 `form:"events_lng" validate:"required_without_all=EventsPlace EventsRewilding"`
@@ -143,7 +143,7 @@ func (r EventRepository) RetrieveParticipantDetails(results []models.Events) []m
 			RemainNumber:   remaining,
 		}
 
-		results[k].EventsParticipants = EventParticipantsList
+		results[k].EventsParticipants = &EventParticipantsList
 	}
 	return results
 }
@@ -351,7 +351,6 @@ func (r EventRepository) Update(c *gin.Context) {
 		config.DB.Collection("Events").UpdateOne(context.TODO(), filters, upd)
 
 		ActiveParticipants := EventParticipantsRepository{}.ActiveParticipants(Events.EventsId)
-		c.JSON(200, ActiveParticipants)
 		for _, v := range ActiveParticipants {
 			NotificationMessage := models.NotificationMessage{
 				Message: "團主於{0}中更新了重要資訊! 點擊查看",
@@ -382,15 +381,16 @@ func (r EventRepository) ProcessData(c *gin.Context, Events *models.Events, payl
 	Events.EventsName = payload.EventsName
 	Events.EventsRewilding = helpers.StringToPrimitiveObjId(payload.EventsRewilding)
 	Events.EventsPlace = payload.EventsPlace
+	Events.EventsType = helpers.StringToPrimitiveObjId(payload.EventsType)
 	Events.EventsPaymentRequired = payload.EventsPaymentRequired
-	Events.EventsPaymentFee = payload.EventsPaymentFee
+	Events.EventsPaymentFee = &payload.EventsPaymentFee
 	Events.EventsRequiresApproval = &payload.EventsRequiresApproval
 	Events.EventsMeetingPointLat = meetingPointLat
 	Events.EventsMeetingPointLng = meetingPointLng
 	Events.EventsMeetingPointName = payload.EventsMeetingPointName
 	Events.EventsLat = eventsLat
 	Events.EventsLng = eventsLng
-	Events.EventsParticipantLimit = payload.EventsParticipantLimit
+	Events.EventsParticipantLimit = &payload.EventsParticipantLimit
 
 	Events.EventsStatisticDistance = eventStatisticDistance
 	Events.EventsStatisticTime = eventDurationSecond
@@ -414,15 +414,16 @@ func (r EventRepository) ProcessDataForm(c *gin.Context, Events *models.Events, 
 	Events.EventsName = payload.EventsName
 	Events.EventsRewilding = helpers.StringToPrimitiveObjId(payload.EventsRewilding)
 	Events.EventsPlace = payload.EventsPlace
+	Events.EventsType = helpers.StringToPrimitiveObjId(payload.EventsType)
 	Events.EventsPaymentRequired = payload.EventsPaymentRequired
-	Events.EventsPaymentFee = payload.EventsPaymentFee
+	Events.EventsPaymentFee = &payload.EventsPaymentFee
 	Events.EventsRequiresApproval = &payload.EventsRequiresApproval
 	Events.EventsMeetingPointLat = meetingPointLat
 	Events.EventsMeetingPointLng = meetingPointLng
 	Events.EventsMeetingPointName = payload.EventsMeetingPointName
 	Events.EventsLat = eventsLat
 	Events.EventsLng = eventsLng
-	Events.EventsParticipantLimit = payload.EventsParticipantLimit
+	Events.EventsParticipantLimit = &payload.EventsParticipantLimit
 
 	Events.EventsStatisticDistance = eventStatisticDistance
 	Events.EventsStatisticTime = eventDurationSecond

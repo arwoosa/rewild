@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -25,6 +26,7 @@ type AppConfig struct {
 	ClourdlareImageDeliveryUrl string
 	OpenWeather                string
 	OpenWeatherApiKey          string
+	EventPolaroidLimit         int
 }
 
 type AppLimit struct {
@@ -58,6 +60,13 @@ func InitialiseConfig() {
 	APP.ClourdlareImageDeliveryUrl = os.Getenv("CLOURDLARE_IMAGE_DELIVERY_URL")
 	APP.OpenWeather = os.Getenv("OPENWEATHER_API_BASE_URL")
 	APP.OpenWeatherApiKey = os.Getenv("OPENWEATHER_API_KEY")
+
+	polaroidLimit, err := strconv.Atoi(os.Getenv("EVENT_POLAROID_LIMIT"))
+	if err == nil {
+		APP.EventPolaroidLimit = polaroidLimit
+	} else {
+		APP.EventPolaroidLimit = 0
+	}
 
 	APP_LIMIT.PocketList = 100
 }
