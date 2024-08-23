@@ -1,3 +1,6 @@
+# CHANGELOG 1.1.8
+- POST event/{id}/schedule one day event bug fix
+
 # CHANGELOG 1.1.7
 - POST/PUT event missing event type
 - Set events_participant_limit & events_payment_fee to 0

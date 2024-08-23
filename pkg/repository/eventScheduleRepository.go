@@ -132,6 +132,9 @@ func (r EventScheduleRepository) Create(c *gin.Context) {
 	eventSchedule := []interface{}{}
 
 	days := int(math.Ceil(Event.EventsDateEnd.Time().Sub(Event.EventsDate.Time()).Hours() / 24))
+	if days == 0 {
+		days = 1
+	}
 
 	if len(payload.EventSchedule) != days {
 		helpers.ResponseBadRequestError(c, "Schedule does not match number of days ("+strconv.Itoa(days)+")")
