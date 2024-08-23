@@ -113,6 +113,8 @@ func (r CollaborativeLogRepository) Retrieve(c *gin.Context) {
 		helpers.ResponseNoData(c, "No Data")
 		return
 	}
+
+	results = EventRepository{}.RetrieveParticipantDetails(results)
 	c.JSON(http.StatusOK, results)
 }
 

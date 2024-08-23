@@ -53,6 +53,7 @@ func EventRoutes(r *gin.Engine) *gin.Engine {
 	{
 		schedule.GET("", repoSchedule.Retrieve)
 		schedule.POST("", repoSchedule.Create)
+		schedule.DELETE("", repoSchedule.DeleteAll)
 		schedule.GET("/:scheduleId", repoSchedule.Read)
 		schedule.PUT("/:scheduleId", repoSchedule.Update)
 		schedule.DELETE("/:scheduleId", repoSchedule.Delete)

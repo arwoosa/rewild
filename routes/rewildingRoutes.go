@@ -22,6 +22,7 @@ func RewildingRoutes(r *gin.Engine) *gin.Engine {
 	detail := rewilding.Group("/:id")
 	{
 		detail.GET("", repoRewilding.Read)
+		detail.DELETE("", middleware.AuthMiddleware(), repoRewilding.Delete)
 		detail.GET("/photos", repoRewildingPhoto.Retrieve)
 		detail.GET("/photos/:photosId", repoRewildingPhoto.Read)
 	}
