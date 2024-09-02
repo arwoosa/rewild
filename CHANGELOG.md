@@ -1,3 +1,9 @@
+# CHANGELOG 1.1.9
+- Experience 3.3.1.1.1.1d ~ 3.3.1.1.1.1e
+- Maximum polaroids (3x) 3.3.1 ~ 3.3.1g
+- Past event date 3.3.2 ~ 3.3.2a
+- General fixes to creating event to use one struct
+
 # CHANGELOG 1.1.8
 - POST event/{id}/schedule one day event bug fix
 
