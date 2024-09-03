@@ -19,6 +19,7 @@ type EventMessageBoardRepository struct{}
 type EventMessageBoardRequest struct {
 	EventMessageBoardBaseMessage  string `json:"event_message_board_base_message" validate:"required_without=EventMessageBoardAnnouncement"`
 	EventMessageBoardAnnouncement string `json:"event_message_board_announcement" validate:"required_without=EventMessageBoardBaseMessage"`
+	EventMessageBoardIsPinned     int    `json:"event_message_board_is_pinned"`
 }
 
 func (r EventMessageBoardRepository) Retrieve(c *gin.Context) {
@@ -166,5 +167,8 @@ func (r EventMessageBoardRepository) ProcessData(c *gin.Context, EventMessageBoa
 	}
 
 	isPinned := 0
+	if payload.EventMessageBoardIsPinned > 0 {
+		isPinned = payload.EventMessageBoardIsPinned
+	}
 	EventMessageBoard.EventMessageBoardIsPinned = &isPinned
 }

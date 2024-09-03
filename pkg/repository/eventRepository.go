@@ -7,6 +7,7 @@ import (
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
 	"oosa_rewild/internal/models"
+	"oosa_rewild/pkg/openweather"
 	"oosa_rewild/pkg/service"
 	"time"
 
@@ -170,10 +171,10 @@ func (r EventRepository) Create(c *gin.Context) {
 		payload.EventsLng = lng
 	}
 
-	/*openWeather := openweather.OpenWeatherRepository{}.Forecast(c, payload.EventsLat, payload.EventsLng)*/
+	openWeather := openweather.OpenWeatherRepository{}.Forecast(c, payload.EventsLat, payload.EventsLng)
 	insert := models.Events{
-		//EventsCityId:    openWeather.City.Id,
-		//EventsCreatedBy: userDetail.UsersId,
+		EventsCityId:    openWeather.City.Id,
+		EventsCreatedBy: userDetail.UsersId,
 		EventsCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
