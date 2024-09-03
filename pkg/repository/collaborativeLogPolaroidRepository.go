@@ -8,6 +8,7 @@ import (
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
 	"oosa_rewild/internal/models"
+	"strconv"
 	"time"
 
 	exif "github.com/dsoprea/go-exif/v3"
@@ -79,6 +80,13 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 	var Events models.Events
 	err := CollaborativeLogRepository{}.ReadOne(c, &Events)
 	if err != nil {
+		return
+	}
+
+	countPolaroid := r.CountTotalPolaroids(Events.EventsId)
+	fmt.Println("countPolaroid", countPolaroid)
+	if countPolaroid >= config.APP_LIMIT.EventPolaroidLimit {
+		helpers.ResponseBadRequestError(c, "Unable to add more polaroids. Maximum allowed: "+strconv.Itoa(int(countPolaroid)))
 		return
 	}
 
@@ -158,18 +166,18 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 		lng = deg.Decimal()
 	}
 
-	/*cloudflare := CloudflareRepository{}
+	cloudflare := CloudflareRepository{}
 	cloudflareResponse, postErr := cloudflare.Post(c, file)
 	if postErr != nil {
 		helpers.ResponseBadRequestError(c, postErr.Error())
 		return
 	}
-	fileName := cloudflare.ImageDelivery(cloudflareResponse.Result.Id, "public")*/
+	fileName := cloudflare.ImageDelivery(cloudflareResponse.Result.Id, "public")
 
 	userDetail := helpers.GetAuthUser(c)
 	insert := models.EventPolaroids{
-		EventPolaroidsEvent: Events.EventsId,
-		// EventPolaroidsUrl:       fileName,
+		EventPolaroidsEvent:     Events.EventsId,
+		EventPolaroidsUrl:       fileName,
 		EventPolaroidsLat:       lat,
 		EventPolaroidsLng:       lng,
 		EventPolaroidsMessage:   payload.EventPolaroidsMessage,
@@ -187,4 +195,13 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 	var EventPolaroids models.EventPolaroids
 	config.DB.Collection("EventPolaroids").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&EventPolaroids)
 	c.JSON(http.StatusOK, EventPolaroids)
+}
+
+func (r CollaborativeLogPolaroidRepository) CountTotalPolaroids(eventId primitive.ObjectID) int64 {
+	filter := bson.D{{Key: "event_polaroids_event", Value: eventId}}
+	count, err := config.DB.Collection("EventPolaroids").CountDocuments(context.TODO(), filter)
+	if err != nil {
+		return 0
+	}
+	return count
 }

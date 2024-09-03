@@ -1,7 +1,21 @@
+# CHANGELOG 1.1.10
+## Changes
+- 1.4.1 - POST /rewilding pocket list valid check, check if data is available from google location (dont show data if not available)
+- _E1.6 - Pinned message
+
+# CHANGELOG 1.1.9
+## Changes
+- Experience 3.3.1.1.1.1d ~ 3.3.1.1.1.1e
+- Maximum polaroids (3x) 3.3.1 ~ 3.3.1g
+- Past event date 3.3.2 ~ 3.3.2a
+- General fixes to creating event to use one struct
+
 # CHANGELOG 1.1.8
+## Changes
 - POST event/{id}/schedule one day event bug fix
 
 # CHANGELOG 1.1.7
+## Changes
 - POST/PUT event missing event type
 - Set events_participant_limit & events_payment_fee to 0
 - Fix PUT event/{id} response

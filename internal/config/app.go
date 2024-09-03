@@ -26,11 +26,11 @@ type AppConfig struct {
 	ClourdlareImageDeliveryUrl string
 	OpenWeather                string
 	OpenWeatherApiKey          string
-	EventPolaroidLimit         int
 }
 
 type AppLimit struct {
-	PocketList int
+	PocketList         int
+	EventPolaroidLimit int64
 }
 
 var APP AppConfig
@@ -61,11 +61,11 @@ func InitialiseConfig() {
 	APP.OpenWeather = os.Getenv("OPENWEATHER_API_BASE_URL")
 	APP.OpenWeatherApiKey = os.Getenv("OPENWEATHER_API_KEY")
 
-	polaroidLimit, err := strconv.Atoi(os.Getenv("EVENT_POLAROID_LIMIT"))
+	polaroidLimit, err := strconv.ParseInt(os.Getenv("EVENT_POLAROID_LIMIT"), 10, 64)
 	if err == nil {
-		APP.EventPolaroidLimit = polaroidLimit
+		APP_LIMIT.EventPolaroidLimit = polaroidLimit
 	} else {
-		APP.EventPolaroidLimit = 0
+		APP_LIMIT.EventPolaroidLimit = 0
 	}
 
 	APP_LIMIT.PocketList = 100

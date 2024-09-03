@@ -147,6 +147,25 @@ func (r RewildingRepository) Create(c *gin.Context) {
 	files := form.File["rewilding_photo[]"]
 	var RewildingPhotos []models.RewildingPhotos
 
+	if len(payload.RewildingPocketList) > 0 {
+		var PocketLists []models.PocketLists
+		orFilter := []bson.M{}
+		for _, v := range payload.RewildingPocketList {
+			orFilter = append(orFilter, bson.M{"_id": helpers.StringToPrimitiveObjId(v)})
+		}
+		filter := bson.D{
+			{Key: "$or", Value: orFilter},
+		}
+
+		cursor, _ := config.DB.Collection("PocketLists").Find(context.TODO(), filter)
+		cursor.All(context.TODO(), &PocketLists)
+
+		if len(PocketLists) != len(payload.RewildingPocketList) {
+			helpers.ResponseError(c, "Invalid pocket list")
+			return
+		}
+	}
+
 	for _, file := range files {
 		_, validateErr := helpers.ValidatePhoto(c, file, true)
 

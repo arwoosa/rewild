@@ -63,7 +63,9 @@ func GooglePlacesToLocationArray(addresses []maps.AddressComponent) []string {
 	key := []string{"administrative_area_level_2", "administrative_area_level_1", "country"}
 	for _, v := range key {
 		longName, _ := GooglePlacesGetArea(addresses, v)
-		loc = append(loc, longName)
+		if longName != "" {
+			loc = append(loc, longName)
+		}
 	}
 	return loc
 }
