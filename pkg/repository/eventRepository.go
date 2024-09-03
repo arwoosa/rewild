@@ -19,41 +19,23 @@ import (
 
 type EventRepository struct{}
 type EventRequest struct {
-	EventsDate             string  `json:"events_date" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
-	EventsDateEnd          string  `json:"events_date_end" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
-	EventsDeadline         string  `json:"events_deadline" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
-	EventsName             string  `json:"events_name" validate:"required"`
-	EventsPlace            string  `json:"events_place" validate:"required_without=EventsRewilding"`
-	EventsRewilding        string  `json:"events_rewilding" validate:"required_without=EventsPlace"`
-	EventsType             string  `json:"events_type" validate:"required"`
-	EventsParticipantLimit int     `json:"events_participant_limit"`
-	EventsPaymentRequired  int     `json:"events_payment_required" default:"0"`
-	EventsPaymentFee       float64 `json:"events_payment_fee"`
-	EventsRequiresApproval int     `json:"events_requires_approval" default:"0"`
-	EventsLat              float64 `json:"events_lat" validate:"required_without_all=EventsPlace EventsRewilding"`
-	EventsLng              float64 `json:"events_lng" validate:"required_without_all=EventsPlace EventsRewilding"`
-	EventsMeetingPointLat  float64 `json:"events_meeting_point_lat" validate:"required"`
-	EventsMeetingPointLng  float64 `json:"events_meeting_point_lng" validate:"required"`
-	EventsMeetingPointName string  `json:"events_meeting_point_name" validate:"required"`
-}
-
-type EventFormDataRequest struct {
-	EventsDate             string  `form:"events_date" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
-	EventsDateEnd          string  `form:"events_date_end" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
-	EventsDeadline         string  `form:"events_deadline" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
-	EventsName             string  `form:"events_name" validate:"required"`
-	EventsPlace            string  `form:"events_place" validate:"required_without=EventsRewilding"`
-	EventsRewilding        string  `form:"events_rewilding" validate:"required_without=EventsPlace"`
-	EventsType             string  `form:"events_type" validate:"required"`
-	EventsParticipantLimit int     `form:"events_participant_limit"`
-	EventsPaymentRequired  int     `form:"events_payment_required" default:"0"`
-	EventsPaymentFee       float64 `form:"events_payment_fee"`
-	EventsRequiresApproval int     `form:"events_requires_approval" default:"0"`
-	EventsLat              float64 `form:"events_lat" validate:"required_without_all=EventsPlace EventsRewilding"`
-	EventsLng              float64 `form:"events_lng" validate:"required_without_all=EventsPlace EventsRewilding"`
-	EventsMeetingPointLat  float64 `form:"events_meeting_point_lat" validate:"required"`
-	EventsMeetingPointLng  float64 `form:"events_meeting_point_lng" validate:"required"`
-	EventsMeetingPointName string  `form:"events_meeting_point_name" validate:"required"`
+	EventsDate             string   `json:"events_date" form:"events_date" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
+	EventsDateEnd          string   `json:"events_date_end" form:"events_date_end" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
+	EventsDeadline         string   `json:"events_deadline" form:"events_deadline" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
+	EventsName             string   `json:"events_name" form:"events_name" validate:"required"`
+	EventsPlace            string   `json:"events_place" form:"events_place" validate:"required_without=EventsRewilding"`
+	EventsRewilding        string   `json:"events_rewilding" form:"events_rewilding" validate:"required_without=EventsPlace"`
+	EventsType             string   `json:"events_type" form:"events_type" validate:"required"`
+	EventsParticipantLimit int      `json:"events_participant_limit" form:"events_participant_limit"`
+	EventsPaymentRequired  int      `json:"events_payment_required" form:"events_payment_required" default:"0"`
+	EventsPaymentFee       float64  `json:"events_payment_fee" form:"events_payment_fee"`
+	EventsRequiresApproval int      `json:"events_requires_approval" form:"events_requires_approval" default:"0"`
+	EventsLat              float64  `json:"events_lat" form:"events_lat" validate:"required_without_all=EventsPlace EventsRewilding"`
+	EventsLng              float64  `json:"events_lng" form:"events_lng" validate:"required_without_all=EventsPlace EventsRewilding"`
+	EventsMeetingPointLat  float64  `json:"events_meeting_point_lat" form:"events_meeting_point_lat" validate:"required"`
+	EventsMeetingPointLng  float64  `json:"events_meeting_point_lng" form:"events_meeting_point_lng" validate:"required"`
+	EventsMeetingPointName string   `json:"events_meeting_point_name" form:"events_meeting_point_name" validate:"required"`
+	EventsParticipants     []string `json:"events_participants" form:"events_participants"`
 }
 
 func (r EventRepository) Retrieve(c *gin.Context) {
@@ -150,11 +132,14 @@ func (r EventRepository) RetrieveParticipantDetails(results []models.Events) []m
 
 func (r EventRepository) Create(c *gin.Context) {
 	userDetail := helpers.GetAuthUser(c)
-	var payload EventFormDataRequest
+	var payload EventRequest
 	validateError := helpers.ValidateForm(c, &payload)
 	if validateError != nil {
 		return
 	}
+
+	eventStartDate := helpers.StringToDateTime(payload.EventsDate)
+	isPastEvent := eventStartDate.Before(time.Now())
 
 	// lat := helpers.FloatToDecimal128(payload.EventsLat)
 	// lng := helpers.FloatToDecimal128(payload.EventsLng)
@@ -188,21 +173,6 @@ func (r EventRepository) Create(c *gin.Context) {
 
 	openWeather := openweather.OpenWeatherRepository{}.Forecast(c, payload.EventsLat, payload.EventsLng)
 	insert := models.Events{
-		// EventsDate:      helpers.StringToPrimitiveDateTime(payload.EventsDate),
-		// EventsDateEnd:   helpers.StringToPrimitiveDateTime(payload.EventsDateEnd),
-		// EventsDeadline:  helpers.StringToPrimitiveDateTime(payload.EventsDeadline),
-		// EventsName:      payload.EventsName,
-		// EventsRewilding: helpers.StringToPrimitiveObjId(payload.EventsRewilding),
-		// EventsPlace: payload.EventsPlace,
-		// EventsType:             "",
-		// EventsParticipantLimit: payload.EventsParticipantLimit,
-		// EventsPaymentRequired:  payload.EventsPaymentRequired,
-		// EventsPaymentFee:       payload.EventsPaymentFee,
-		// EventsRequiresApproval: &payload.EventsRequiresApproval,
-		// EventsLat: lat,
-		// EventsLng: lng,
-		// EventsMeetingPointLat: meetingLat,
-		// EventsMeetingPointLng: meetingLng,
 		EventsCityId:    openWeather.City.Id,
 		EventsCreatedBy: userDetail.UsersId,
 		EventsCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -225,7 +195,7 @@ func (r EventRepository) Create(c *gin.Context) {
 		fileName := cloudflare.ImageDelivery(cloudflareResponse.Result.Id, "public")
 		insert.EventsPhoto = fileName
 	}
-	r.ProcessDataForm(c, &insert, payload)
+	r.ProcessData(c, &insert, payload)
 
 	result, err := config.DB.Collection("Events").InsertOne(context.TODO(), insert)
 	if err != nil {
@@ -237,14 +207,29 @@ func (r EventRepository) Create(c *gin.Context) {
 	config.DB.Collection("Events").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&Events)
 
 	// Create participant records
-	insertParticipant := models.EventParticipants{
-		EventParticipantsEvent:     Events.EventsId,
-		EventParticipantsUser:      userDetail.UsersId,
-		EventParticipantsStatus:    GetEventParticipantStatus("ACCEPTED"),
-		EventParticipantsCreatedBy: userDetail.UsersId,
-		EventParticipantsCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+	insertParticipant := []interface{}{
+		models.EventParticipants{
+			EventParticipantsEvent:     Events.EventsId,
+			EventParticipantsUser:      userDetail.UsersId,
+			EventParticipantsStatus:    GetEventParticipantStatus("ACCEPTED"),
+			EventParticipantsCreatedBy: userDetail.UsersId,
+			EventParticipantsCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		},
 	}
-	config.DB.Collection("EventParticipants").InsertOne(context.TODO(), insertParticipant)
+
+	if isPastEvent && len(payload.EventsParticipants) > 0 {
+		// Handle participant
+		for _, v := range payload.EventsParticipants {
+			insertParticipant = append(insertParticipant, models.EventParticipants{
+				EventParticipantsEvent:     Events.EventsId,
+				EventParticipantsUser:      helpers.StringToPrimitiveObjId(v),
+				EventParticipantsStatus:    GetEventParticipantStatus("ACCEPTED"),
+				EventParticipantsCreatedBy: userDetail.UsersId,
+				EventParticipantsCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+			})
+		}
+	}
+	config.DB.Collection("EventParticipants").InsertMany(context.TODO(), insertParticipant)
 
 	// Create badge record
 	helpers.BadgeEvents(c, Events.EventsId)
@@ -364,39 +349,6 @@ func (r EventRepository) Update(c *gin.Context) {
 }
 
 func (r EventRepository) ProcessData(c *gin.Context, Events *models.Events, payload EventRequest) {
-	eventsLat := payload.EventsLat
-	eventsLng := payload.EventsLng
-	meetingPointLat := payload.EventsMeetingPointLat
-	meetingPointLng := payload.EventsMeetingPointLng
-
-	eventDate := helpers.StringToPrimitiveDateTime(payload.EventsDate)
-	eventDateEnd := helpers.StringToPrimitiveDateTime(payload.EventsDateEnd)
-	eventDurationSecond := eventDateEnd.Time().Sub(eventDate.Time()).Seconds()
-
-	eventStatisticDistance := (helpers.Haversine(eventsLat, eventsLng, meetingPointLat, meetingPointLng) * 100000) / 70
-
-	Events.EventsDate = eventDate
-	Events.EventsDateEnd = eventDateEnd
-	Events.EventsDeadline = helpers.StringToPrimitiveDateTime(payload.EventsDeadline)
-	Events.EventsName = payload.EventsName
-	Events.EventsRewilding = helpers.StringToPrimitiveObjId(payload.EventsRewilding)
-	Events.EventsPlace = payload.EventsPlace
-	Events.EventsType = helpers.StringToPrimitiveObjId(payload.EventsType)
-	Events.EventsPaymentRequired = payload.EventsPaymentRequired
-	Events.EventsPaymentFee = &payload.EventsPaymentFee
-	Events.EventsRequiresApproval = &payload.EventsRequiresApproval
-	Events.EventsMeetingPointLat = meetingPointLat
-	Events.EventsMeetingPointLng = meetingPointLng
-	Events.EventsMeetingPointName = payload.EventsMeetingPointName
-	Events.EventsLat = eventsLat
-	Events.EventsLng = eventsLng
-	Events.EventsParticipantLimit = &payload.EventsParticipantLimit
-
-	Events.EventsStatisticDistance = eventStatisticDistance
-	Events.EventsStatisticTime = eventDurationSecond
-}
-
-func (r EventRepository) ProcessDataForm(c *gin.Context, Events *models.Events, payload EventFormDataRequest) {
 	eventsLat := payload.EventsLat
 	eventsLng := payload.EventsLng
 	meetingPointLat := payload.EventsMeetingPointLat

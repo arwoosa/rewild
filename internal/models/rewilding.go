@@ -6,9 +6,9 @@ import (
 
 type Rewilding struct {
 	RewildingID             primitive.ObjectID        `bson:"_id,omitempty" json:"rewilding_id"`
-	RewildingCity           string                    `bson:"rewilding_city,omitempty" json:"rewilding_city"`
-	RewildingArea           string                    `bson:"rewilding_area,omitempty" json:"rewilding_area"`
-	RewildingLocation       []string                  `bson:"rewilding_location,omitempty" json:"rewilding_location"`
+	RewildingCity           string                    `bson:"rewilding_city,omitempty" json:"rewilding_city,omitempty"`
+	RewildingArea           string                    `bson:"rewilding_area,omitempty" json:"rewilding_area,omitempty"`
+	RewildingLocation       []string                  `bson:"rewilding_location,omitempty" json:"rewilding_location,omitempty"`
 	RewildingCountryCode    string                    `bson:"rewilding_country_code,omitempty" json:"rewilding_country_code,omitempty"`
 	RewildingName           string                    `bson:"rewilding_name,omitempty" json:"rewilding_name"`
 	RewildingRating         int                       `bson:"rewilding_rating,omitempty" json:"rewilding_rating"`
