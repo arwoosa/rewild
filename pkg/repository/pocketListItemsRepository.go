@@ -8,6 +8,7 @@ import (
 	"oosa_rewild/internal/helpers"
 	"oosa_rewild/internal/models"
 	"oosa_rewild/pkg/service"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -18,8 +19,9 @@ import (
 
 type PocketListItemsRepository struct{}
 type PocketListItemsRequest struct {
-	PocketListItemsPlaceId   string `json:"pocket_list_items_place_id"`
-	PocketListItemsPlaceName string `json:"pocket_list_items_place_name" validate:"required"`
+	PocketListItemsPlaceId   string `json:"pocket_list_items_place_id" validate:"required_without=PocketListItemsRewilding"`
+	PocketListItemsPlaceName string `json:"pocket_list_items_place_name" validate:"required_without=PocketListItemsRewilding"`
+	PocketListItemsRewilding string `json:"pocket_list_items_rewilding_id" validate:"required_without=PocketListItemsPlaceId"`
 }
 type PocketListItemsUpdateRequest struct {
 	PocketListItemsMst string `json:"pocket_list_items_mst"`
@@ -68,26 +70,59 @@ func (r PocketListItemsRepository) Retrieve(c *gin.Context) {
 func (r PocketListItemsRepository) Create(c *gin.Context) {
 	pocketListId := c.Param("id")
 	var payload PocketListItemsRequest
+	var PocketLists models.PocketLists
 	validateError := helpers.Validate(c, &payload)
 	if validateError != nil {
 		return
 	}
 
-	err := PocketListRepository{}.ReadOne(c, &models.PocketLists{}, "")
+	err := PocketListRepository{}.ReadOne(c, &PocketLists, "")
 	if err != nil {
 		return
 	}
 
-	places := helpers.GooglePlaceById(c, payload.PocketListItemsPlaceId)
-	if places == nil {
+	maxPocketListItems := int(config.APP_LIMIT.PocketListItems)
+	if PocketLists.PocketListsCount >= maxPocketListItems {
+		helpers.ResponseError(c, "Cannot add to pocket list. Max allowed "+strconv.Itoa(int(maxPocketListItems)))
 		return
 	}
 
-	rewildingId := service.GoogleToRewilding(c, places.Id)
-	insert := models.PocketListItems{
-		PocketListItemsMst:       helpers.StringToPrimitiveObjId(pocketListId),
-		PocketListItemsRewilding: rewildingId,
-		PocketListItemsName:      payload.PocketListItemsPlaceName,
+	var insert models.PocketListItems
+	PocketListID := helpers.StringToPrimitiveObjId(pocketListId)
+	var PocketListRewildingId primitive.ObjectID
+	var PocketListItemsPlaceName string
+
+	if payload.PocketListItemsPlaceId != "" {
+		places := helpers.GooglePlaceById(c, payload.PocketListItemsPlaceId)
+		if places == nil {
+			return
+		}
+
+		PocketListRewildingId = service.GoogleToRewilding(c, places.Id)
+		PocketListItemsPlaceName = payload.PocketListItemsPlaceName
+	} else if payload.PocketListItemsRewilding != "" {
+		var Rewilding models.Rewilding
+		err := RewildingRepository{}.GetOneRewilding(payload.PocketListItemsRewilding, &Rewilding)
+		if err == mongo.ErrNoDocuments {
+			helpers.ResponseError(c, "Invalid rewilding ID")
+			return
+		}
+
+		PocketListRewildingId = Rewilding.RewildingID
+		PocketListItemsPlaceName = Rewilding.RewildingName
+	}
+
+	checkIfAvailable := r.GetPocketListItemByMstRewildingId(PocketListID, PocketListRewildingId)
+
+	if checkIfAvailable != mongo.ErrNoDocuments {
+		helpers.ResponseError(c, PocketListItemsPlaceName+" ID available in pocket list")
+		return
+	}
+
+	insert = models.PocketListItems{
+		PocketListItemsMst:       PocketListID,
+		PocketListItemsRewilding: PocketListRewildingId,
+		PocketListItemsName:      PocketListItemsPlaceName,
 		PocketListItemsCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
@@ -169,6 +204,16 @@ func (r PocketListItemsRepository) Delete(c *gin.Context) {
 		PocketListRepository{}.UpdateCount(c, pocketListId)
 		helpers.ResultMessageSuccess(c, "Pocket list item record deleted")
 	}
+}
+
+func (r PocketListItemsRepository) GetPocketListItemByMstRewildingId(mstId primitive.ObjectID, rewildingId primitive.ObjectID) error {
+	var PocketListItems models.PocketListItems
+	filter := bson.D{
+		{Key: "pocket_list_items_mst", Value: mstId},
+		{Key: "pocket_list_items_rewilding", Value: rewildingId},
+	}
+	err := config.DB.Collection("PocketListItems").FindOne(context.TODO(), filter).Decode(&PocketListItems)
+	return err
 }
 
 /*

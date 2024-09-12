@@ -7,6 +7,7 @@ import (
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
 	"oosa_rewild/internal/models"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -42,6 +43,22 @@ func (r PocketListRepository) Create(c *gin.Context) {
 	var payload PocketListRequest
 	validateError := helpers.Validate(c, &payload)
 	if validateError != nil {
+		return
+	}
+
+	maxLenPocketListsName := int(config.APP_LIMIT.LengthPocketListName)
+	maxPocketLists := config.APP_LIMIT.PocketList
+	if maxLenPocketListsName < len(payload.PocketListsName) {
+		helpers.ResponseError(c, "Name cannot be more than "+strconv.Itoa(maxLenPocketListsName)+" characters")
+		return
+	}
+
+	opts := options.Count().SetHint("_id_")
+	filter := bson.D{{Key: "pocket_lists_user", Value: userDetail.UsersId}}
+	countPocketList, _ := config.DB.Collection("PocketLists").CountDocuments(context.TODO(), filter, opts)
+
+	if countPocketList >= maxPocketLists {
+		helpers.ResponseError(c, "Cannot create new pocket list. Max allowed "+strconv.Itoa(int(maxPocketLists)))
 		return
 	}
 

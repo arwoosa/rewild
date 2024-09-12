@@ -82,5 +82,10 @@ func EventRoutes(r *gin.Engine) *gin.Engine {
 		invitation.PUT("", repoInvitation.Update)
 	}
 
+	join := detail.Group("/join", middleware.AuthMiddleware())
+	{
+		join.POST("", repoInvitation.Join)
+	}
+
 	return r
 }

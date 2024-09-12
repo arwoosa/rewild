@@ -1,3 +1,13 @@
+# CHANGELOG 1.1.11
+## Changes
+- _E1.8, _E1.8a, _E1.8.1 - Event join message
+- 1.0a, 1.0b, 1.0c, 1.0d, 1.0e, 1.0f, 1.0g, 1.0h - Event filter date
+- _A1a - Pocket list max length
+- E1 ~ E1.2.1.1.1.1 - Invitation template and send to user
+- 3.4 ~ 3.4c - Achievement routes
+- 1.5.1a.2 ~ 1.5.1a.3 - Pocket List add rewilding spot
+- 2.0 - GET /my/event : Deleted events still appear
+
 # CHANGELOG 1.1.10
 ## Changes
 - 1.4.1 - POST /rewilding pocket list valid check, check if data is available from google location (dont show data if not available)
