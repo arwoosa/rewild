@@ -15,6 +15,7 @@ func RegisterRoutes() *gin.Engine {
 	PocketListRoutes(r)
 	EventUserRoutes(r)
 	EventRoutes(r)
+	AchievementRoutes(r)
 	EventInvitationRoutes(r)
 	CollaborativeLogRoutes(r)
 	FlickrRoutes(r)
@@ -22,6 +23,7 @@ func RegisterRoutes() *gin.Engine {
 	LinkRoutes(r)
 	ReferenceRoutes(r)
 	TestRoutes(r)
+	UserRoutes(r)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return r

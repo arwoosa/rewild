@@ -32,6 +32,7 @@ type EventRequest struct {
 	EventsRequiresApproval int      `json:"events_requires_approval" form:"events_requires_approval" default:"0"`
 	EventsLat              float64  `json:"events_lat" form:"events_lat" validate:"required_without_all=EventsPlace EventsRewilding"`
 	EventsLng              float64  `json:"events_lng" form:"events_lng" validate:"required_without_all=EventsPlace EventsRewilding"`
+	EventsCountryCode      string   `json:"events_country_code" form:"events_country_code"`
 	EventsMeetingPointLat  float64  `json:"events_meeting_point_lat" form:"events_meeting_point_lat" validate:"required"`
 	EventsMeetingPointLng  float64  `json:"events_meeting_point_lng" form:"events_meeting_point_lng" validate:"required"`
 	EventsMeetingPointName string   `json:"events_meeting_point_name" form:"events_meeting_point_name" validate:"required"`
@@ -40,13 +41,50 @@ type EventRequest struct {
 
 func (r EventRepository) Retrieve(c *gin.Context) {
 	var results []models.Events
+
+	eventPeriodBegin := c.Query("event_period_begin")
+	eventPeriodEnd := c.Query("event_period_end")
+
+	var eventBegin time.Time
+	var eventEnd time.Time
+
+	match := bson.M{
+		"events_deleted": bson.M{"$exists": false},
+	}
+
+	if eventPeriodBegin != "" && eventPeriodEnd == "" {
+		eventBegin = helpers.StringToDatetime(eventPeriodBegin + " 00:00:00")
+		eventEnd = helpers.StringToDatetime(eventPeriodBegin + " 23:59:59")
+		match["events_date"] = bson.M{
+			"$gte": primitive.NewDateTimeFromTime(eventBegin),
+			"$lte": primitive.NewDateTimeFromTime(eventEnd),
+		}
+
+	} else if eventPeriodBegin == "" && eventPeriodEnd != "" {
+		eventBegin = helpers.StringToDatetime(eventPeriodEnd + " 00:00:00")
+		eventEnd = helpers.StringToDatetime(eventPeriodEnd + " 23:59:59")
+		match["events_date"] = bson.M{
+			"$gte": primitive.NewDateTimeFromTime(eventBegin),
+			"$lte": primitive.NewDateTimeFromTime(eventEnd),
+		}
+
+	} else if eventPeriodBegin != "" && eventPeriodEnd != "" {
+		eventBegin = helpers.StringToDatetime(eventPeriodBegin + " 00:00:00")
+		eventEnd = helpers.StringToDatetime(eventPeriodEnd + " 23:59:59")
+		match["events_date"] = bson.M{
+			"$gte": primitive.NewDateTimeFromTime(eventBegin),
+			"$lte": primitive.NewDateTimeFromTime(eventEnd),
+		}
+	} else {
+		match["events_date"] = bson.M{"$gte": primitive.NewDateTimeFromTime(time.Now())}
+	}
+
+	filterPeriod := bson.D{{
+		Key: "$match", Value: match,
+	}}
+
 	agg := mongo.Pipeline{
-		bson.D{{
-			Key: "$match", Value: bson.M{
-				"events_date":    bson.M{"$gte": primitive.NewDateTimeFromTime(time.Now())},
-				"events_deleted": bson.M{"$exists": false},
-			},
-		}},
+		filterPeriod,
 		bson.D{{
 			Key: "$lookup", Value: bson.M{
 				"from":         "Users",
@@ -146,7 +184,6 @@ func (r EventRepository) Create(c *gin.Context) {
 
 	// meetingLat := helpers.FloatToDecimal128(payload.EventsMeetingPointLat)
 	// meetingLng := helpers.FloatToDecimal128(payload.EventsMeetingPointLng)
-
 	if payload.EventsPlace != "" {
 		rewildingId := service.GoogleToRewilding(c, payload.EventsPlace)
 		if helpers.MongoZeroID(rewildingId) {
@@ -169,6 +206,7 @@ func (r EventRepository) Create(c *gin.Context) {
 		}
 		payload.EventsLat = lat
 		payload.EventsLng = lng
+		payload.EventsCountryCode = rewildingData.RewildingCountryCode
 	}
 
 	openWeather := openweather.OpenWeatherRepository{}.Forecast(c, payload.EventsLat, payload.EventsLng)
@@ -376,6 +414,7 @@ func (r EventRepository) ProcessData(c *gin.Context, Events *models.Events, payl
 	Events.EventsLat = eventsLat
 	Events.EventsLng = eventsLng
 	Events.EventsParticipantLimit = &payload.EventsParticipantLimit
+	Events.EventsCountryCode = payload.EventsCountryCode
 
 	Events.EventsStatisticDistance = eventStatisticDistance
 	Events.EventsStatisticTime = eventDurationSecond
