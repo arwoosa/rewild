@@ -8,6 +8,8 @@ import (
 	"oosa_rewild/internal/helpers"
 	"oosa_rewild/internal/middleware"
 	"oosa_rewild/internal/models"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -119,6 +121,12 @@ func (r RewildingRepository) Read(c *gin.Context) {
 	c.JSON(200, Rewilding)
 }
 
+func (r RewildingRepository) GetOneRewilding(stringId string, Rewilding *models.Rewilding) error {
+	id, _ := primitive.ObjectIDFromHex(stringId)
+	err := config.DB.Collection("Rewilding").FindOne(context.TODO(), bson.D{{Key: "_id", Value: id}}).Decode(&Rewilding)
+	return err
+}
+
 func (r RewildingRepository) Create(c *gin.Context) {
 	userDetail := helpers.GetAuthUser(c)
 	var payload RewildingFormDataRequest
@@ -149,6 +157,7 @@ func (r RewildingRepository) Create(c *gin.Context) {
 
 	if len(payload.RewildingPocketList) > 0 {
 		var PocketLists []models.PocketLists
+		PocketListErr := []string{}
 		orFilter := []bson.M{}
 		for _, v := range payload.RewildingPocketList {
 			orFilter = append(orFilter, bson.M{"_id": helpers.StringToPrimitiveObjId(v)})
@@ -162,6 +171,19 @@ func (r RewildingRepository) Create(c *gin.Context) {
 
 		if len(PocketLists) != len(payload.RewildingPocketList) {
 			helpers.ResponseError(c, "Invalid pocket list")
+			return
+		}
+
+		for _, v := range PocketLists {
+			limit := int(config.APP_LIMIT.PocketListItems)
+			if v.PocketListsCount >= limit {
+				errMessage := "Cannot add to " + v.PocketListsName + " has reached limit of " + strconv.Itoa(limit)
+				PocketListErr = append(PocketListErr, errMessage)
+			}
+		}
+
+		if len(PocketListErr) > 0 {
+			helpers.ResponseError(c, strings.Join(PocketListErr, ", "))
 			return
 		}
 	}

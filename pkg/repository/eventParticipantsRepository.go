@@ -25,6 +25,7 @@ func GetEventParticipantStatus(status string) int64 {
 		"PENDING":  0,
 		"ACCEPTED": 1,
 		"REJECTED": 2,
+		"APPLIED":  3,
 	}
 	return ParticipantStatus[status]
 }
@@ -69,7 +70,8 @@ func (r EventParticipantsRepository) Retrieve(c *gin.Context) {
 }
 
 func (r EventParticipantsRepository) Create(c *gin.Context) {
-	err := EventRepository{}.ReadOne(c, &models.Events{})
+	var Event models.Events
+	err := EventRepository{}.ReadOne(c, &Event)
 	if err != nil {
 		return
 	}
@@ -106,6 +108,10 @@ func (r EventParticipantsRepository) Create(c *gin.Context) {
 		EventParticipantsStatus:    GetEventParticipantStatus("PENDING"),
 		EventParticipantsCreatedBy: userDetail.UsersId,
 		EventParticipantsCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		EventParticipantsInvitation: &models.EventParticipantInvitation{
+			InvitationMessage:  Event.EventsInvitationMessage,
+			InvitationTemplate: Event.EventsInvitationTemplate,
+		},
 	}
 
 	result, err := config.DB.Collection("EventParticipants").InsertOne(context.TODO(), insert)

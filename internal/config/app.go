@@ -29,8 +29,10 @@ type AppConfig struct {
 }
 
 type AppLimit struct {
-	PocketList         int
-	EventPolaroidLimit int64
+	PocketList           int64
+	PocketListItems      int64
+	EventPolaroidLimit   int64
+	LengthPocketListName int64
 }
 
 var APP AppConfig
@@ -61,12 +63,25 @@ func InitialiseConfig() {
 	APP.OpenWeather = os.Getenv("OPENWEATHER_API_BASE_URL")
 	APP.OpenWeatherApiKey = os.Getenv("OPENWEATHER_API_KEY")
 
+	APP_LIMIT.EventPolaroidLimit = 0
+	APP_LIMIT.PocketList = 0
+	APP_LIMIT.PocketListItems = 0
+	APP_LIMIT.LengthPocketListName = 0
+
 	polaroidLimit, err := strconv.ParseInt(os.Getenv("EVENT_POLAROID_LIMIT"), 10, 64)
+	pocketListLimit, pocketlistLimitErr := strconv.ParseInt(os.Getenv("POCKET_LIST_LIMIT"), 10, 64)
+	pocketListitemsLimit, pocketlistitemsLimitErr := strconv.ParseInt(os.Getenv("POCKET_LIST_ITEMS_LIMIT"), 10, 64)
+	lengthPocketListName, lengthPocketListNameErr := strconv.ParseInt(os.Getenv("LENGTH_POCKET_LIST_NAME"), 10, 64)
 	if err == nil {
 		APP_LIMIT.EventPolaroidLimit = polaroidLimit
-	} else {
-		APP_LIMIT.EventPolaroidLimit = 0
 	}
-
-	APP_LIMIT.PocketList = 100
+	if pocketlistLimitErr == nil {
+		APP_LIMIT.PocketList = pocketListLimit
+	}
+	if pocketlistitemsLimitErr == nil {
+		APP_LIMIT.PocketListItems = pocketListitemsLimit
+	}
+	if lengthPocketListNameErr == nil {
+		APP_LIMIT.LengthPocketListName = lengthPocketListName
+	}
 }

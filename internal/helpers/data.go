@@ -58,3 +58,8 @@ func TimeIsBetween(t, min, max time.Time) bool {
 	}
 	return (t.Equal(min) || t.After(min)) && (t.Equal(max) || t.Before(max))
 }
+
+func StringToDatetime(value string) time.Time {
+	dt, _ := time.Parse("2006-01-02 15:04:05", value)
+	return dt
+}

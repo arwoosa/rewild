@@ -12,6 +12,7 @@ type Events struct {
 	EventsPlace                string               `bson:"events_place,omitempty" json:"events_place"`
 	EventsCityId               int                  `bson:"events_city_id,omitempty" json:"events_city_id"`
 	EventsType                 primitive.ObjectID   `bson:"events_type,omitempty" json:"events_type,omitempty"`
+	EventsInvitationTemplate   string               `bson:"events_invitation_template,omitempty" json:"events_invitation_template"`
 	EventsInvitationMessage    string               `bson:"events_invitation_message,omitempty" json:"events_invitation_message"`
 	EventsParticipantLimit     *int                 `bson:"events_participant_limit,omitempty" json:"events_participant_limit"`
 	EventsPaymentRequired      int                  `bson:"events_payment_required,omitempty" json:"events_payment_required"`
@@ -20,6 +21,7 @@ type Events struct {
 	EventsQuestionnaireLink    string               `bson:"events_questionnaire_link,omitempty" json:"events_questionnaire_link"`
 	EventsLat                  float64              `bson:"events_lat,omitempty" json:"events_lat"`
 	EventsLng                  float64              `bson:"events_lng,omitempty" json:"events_lng"`
+	EventsCountryCode          string               `bson:"events_country_code,omitempty" json:"events_country_code"`
 	EventsMeetingPointLat      float64              `bson:"events_meeting_point_lat,omitempty" json:"events_meeting_point_lat"`
 	EventsMeetingPointLng      float64              `bson:"events_meeting_point_lng,omitempty" json:"events_meeting_point_lng"`
 	EventsMeetingPointName     string               `bson:"events_meeting_point_name,omitempty" json:"events_meeting_point_name"`
@@ -40,4 +42,9 @@ type Events struct {
 type EventParticipantObj struct {
 	LatestTreeUser *[]UsersAgg `json:"latest_tree_user"`
 	RemainNumber   int         `json:"remain_number"`
+}
+
+type EventsCountryCount struct {
+	EventsCountryCode  string `bson:"_id,omitempty" json:"events_country_code"`
+	EventsCountryCount int    `bson:"events_country_count,omitempty" json:"events_country_count"`
 }

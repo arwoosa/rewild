@@ -14,11 +14,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type UserEventRepository struct{}
+type OosaUserEventRepository struct{}
 
-func (r UserEventRepository) Retrieve(c *gin.Context) {
+func (r OosaUserEventRepository) Retrieve(c *gin.Context) {
 	isPast := c.Query("past")
-	countryCode := c.Query("country_code")
 	var results []models.Events
 	userDetail := helpers.GetAuthUser(c)
 	currentTime := primitive.NewDateTimeFromTime(time.Now())
@@ -36,17 +35,12 @@ func (r UserEventRepository) Retrieve(c *gin.Context) {
 
 	match := bson.M{
 		"EventParticipants.event_participants_user": userDetail.UsersId,
-		"events_deleted": bson.M{"$exists": false},
 	}
 
 	if isPast != "" {
 		match["events_date"] = bson.M{"$lt": currentTime}
 	} else {
 		match["events_date"] = bson.M{"$gte": currentTime}
-	}
-
-	if countryCode != "" {
-		match["events_country_code"] = countryCode
 	}
 
 	filterStage := bson.D{{Key: "$match", Value: match}}
