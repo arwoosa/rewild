@@ -38,7 +38,7 @@ func (r CollaborativeLogExperienceRepository) Create(c *gin.Context) {
 
 	EventParticipants.EventParticipantsExperience = payload.EventsExperience
 	updFilter := bson.D{
-		{Key: "_id", Value: EventParticipants.EventParticipantsExperience},
+		{Key: "_id", Value: EventParticipants.EventParticipantsId},
 	}
 	upd := bson.D{{Key: "$set", Value: EventParticipants}}
 	config.DB.Collection("EventParticipants").UpdateOne(context.TODO(), updFilter, upd)
