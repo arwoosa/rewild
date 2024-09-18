@@ -1,3 +1,9 @@
+# CHANGELOG 1.1.12
+## Changes
+- _O1.2 - Get user base camp
+- _O1.1, _O1.1a, _O1.1b, _O1.2 - Other user page
+- 3.3.1.1.1.1d - Fix to experience
+
 # CHANGELOG 1.1.11
 ## Changes
 - _E1.8, _E1.8a, _E1.8.1 - Event join message

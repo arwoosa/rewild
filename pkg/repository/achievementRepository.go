@@ -17,9 +17,24 @@ import (
 type AchievementRepository struct{}
 
 func (t AchievementRepository) Retrieve(c *gin.Context) {
-
 	var results []models.EventsCountryCount
 	userDetail := helpers.GetAuthUser(c)
+
+	err := t.GetAchievementsByUserId(c, userDetail.UsersId, &results)
+	if err != nil {
+		helpers.ResponseError(c, err.Error())
+		return
+	}
+
+	if len(results) == 0 {
+		helpers.ResponseNoData(c, "No Data")
+		return
+	}
+
+	c.JSON(http.StatusOK, results)
+}
+
+func (t AchievementRepository) GetAchievementsByUserId(c *gin.Context, userId primitive.ObjectID, results *[]models.EventsCountryCount) error {
 	currentTime := primitive.NewDateTimeFromTime(time.Now())
 	lookupStage := bson.D{{Key: "$lookup", Value: bson.M{
 		"from":         "EventParticipants",
@@ -32,7 +47,7 @@ func (t AchievementRepository) Retrieve(c *gin.Context) {
 	}
 
 	match := bson.M{
-		"EventParticipants.event_participants_user": userDetail.UsersId,
+		"EventParticipants.event_participants_user": userId,
 		"events_date": bson.M{"$lt": currentTime},
 	}
 
@@ -52,17 +67,7 @@ func (t AchievementRepository) Retrieve(c *gin.Context) {
 	}
 
 	cursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), pipeline)
-	cursor.All(context.TODO(), &results)
+	cursor.All(context.TODO(), results)
 
-	if err != nil {
-		helpers.ResponseError(c, err.Error())
-		return
-	}
-
-	if len(results) == 0 {
-		helpers.ResponseNoData(c, "No Data")
-		return
-	}
-
-	c.JSON(http.StatusOK, results)
+	return err
 }
