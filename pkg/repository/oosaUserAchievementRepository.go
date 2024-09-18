@@ -9,16 +9,16 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type OosaUserEventRepository struct{}
+type OosaUserAchievementRepository struct{}
 
-func (r OosaUserEventRepository) Retrieve(c *gin.Context) {
+func (r OosaUserAchievementRepository) Retrieve(c *gin.Context) {
+	var results []models.EventsCountryCount
 	userIdVal := c.Param("id")
 	userId, _ := primitive.ObjectIDFromHex(userIdVal)
-	var results []models.Events
 
-	err := UserEventRepository{}.GetEventByUserId(c, userId, &results)
-
+	err := AchievementRepository{}.GetAchievementsByUserId(c, userId, &results)
 	if err != nil {
+		helpers.ResponseError(c, err.Error())
 		return
 	}
 

@@ -17,10 +17,26 @@ import (
 type UserEventRepository struct{}
 
 func (r UserEventRepository) Retrieve(c *gin.Context) {
-	isPast := c.Query("past")
-	countryCode := c.Query("country_code")
 	var results []models.Events
 	userDetail := helpers.GetAuthUser(c)
+
+	err := r.GetEventByUserId(c, userDetail.UsersId, &results)
+
+	if err != nil {
+		return
+	}
+
+	if len(results) == 0 {
+		helpers.ResponseNoData(c, "No Data")
+		return
+	}
+
+	c.JSON(http.StatusOK, results)
+}
+
+func (r UserEventRepository) GetEventByUserId(c *gin.Context, userId primitive.ObjectID, Events *[]models.Events) error {
+	isPast := c.Query("past")
+	countryCode := c.Query("country_code")
 	currentTime := primitive.NewDateTimeFromTime(time.Now())
 
 	// cursor, err := config.DB.Collection("Events").Find(context.TODO(), filter)
@@ -35,7 +51,7 @@ func (r UserEventRepository) Retrieve(c *gin.Context) {
 	}
 
 	match := bson.M{
-		"EventParticipants.event_participants_user": userDetail.UsersId,
+		"EventParticipants.event_participants_user": userId,
 		"events_deleted": bson.M{"$exists": false},
 	}
 
@@ -70,17 +86,11 @@ func (r UserEventRepository) Retrieve(c *gin.Context) {
 	}
 
 	cursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), pipeline)
-	cursor.All(context.TODO(), &results)
+	cursor.All(context.TODO(), Events)
 
-	if err != nil {
-		return
+	if len(*Events) > 0 {
+		*Events = EventRepository{}.RetrieveParticipantDetails(*Events)
 	}
 
-	if len(results) == 0 {
-		helpers.ResponseNoData(c, "No Data")
-		return
-	}
-
-	results = EventRepository{}.RetrieveParticipantDetails(results)
-	c.JSON(http.StatusOK, results)
+	return err
 }
