@@ -36,6 +36,16 @@ func StringToPrimitiveDateTime(value string) primitive.DateTime {
 	return primitive.NewDateTimeFromTime(time)
 }
 
+func StringDateToPrimitiveDateTime(value string) primitive.DateTime {
+	time := StringDateToDateTime(value)
+	return primitive.NewDateTimeFromTime(time)
+}
+
+func StringDateToDateTime(value string) time.Time {
+	date, _ := time.Parse("2006-01-02", value)
+	return date
+}
+
 func StringToDateTime(value string) time.Time {
 	date, _ := time.Parse("2006-01-02T15:04:05Z07:00", value)
 	return date
