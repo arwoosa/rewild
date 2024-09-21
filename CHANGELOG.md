@@ -1,3 +1,8 @@
+# CHANGELOG 1.1.14
+## Changes
+- 3.1 - Removal of Auth Guard
+- 2.1c - Update regex check on event name (alphanumeric, chinese, space)
+
 # CHANGELOG 1.1.13
 ## Changes
 - 4.1 - News
