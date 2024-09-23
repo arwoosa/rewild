@@ -5,6 +5,8 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"regexp"
+	"strconv"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"
@@ -115,4 +117,15 @@ func ValidatePhoto(c *gin.Context, file *multipart.FileHeader, required bool) (*
 	}
 
 	return file, nil
+}
+
+func ValidateStringStyle1(stringTest string, stringLength int) (bool, string) {
+	// Alphanumeric, Chinese Characters and Space
+	maxStringLength := strconv.Itoa(int(stringLength))
+	regexString := "^[\u4e00-\u9fa5a-zA-Z0-9 ]{1," + maxStringLength + "}$"
+	match, _ := regexp.MatchString(regexString, stringTest)
+	if !match {
+		return false, "latin and chinese characters with max length of " + maxStringLength
+	}
+	return true, ""
 }

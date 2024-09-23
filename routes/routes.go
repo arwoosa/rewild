@@ -24,6 +24,7 @@ func RegisterRoutes() *gin.Engine {
 	ReferenceRoutes(r)
 	TestRoutes(r)
 	UserRoutes(r)
+	NewsRoutes(r)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return r
