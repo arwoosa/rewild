@@ -176,6 +176,12 @@ func (r EventRepository) Create(c *gin.Context) {
 		return
 	}
 
+	match, errMessage := helpers.ValidateStringStyle1(payload.EventsName, int(config.APP_LIMIT.LengthEventName))
+	if !match {
+		helpers.ResponseError(c, "Name can only contain "+errMessage)
+		return
+	}
+
 	eventStartDate := helpers.StringToDateTime(payload.EventsDate)
 	isPastEvent := eventStartDate.Before(time.Now())
 
@@ -365,6 +371,12 @@ func (r EventRepository) Update(c *gin.Context) {
 
 	err := r.ReadOne(c, &Events)
 	if err == nil {
+		match, errMessage := helpers.ValidateStringStyle1(payload.EventsName, int(config.APP_LIMIT.LengthEventName))
+		if !match {
+			helpers.ResponseError(c, "Name can only contain "+errMessage)
+			return
+		}
+
 		Events.EventsUpdatedBy = userDetail.UsersId
 		Events.EventsUpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 

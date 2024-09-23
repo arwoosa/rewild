@@ -33,6 +33,8 @@ type AppLimit struct {
 	PocketListItems      int64
 	EventPolaroidLimit   int64
 	LengthPocketListName int64
+	LengthEventName      int64
+	MinimumTopRanking    int64
 }
 
 var APP AppConfig
@@ -67,11 +69,15 @@ func InitialiseConfig() {
 	APP_LIMIT.PocketList = 0
 	APP_LIMIT.PocketListItems = 0
 	APP_LIMIT.LengthPocketListName = 0
+	APP_LIMIT.LengthEventName = 0
+	APP_LIMIT.MinimumTopRanking = 0
 
 	polaroidLimit, err := strconv.ParseInt(os.Getenv("EVENT_POLAROID_LIMIT"), 10, 64)
 	pocketListLimit, pocketlistLimitErr := strconv.ParseInt(os.Getenv("POCKET_LIST_LIMIT"), 10, 64)
 	pocketListitemsLimit, pocketlistitemsLimitErr := strconv.ParseInt(os.Getenv("POCKET_LIST_ITEMS_LIMIT"), 10, 64)
 	lengthPocketListName, lengthPocketListNameErr := strconv.ParseInt(os.Getenv("LENGTH_POCKET_LIST_NAME"), 10, 64)
+	lengthEventName, lengthEventNameErr := strconv.ParseInt(os.Getenv("LENGTH_EVENT_NAME"), 10, 64)
+	minimumTopRanking, minimumTopRankingErr := strconv.ParseInt(os.Getenv("MINIMUM_TOP_RANKING"), 10, 64)
 	if err == nil {
 		APP_LIMIT.EventPolaroidLimit = polaroidLimit
 	}
@@ -83,5 +89,11 @@ func InitialiseConfig() {
 	}
 	if lengthPocketListNameErr == nil {
 		APP_LIMIT.LengthPocketListName = lengthPocketListName
+	}
+	if lengthEventNameErr == nil {
+		APP_LIMIT.LengthEventName = lengthEventName
+	}
+	if minimumTopRankingErr == nil {
+		APP_LIMIT.MinimumTopRanking = minimumTopRanking
 	}
 }
