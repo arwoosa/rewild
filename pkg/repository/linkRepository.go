@@ -1,10 +1,11 @@
 package repository
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"oosa_rewild/internal/helpers"
-	"os"
+	"regexp"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gin-gonic/gin"
@@ -16,6 +17,7 @@ type LinkRequest struct {
 }
 
 type HTMLMeta struct {
+	Url           string
 	Title         string
 	Description   string
 	OGTitle       string
@@ -33,24 +35,39 @@ func (r LinkRepository) Query(c *gin.Context) {
 		return
 	}
 
-	response, err := http.Get(payload.Url)
+	meta, err := r.GetMeta(c, payload.Url)
 	if err != nil {
-		fmt.Printf("%s", err)
-		os.Exit(1)
+		helpers.ResponseBadRequestError(c, err.Error())
 	} else {
-		var HTMLMeta HTMLMeta
-		defer response.Body.Close()
+		c.JSON(200, meta)
+	}
+}
 
+func (r LinkRepository) GetMeta(c *gin.Context, Url string) (HTMLMeta, error) {
+	var HTMLMeta HTMLMeta
+
+	schemeMatch, _ := regexp.MatchString("^(http|https)://", Url)
+	if !schemeMatch {
+		Url = "http://" + Url
+	}
+
+	response, err := http.Get(Url)
+	HTMLMeta.Url = Url
+
+	if err != nil {
+		return HTMLMeta, err
+	} else {
+		defer response.Body.Close()
 		if response.StatusCode != 200 {
-			helpers.ResponseBadRequestError(c, fmt.Sprintf("status code error: %d %s", response.StatusCode, response.Status))
-			return
+			errMessage := fmt.Sprintf("status code error: %d %s", response.StatusCode, response.Status)
+			return HTMLMeta, errors.New(errMessage)
 		}
 
 		// Load the HTML document
 		doc, err := goquery.NewDocumentFromReader(response.Body)
 		if err != nil {
 			helpers.ResponseBadRequestError(c, err.Error())
-			return
+			return HTMLMeta, err
 		}
 
 		description, descriptionExists := doc.Find("meta[name=\"description\"]").First().Attr("content")
@@ -80,7 +97,6 @@ func (r LinkRepository) Query(c *gin.Context) {
 
 		title := doc.Find("title").Text()
 		HTMLMeta.Title = title
-
-		c.JSON(200, HTMLMeta)
 	}
+	return HTMLMeta, nil
 }

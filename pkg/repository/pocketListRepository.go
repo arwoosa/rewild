@@ -46,10 +46,12 @@ func (r PocketListRepository) Create(c *gin.Context) {
 		return
 	}
 
-	maxLenPocketListsName := int(config.APP_LIMIT.LengthPocketListName)
+	// maxLenPocketListsName := int(config.APP_LIMIT.LengthPocketListName)
 	maxPocketLists := config.APP_LIMIT.PocketList
-	if maxLenPocketListsName < len(payload.PocketListsName) {
-		helpers.ResponseError(c, "Name cannot be more than "+strconv.Itoa(maxLenPocketListsName)+" characters")
+
+	match, errMessage := helpers.ValidateStringStyle1(payload.PocketListsName, int(config.APP_LIMIT.LengthPocketListName))
+	if !match {
+		helpers.ResponseError(c, "Name can only contain "+errMessage)
 		return
 	}
 

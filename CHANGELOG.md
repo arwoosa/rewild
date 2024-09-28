@@ -1,3 +1,13 @@
+# CHANGELOG 1.1.15
+## Changes
+- Tab1 - Pocket List Name Changes
+- _E1.6 - Event Message Board Create/Update Character limit
+- _E1 - Event Accounting Create/Update Character validation
+- 1.2a, 1.3 - RewildingSearch: Add helpers for rewilding:searchText, rewilding:searchNearby, rewilding:autocomplete, rewilding/place/{placeId}
+- 1.1 - Removal of Auth
+- 1.4.1 - Addition of title retrieval on rewilding_reference_information
+- GENERAL - GetMeta function to handle missing scheme (http/https), fix on exit app when error
+
 # CHANGELOG 1.1.14
 ## Changes
 - 3.1 - Removal of Auth Guard

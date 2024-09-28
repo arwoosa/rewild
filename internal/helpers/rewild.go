@@ -49,3 +49,15 @@ func RewildSaveGooglePhotos(c *gin.Context, photos []*places.GoogleMapsPlacesV1P
 	}
 	return RewildingPhotos, nil
 }
+
+func RewildGooglePhotos(c *gin.Context, photos []*places.GoogleMapsPlacesV1Photo) []models.RewildingPhotos {
+	var RewildingPhotos []models.RewildingPhotos
+	for _, item := range photos {
+		photo := GooglePlacePhoto(c, item.Name)
+		RewildingPhotos = append(RewildingPhotos, models.RewildingPhotos{
+			RewildingPhotosID:   primitive.NewObjectID(),
+			RewildingPhotosPath: photo.PhotoUri,
+		})
+	}
+	return RewildingPhotos
+}

@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
@@ -16,6 +17,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"google.golang.org/api/places/v1"
 )
 
 type RewildingRepository struct{}
@@ -37,6 +39,13 @@ type RewildingFormDataRequest struct {
 	RewildingName                 string   `form:"rewilding_name" validate:"required"`
 	RewildingLat                  float64  `form:"rewilding_lat"  validate:"required"`
 	RewildingLng                  float64  `form:"rewilding_lng"  validate:"required"`
+}
+
+type RewildingAutocomplete struct {
+	PlaceId  string   `json:"place_id"`
+	Name     string   `json:"name"`
+	Location string   `json:"location"`
+	Type     []string `json:"type"`
 }
 
 // @Summary Rewilding
@@ -224,8 +233,15 @@ func (r RewildingRepository) Create(c *gin.Context) {
 	var referenceLinks []models.RewildingReferenceLinks
 	if len(payload.RewildingReferenceInformation) > 0 {
 		for _, referenceInformation := range payload.RewildingReferenceInformation {
+			meta, _ := LinkRepository{}.GetMeta(c, referenceInformation)
 			insRefLink := models.RewildingReferenceLinks{
-				RewildingReferenceLinksLink: referenceInformation,
+				RewildingReferenceLinksLink:          meta.Url,
+				RewildingReferenceLinksTitle:         meta.Title,
+				RewildingReferenceLinksDescription:   meta.Description,
+				RewildingReferenceLinksOGTitle:       meta.OGTitle,
+				RewildingReferenceLinksOGDescription: meta.OGDescription,
+				RewildingReferenceLinksOGImage:       meta.OGImage,
+				RewildingReferenceLinksOGSiteName:    meta.OGTitle,
 			}
 			referenceLinks = append(referenceLinks, insRefLink)
 		}
@@ -292,4 +308,210 @@ func (r RewildingRepository) Delete(c *gin.Context) {
 func (r RewildingRepository) Options(c *gin.Context) {
 	RefRewildingTypes := helpers.RefRewildingTypes()
 	c.JSON(http.StatusOK, gin.H{"rewilding_types": RefRewildingTypes})
+}
+
+func (r RewildingRepository) Action(c *gin.Context) {
+	action := c.Param("action")
+
+	switch action {
+	case "rewilding:searchText":
+		r.SearchText(c)
+		return
+	case "rewilding:searchNearby":
+		r.SearchNearby(c)
+		return
+	case "rewilding:autocomplete":
+		r.Autocomplete(c)
+		return
+	}
+}
+
+func (r RewildingRepository) SearchText(c *gin.Context) {
+	reqSearch := c.Query("keyword")
+	reqLanguage := c.Query("language")
+	reqRectLowLat := c.Query("rectangle_low_lat")
+	reqRectLowLng := c.Query("rectangle_low_lng")
+	reqRectHightLat := c.Query("rectangle_hight_lat")
+	reqRectHightLng := c.Query("rectangle_hight_lng")
+
+	placesService := helpers.GooglePlacesInitialise(c)
+	if placesService == nil {
+		return
+	}
+
+	languageCode := "zh-TW"
+
+	if reqLanguage != "" {
+		languageCode = reqLanguage
+	}
+
+	req := places.GoogleMapsPlacesV1SearchTextRequest{
+		TextQuery:      reqSearch,
+		MaxResultCount: 10,
+		LanguageCode:   languageCode,
+	}
+
+	if reqRectLowLat != "" && reqRectLowLng != "" && reqRectHightLat != "" && reqRectHightLng != "" {
+		req.LocationBias = &places.GoogleMapsPlacesV1SearchTextRequestLocationBias{
+			Rectangle: &places.GoogleGeoTypeViewport{
+				Low: &places.GoogleTypeLatLng{
+					Latitude:  helpers.StringToFloat(reqRectLowLat),
+					Longitude: helpers.StringToFloat(reqRectLowLng),
+				},
+				High: &places.GoogleTypeLatLng{
+					Latitude:  helpers.StringToFloat(reqRectHightLat),
+					Longitude: helpers.StringToFloat(reqRectHightLng),
+				},
+			},
+		}
+	}
+
+	placeReq := placesService.Places.SearchText(&req)
+	placeReq.Header().Add("X-Goog-FieldMask", "places.id,places.types,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount")
+	places, errPlace := placeReq.Do()
+	if errPlace != nil {
+		log.Fatalf("error %s", errPlace)
+	}
+
+	Rewilding := r.GooglePlaceToRewildingList(c, places.Places)
+	c.JSON(http.StatusOK, Rewilding)
+}
+
+func (r RewildingRepository) SearchNearby(c *gin.Context) {
+	reqType := c.Query("type")
+	reqLat := c.Query("lat")
+	reqLng := c.Query("lng")
+	reqRadius := c.Query("radius")
+	reqLanguage := c.Query("language")
+
+	placesService := helpers.GooglePlacesInitialise(c)
+	if placesService == nil {
+		return
+	}
+
+	radius := 5000.00
+	languageCode := "zh-TW"
+	includedTypes := []string{"national_park", "hiking_area", "campground", "camping_cabin", "park", "playground"}
+
+	if reqRadius != "" {
+		radius = helpers.StringToFloat(reqRadius)
+	}
+	if reqLanguage != "" {
+		languageCode = reqLanguage
+	}
+	if reqType != "" {
+		includedTypes = strings.Split(reqType, ",")
+	}
+
+	req := places.GoogleMapsPlacesV1SearchNearbyRequest{
+		IncludedTypes:  includedTypes,
+		MaxResultCount: 10,
+		LocationRestriction: &places.GoogleMapsPlacesV1SearchNearbyRequestLocationRestriction{
+			Circle: &places.GoogleMapsPlacesV1Circle{
+				Center: &places.GoogleTypeLatLng{
+					Latitude:  helpers.StringToFloat(reqLat),
+					Longitude: helpers.StringToFloat(reqLng),
+				},
+				Radius: radius,
+			},
+		},
+		LanguageCode: languageCode,
+	}
+
+	placeReq := placesService.Places.SearchNearby(&req)
+	placeReq.Header().Add("X-Goog-FieldMask", "places.id,places.types,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount")
+	places, errPlace := placeReq.Do()
+	if errPlace != nil {
+		log.Fatalf("error %s", errPlace)
+	}
+
+	Rewilding := r.GooglePlaceToRewildingList(c, places.Places)
+	c.JSON(http.StatusOK, Rewilding)
+}
+
+func (r RewildingRepository) Autocomplete(c *gin.Context) {
+	var Autocomplete []RewildingAutocomplete
+	reqInput := c.Query("input")
+	reqLanguage := c.Query("language")
+
+	placesService := helpers.GooglePlacesInitialise(c)
+	if placesService == nil {
+		return
+	}
+
+	languageCode := "zh-TW"
+	if reqLanguage != "" {
+		languageCode = reqLanguage
+	}
+
+	req := places.GoogleMapsPlacesV1AutocompletePlacesRequest{
+		Input:        reqInput,
+		LanguageCode: languageCode,
+	}
+
+	placeReq := placesService.Places.Autocomplete(&req)
+	places, errPlace := placeReq.Do()
+	if errPlace != nil {
+		log.Fatalf("error %s", errPlace)
+	}
+
+	for _, v := range places.Suggestions {
+		entry := RewildingAutocomplete{
+			PlaceId:  v.PlacePrediction.PlaceId,
+			Name:     v.PlacePrediction.StructuredFormat.MainText.Text,
+			Location: v.PlacePrediction.StructuredFormat.SecondaryText.Text,
+			Type:     v.PlacePrediction.Types,
+		}
+		Autocomplete = append(Autocomplete, entry)
+	}
+
+	c.JSON(http.StatusOK, Autocomplete)
+}
+
+func (r RewildingRepository) Places(c *gin.Context) {
+	placesId := c.Param("placesId")
+	placeRewilding, gplaces := r.GooglePlaceToRewilding(c, placesId)
+
+	if gplaces != nil {
+		c.JSON(200, placeRewilding)
+	}
+}
+
+func (r RewildingRepository) GooglePlaceToRewildingList(c *gin.Context, placeObject []*places.GoogleMapsPlacesV1Place) []models.Rewilding {
+	var Rewilding []models.Rewilding
+	for _, v := range placeObject {
+		placeRewilding, gplaces := r.GooglePlaceToRewilding(c, v.Id)
+		if gplaces != nil {
+			Rewilding = append(Rewilding, placeRewilding)
+		}
+	}
+	return Rewilding
+}
+
+func (r RewildingRepository) GooglePlaceToRewilding(c *gin.Context, placeId string) (models.Rewilding, *places.GoogleMapsPlacesV1Place) {
+	gplaces := helpers.GooglePlaceById(c, placeId)
+
+	if gplaces != nil {
+		location := helpers.GooglePlacesV1ToLocationArray(gplaces.AddressComponents)
+		area, _ := helpers.GooglePlacesV1GetArea(gplaces.AddressComponents, "administrative_area_level_1")
+		_, countryCode := helpers.GooglePlacesV1GetArea(gplaces.AddressComponents, "country")
+
+		elevation := helpers.GoogleMapsElevation(c, gplaces.Location.Latitude, gplaces.Location.Longitude)
+		RewildingPhotos := helpers.RewildGooglePhotos(c, gplaces.Photos)
+		applyOfficial := false
+
+		return models.Rewilding{
+			RewildingArea:          area,
+			RewildingLocation:      location,
+			RewildingCountryCode:   countryCode,
+			RewildingName:          gplaces.DisplayName.Text,
+			RewildingLat:           gplaces.Location.Latitude,
+			RewildingLng:           gplaces.Location.Longitude,
+			RewildingPlaceId:       gplaces.Id,
+			RewildingElevation:     elevation.Elevation,
+			RewildingPhotos:        RewildingPhotos,
+			RewildingApplyOfficial: &applyOfficial,
+		}, gplaces
+	}
+	return models.Rewilding{}, gplaces
 }
