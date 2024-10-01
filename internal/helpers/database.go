@@ -20,6 +20,16 @@ func FloatToString(float float64) string {
 	return strconv.FormatFloat(float, 'f', -1, 64)
 }
 
+func StringToFloat(stringFloat string) float64 {
+	val, _ := strconv.ParseFloat(stringFloat, 64)
+	return val
+}
+
+func StringToInt(stringInt string) int {
+	val, _ := strconv.Atoi(stringInt)
+	return val
+}
+
 func Decimal128ToFloat(decimal128 primitive.Decimal128) float64 {
 	decimalString := decimal128.String()
 	float, _ := strconv.ParseFloat(decimalString, 64)

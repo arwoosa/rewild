@@ -17,10 +17,10 @@ func EventRoutes(r *gin.Engine) *gin.Engine {
 	repoParticipants := repository.EventParticipantsRepository{}
 	repoInvitation := repository.EventInvitationMessageRepository{}
 
-	main := r.Group("/event", middleware.AuthMiddleware())
+	main := r.Group("/event")
 	{
 		main.GET("", repo.Retrieve)
-		main.POST("", repo.Create)
+		main.POST("", repo.Create, middleware.AuthMiddleware())
 		// main.GET("/references", repo.Options)
 	}
 
