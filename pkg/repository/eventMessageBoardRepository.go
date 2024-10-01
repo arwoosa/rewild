@@ -7,6 +7,7 @@ import (
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
 	"oosa_rewild/internal/models"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -74,6 +75,12 @@ func (r EventMessageBoardRepository) Create(c *gin.Context) {
 		return
 	}
 
+	lenMessageBoardMessage := len(payload.EventMessageBoardBaseMessage)
+	if lenMessageBoardMessage > int(config.APP_LIMIT.LengthEventMessageBoardMessage) {
+		helpers.ResponseBadRequestError(c, "Unable to post as character exceeds limit ("+strconv.Itoa(lenMessageBoardMessage)+"/"+strconv.Itoa(int(config.APP_LIMIT.LengthEventMessageBoardMessage))+")")
+		return
+	}
+
 	insert := models.EventMessageBoard{
 		EventMessageBoardEvent: helpers.StringToPrimitiveObjId(c.Param("id")),
 		// EventMessageBoardStatus
@@ -128,6 +135,12 @@ func (r EventMessageBoardRepository) Update(c *gin.Context) {
 	var payload EventMessageBoardRequest
 	validateError := helpers.Validate(c, &payload)
 	if validateError != nil {
+		return
+	}
+
+	lenMessageBoardMessage := len(payload.EventMessageBoardBaseMessage)
+	if lenMessageBoardMessage > int(config.APP_LIMIT.LengthEventMessageBoardMessage) {
+		helpers.ResponseBadRequestError(c, "Unable to post as character exceeds limit ("+strconv.Itoa(lenMessageBoardMessage)+"/"+strconv.Itoa(int(config.APP_LIMIT.LengthEventMessageBoardMessage))+")")
 		return
 	}
 

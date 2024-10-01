@@ -73,6 +73,12 @@ func (r EventAccountingRepository) Create(c *gin.Context) {
 		return
 	}
 
+	match, errMessage := helpers.ValidateStringStyle1(payload.EventAccountingMessage, int(config.APP_LIMIT.LengthEventAccountingMessage))
+	if !match {
+		helpers.ResponseError(c, "Name can only contain "+errMessage)
+		return
+	}
+
 	insert := models.EventAccounting{
 		EventAccountingEvent:     helpers.StringToPrimitiveObjId(c.Param("id")),
 		EventAccountingCreatedBy: userDetail.UsersId,
@@ -125,6 +131,12 @@ func (r EventAccountingRepository) Update(c *gin.Context) {
 	var payload EventAccountingRequest
 	validateError := helpers.Validate(c, &payload)
 	if validateError != nil {
+		return
+	}
+
+	match, errMessage := helpers.ValidateStringStyle1(payload.EventAccountingMessage, int(config.APP_LIMIT.LengthEventAccountingMessage))
+	if !match {
+		helpers.ResponseError(c, "Name can only contain "+errMessage)
 		return
 	}
 

@@ -17,6 +17,13 @@ func RewildingRoutes(r *gin.Engine) *gin.Engine {
 		rewilding.GET("", repoRewilding.Retrieve)
 		rewilding.POST("", middleware.AuthMiddleware(), repoRewilding.Create)
 		// rewilding.GET("/references", middleware.AuthMiddleware(), repoRewilding.Options)
+
+		r.GET(":action", repoRewilding.Action)
+	}
+
+	rewildingPlaces := rewilding.Group("/places")
+	{
+		rewildingPlaces.GET(":placesId", repoRewilding.Places)
 	}
 
 	detail := rewilding.Group("/:id")
