@@ -37,6 +37,7 @@ type Events struct {
 	EventsUpdatedAt            primitive.DateTime   `bson:"events_updated_at,omitempty" json:"events_updated_at"`
 	EventsParticipants         *EventParticipantObj `bson:"events_participants,omitempty" json:"events_participants,omitempty"`
 	EventsCreatedByUser        *UsersAgg            `bson:"events_created_by_user,omitempty" json:"events_created_by_user,omitempty"`
+	EventsRewildingDetail      *RewildingDetail     `bson:"events_rewilding_detail,omitempty" json:"events_rewilding_detail,omitempty"`
 }
 
 type EventParticipantObj struct {

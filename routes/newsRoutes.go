@@ -13,7 +13,7 @@ func NewsRoutes(r *gin.Engine) *gin.Engine {
 	main := r.Group("/news")
 	{
 		main.GET("", repo.Retrieve)
-		main.POST("", repo.Create, middleware.AuthMiddleware())
+		main.POST("", middleware.AuthMiddleware(), repo.Create)
 	}
 
 	detail := main.Group("/:id", middleware.AuthMiddleware())
