@@ -31,3 +31,9 @@ type RewildingPhotos struct {
 	RewildingPhotosPath string             `bson:"rewilding_photos_path,omitempty" json:"rewilding_photos_path,omitempty"`
 	RewildingPhotosData []byte             `bson:"rewilding_photos_data,omitempty" json:"-"`
 }
+
+type RewildingDetail struct {
+	RewildingID       primitive.ObjectID `bson:"_id,omitempty" json:"rewilding_id"`
+	RewildingName     string             `bson:"rewilding_name,omitempty" json:"rewilding_name"`
+	RewildingLocation []string           `bson:"rewilding_location,omitempty" json:"rewilding_location,omitempty"`
+}

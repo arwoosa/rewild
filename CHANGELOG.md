@@ -1,3 +1,8 @@
+# CHANGELOG 1.1.16
+## Changes
+- 1.0 - Add events_rewilding_detail key
+- _EVENT - Create and update event missing user ID
+
 # CHANGELOG 1.1.15
 ## Changes
 - Tab1 - Pocket List Name Changes

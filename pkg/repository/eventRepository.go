@@ -96,6 +96,17 @@ func (r EventRepository) Retrieve(c *gin.Context) {
 		bson.D{{
 			Key: "$unwind", Value: "$events_created_by_user",
 		}},
+		bson.D{{
+			Key: "$lookup", Value: bson.M{
+				"from":         "Rewilding",
+				"localField":   "events_rewilding",
+				"foreignField": "_id",
+				"as":           "events_rewilding_detail",
+			},
+		}},
+		bson.D{{
+			Key: "$unwind", Value: "$events_rewilding_detail",
+		}},
 	}
 
 	cursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), agg)
