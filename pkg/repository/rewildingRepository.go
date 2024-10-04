@@ -324,6 +324,8 @@ func (r RewildingRepository) Action(c *gin.Context) {
 		r.Autocomplete(c)
 		return
 	}
+
+	c.JSON(200, gin.H{"message": action + " is not supported. Supported: rewilding:searchText, rewilding:searchNearby, rewilding:autocomplete"})
 }
 
 func (r RewildingRepository) SearchText(c *gin.Context) {
