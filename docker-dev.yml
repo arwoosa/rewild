@@ -13,8 +13,9 @@ services:
     container_name: oosa_rewild
     image: oosa-rewild:dev
     restart: on-failure
-    ports:
-      - 6082:6080
+    labels:
+      - traefik.http.routers.rewild.entrypoints=web
+      - traefik.http.routers.rewild.rule= Host(`rewild.docker.localhost`)
     environment:
       - APP_PORT=6080
       - DB_API_HOST=oosa_mongodb
@@ -35,7 +36,5 @@ services:
       - LENGTH_EVENT_MESSAGE_BOARD_MESSAGE=150
       - LENGTH_EVENT_ACCOUNTING_MESSAGE=30
       - MINIMUM_TOP_RANKING=2
-    volumes:
-      - .:/go/src/rewild
     networks:
     - oosa-network
