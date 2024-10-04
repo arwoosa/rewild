@@ -1,3 +1,8 @@
+# CHANGELOG 1.1.17
+## Changes
+- 1.2a, 1.3 - RewildingSearch: Rename helpers to rewilding-searchText, rewilding-searchNearby, rewilding-autocomplete
+- _E1.6 - Pin message board
+
 # CHANGELOG 1.1.16
 ## Changes
 - 1.0 - Add events_rewilding_detail key

@@ -38,6 +38,7 @@ func EventRoutes(r *gin.Engine) *gin.Engine {
 		messageBoard.GET("/:messageBoardId", repoMessageBoard.Read)
 		messageBoard.PUT("/:messageBoardId", repoMessageBoard.Update)
 		messageBoard.DELETE("/:messageBoardId", repoMessageBoard.Delete)
+		messageBoard.POST("/:messageBoardId/pin", repoMessageBoard.Pin)
 	}
 
 	referenceLinks := detail.Group("/reference-links", middleware.AuthMiddleware())
