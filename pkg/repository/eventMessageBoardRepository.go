@@ -22,18 +22,39 @@ type EventMessageBoardRequest struct {
 	EventMessageBoardAnnouncement string `json:"event_message_board_announcement" validate:"required_without=EventMessageBoardBaseMessage"`
 	EventMessageBoardIsPinned     int    `json:"event_message_board_is_pinned"`
 }
+type EventMessageBoardPinRequest struct {
+	EventMessageBoardCategory string `json:"event_message_board_category" validate:"required"`
+}
 
 func (r EventMessageBoardRepository) Retrieve(c *gin.Context) {
+	messageType := c.Query("type")
+	messageCategory := c.Query("category")
 	eventId := helpers.StringToPrimitiveObjId(c.Param("id"))
 	err := EventRepository{}.ReadOne(c, &models.Events{})
 	if err != nil {
 		return
 	}
 
+	match := bson.D{{
+		Key: "event_message_board_event", Value: eventId,
+	}}
+
+	if messageType == "message_board" {
+		match = append(match, bson.E{Key: "event_message_board_base_message", Value: bson.M{"$exists": true}})
+	} else if messageType == "announcement" {
+		match = append(match, bson.E{Key: "event_message_board_announcement", Value: bson.M{"$exists": true}})
+
+		if messageCategory != "" {
+			match = append(match, bson.E{Key: "event_message_board_category", Value: messageCategory})
+		}
+	}
+
+	criteria := bson.D{{
+		Key: "$match", Value: match,
+	}}
+
 	agg := mongo.Pipeline{
-		bson.D{{
-			Key: "$match", Value: bson.M{"event_message_board_event": eventId},
-		}},
+		criteria,
 		bson.D{{
 			Key: "$lookup", Value: bson.M{
 				"from":         "Users",
@@ -184,4 +205,47 @@ func (r EventMessageBoardRepository) ProcessData(c *gin.Context, EventMessageBoa
 		isPinned = payload.EventMessageBoardIsPinned
 	}
 	EventMessageBoard.EventMessageBoardIsPinned = &isPinned
+}
+
+func (r EventMessageBoardRepository) Pin(c *gin.Context) {
+	err := EventRepository{}.ReadOne(c, &models.Events{})
+	if err != nil {
+		return
+	}
+
+	userDetail := helpers.GetAuthUser(c)
+
+	var payload EventMessageBoardPinRequest
+	validateError := helpers.Validate(c, &payload)
+	if validateError != nil {
+		return
+	}
+
+	var EventMessageBoard models.EventMessageBoard
+	errMb := r.ReadOne(c, &EventMessageBoard)
+	isPinned := 1
+	if errMb == nil {
+		insert := models.EventMessageBoard{
+			EventMessageBoardEvent: EventMessageBoard.EventMessageBoardEvent,
+			// EventMessageBoardBaseMessage: ,
+			// EventMessageBoardStatus: ,
+			EventMessageBoardCategory:     payload.EventMessageBoardCategory,
+			EventMessageBoardAnnouncement: EventMessageBoard.EventMessageBoardBaseMessage,
+			EventMessageBoardMessageId:    EventMessageBoard.EventMessageBoardId,
+			EventMessageBoardCreatedBy:    userDetail.UsersId,
+			EventMessageBoardCreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
+			EventMessageBoardIsPinned:     &isPinned,
+		}
+
+		result, err := config.DB.Collection("EventMessageBoard").InsertOne(context.TODO(), insert)
+		if err != nil {
+			fmt.Println("ERROR", err.Error())
+			return
+		}
+
+		var EventMessageBoard models.EventMessageBoard
+		config.DB.Collection("EventMessageBoard").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&EventMessageBoard)
+		c.JSON(http.StatusOK, EventMessageBoard)
+	}
+
 }

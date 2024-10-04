@@ -7,8 +7,9 @@ type EventMessageBoard struct {
 	EventMessageBoardEvent         primitive.ObjectID `bson:"event_message_board_event,omitempty" json:"event_message_board_event"`
 	EventMessageBoardBaseMessage   string             `bson:"event_message_board_base_message,omitempty" json:"event_message_board_base_message,omitempty"`
 	EventMessageBoardStatus        int                `bson:"event_message_board_status,omitempty" json:"event_message_board_status,omitempty"`
-	EventMessageBoardCategory      primitive.ObjectID `bson:"event_message_board_category,omitempty" json:"event_message_board_category,omitempty"`
+	EventMessageBoardCategory      string             `bson:"event_message_board_category,omitempty" json:"event_message_board_category,omitempty"`
 	EventMessageBoardAnnouncement  string             `bson:"event_message_board_announcement,omitempty" json:"event_message_board_announcement,omitempty"`
+	EventMessageBoardMessageId     primitive.ObjectID `bson:"event_message_board_message_id,omitempty" json:"event_message_board_message_id"`
 	EventMessageBoardCreatedBy     primitive.ObjectID `bson:"event_message_board_created_by,omitempty" json:"event_message_board_created_by"`
 	EventMessageBoardCreatedAt     primitive.DateTime `bson:"event_message_board_created_at,omitempty" json:"event_message_board_created_at"`
 	EventMessageBoardIsPinned      *int               `bson:"event_message_board_is_pinned,omitempty" json:"event_message_board_is_pinned"`
