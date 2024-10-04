@@ -1,0 +1,41 @@
+networks:
+  oosa-network:
+    external: true
+    driver: bridge
+    name: oosa-network
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+
+name: oosa
+services:
+  oosa_rewild:
+    container_name: oosa_rewild
+    image: oosa-rewild:dev
+    restart: on-failure
+    ports:
+      - 6082:6080
+    environment:
+      - APP_PORT=6080
+      - DB_API_HOST=oosa_mongodb
+      - DB_API_PORT=27017
+      - DB_API_DATABASE=oosa
+      - GOOGLE_API_KEY=AIzaSyD0nHbzl6s_ST88idwPVQJ6vWTCdSbG__E
+      - CLOUDFLARE_IMAGE_AUTH_TOKEN=LAtqwjUrfA9DH-st22XkYpR82Hnz2LwsK14M583r
+      - CLOURDLARE_IMAGE_ACCOUNT_ID=69e9668bb0036342460ed07037a7ae24
+      - CLOURDLARE_IMAGE_ACCOUNT_HASH=peXbMh4A5r2xX67SaM4zPQ
+      - CLOURDLARE_IMAGE_DELIVERY_URL=https://oosa.life/cdn-cgi/imagedelivery
+      - OPENWEATHER_API_BASE_URL=https://api.openweathermap.org/data/2.5/
+      - OPENWEATHER_API_KEY=87b75f52e03066a98c8d275f20fc02b9
+      - EVENT_POLAROID_LIMIT=3
+      - POCKET_LIST_LIMIT=3
+      - POCKET_LIST_ITEMS_LIMIT=10
+      - LENGTH_POCKET_LIST_NAME=30
+      - LENGTH_EVENT_NAME=20
+      - LENGTH_EVENT_MESSAGE_BOARD_MESSAGE=150
+      - LENGTH_EVENT_ACCOUNTING_MESSAGE=30
+      - MINIMUM_TOP_RANKING=2
+    volumes:
+      - .:/go/src/rewild
+    networks:
+    - oosa-network
