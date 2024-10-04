@@ -12,7 +12,7 @@ services:
   oosa_rewild:
     container_name: oosa_rewild
     image: oosa-rewild:dev
-    restart: on-failure
+    restart: always
     labels:
       - traefik.http.routers.rewild.entrypoints=web
       - traefik.http.routers.rewild.rule= Host(`rewild.docker.localhost`)
