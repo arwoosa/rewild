@@ -15,16 +15,15 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type EventMessageBoardRepository struct{}
-type EventMessageBoardRequest struct {
-	EventMessageBoardBaseMessage string `json:"event_message_board_base_message" validate:"required"`
-	EventMessageBoardIsPinned    int    `json:"event_message_board_is_pinned"`
-}
-type EventMessageBoardPinRequest struct {
-	EventMessageBoardCategory string `json:"event_message_board_category" validate:"required"`
+type EventAnnouncementRepository struct{}
+type EventAnnouncementRequest struct {
+	EventMessageBoardAnnouncement string `json:"event_message_board_announcement" validate:"required"`
+	EventMessageBoardCategory     string `json:"event_message_board_category" validate:"required"`
+	EventMessageBoardIsPinned     int    `json:"event_message_board_is_pinned"`
 }
 
-func (r EventMessageBoardRepository) Retrieve(c *gin.Context) {
+func (r EventAnnouncementRepository) Retrieve(c *gin.Context) {
+	messageCategory := c.Query("category")
 	eventId := helpers.StringToPrimitiveObjId(c.Param("id"))
 	err := EventRepository{}.ReadOne(c, &models.Events{})
 	if err != nil {
@@ -33,7 +32,11 @@ func (r EventMessageBoardRepository) Retrieve(c *gin.Context) {
 
 	match := bson.D{
 		{Key: "event_message_board_event", Value: eventId},
-		{Key: "event_message_board_base_message", Value: bson.M{"$exists": true}},
+		{Key: "event_message_board_announcement", Value: bson.M{"$exists": true}},
+	}
+
+	if messageCategory != "" {
+		match = append(match, bson.E{Key: "event_message_board_category", Value: messageCategory})
 	}
 
 	criteria := bson.D{{
@@ -70,22 +73,22 @@ func (r EventMessageBoardRepository) Retrieve(c *gin.Context) {
 	c.JSON(http.StatusOK, results)
 }
 
-func (r EventMessageBoardRepository) Create(c *gin.Context) {
+func (r EventAnnouncementRepository) Create(c *gin.Context) {
 	err := EventRepository{}.ReadOne(c, &models.Events{})
 	if err != nil {
 		return
 	}
 
 	userDetail := helpers.GetAuthUser(c)
-	var payload EventMessageBoardRequest
+	var payload EventAnnouncementRequest
 	validateError := helpers.Validate(c, &payload)
 	if validateError != nil {
 		return
 	}
 
-	match, errMessage := helpers.ValidateStringLength(payload.EventMessageBoardBaseMessage, int(config.APP_LIMIT.LengthEventMessageBoardMessage))
+	match, errMessage := helpers.ValidateStringLength(payload.EventMessageBoardAnnouncement, int(config.APP_LIMIT.LengthEventMessageBoardMessage))
 	if !match {
-		helpers.ResponseBadRequestError(c, "Message board can only contain "+errMessage)
+		helpers.ResponseBadRequestError(c, "Announcement can only contain "+errMessage)
 		return
 	}
 
@@ -110,7 +113,7 @@ func (r EventMessageBoardRepository) Create(c *gin.Context) {
 	c.JSON(http.StatusOK, EventMessageBoard)
 }
 
-func (r EventMessageBoardRepository) Read(c *gin.Context) {
+func (r EventAnnouncementRepository) Read(c *gin.Context) {
 	err := EventRepository{}.ReadOne(c, &models.Events{})
 	if err != nil {
 		return
@@ -123,7 +126,7 @@ func (r EventMessageBoardRepository) Read(c *gin.Context) {
 	}
 }
 
-func (r EventMessageBoardRepository) ReadOne(c *gin.Context, EventMessageBoard *models.EventMessageBoard) error {
+func (r EventAnnouncementRepository) ReadOne(c *gin.Context, EventMessageBoard *models.EventMessageBoard) error {
 	eventId := helpers.StringToPrimitiveObjId(c.Param("id"))
 	eventMessageBoardId := helpers.StringToPrimitiveObjId(c.Param("messageBoardId"))
 	filter := bson.D{{Key: "_id", Value: eventMessageBoardId}, {Key: "event_message_board_event", Value: eventId}}
@@ -134,21 +137,21 @@ func (r EventMessageBoardRepository) ReadOne(c *gin.Context, EventMessageBoard *
 	return err
 }
 
-func (r EventMessageBoardRepository) Update(c *gin.Context) {
+func (r EventAnnouncementRepository) Update(c *gin.Context) {
 	err := EventRepository{}.ReadOne(c, &models.Events{})
 	if err != nil {
 		return
 	}
 
-	var payload EventMessageBoardRequest
+	var payload EventAnnouncementRequest
 	validateError := helpers.Validate(c, &payload)
 	if validateError != nil {
 		return
 	}
 
-	match, errMessage := helpers.ValidateStringLength(payload.EventMessageBoardBaseMessage, int(config.APP_LIMIT.LengthEventMessageBoardMessage))
+	match, errMessage := helpers.ValidateStringLength(payload.EventMessageBoardAnnouncement, int(config.APP_LIMIT.LengthEventMessageBoardMessage))
 	if !match {
-		helpers.ResponseBadRequestError(c, "Message board can only contain "+errMessage)
+		helpers.ResponseBadRequestError(c, "Announcement can only contain "+errMessage)
 		return
 	}
 
@@ -163,7 +166,7 @@ func (r EventMessageBoardRepository) Update(c *gin.Context) {
 	}
 }
 
-func (r EventMessageBoardRepository) Delete(c *gin.Context) {
+func (r EventAnnouncementRepository) Delete(c *gin.Context) {
 	err := EventRepository{}.ReadOne(c, &models.Events{})
 	if err != nil {
 		return
@@ -178,55 +181,13 @@ func (r EventMessageBoardRepository) Delete(c *gin.Context) {
 	}
 }
 
-func (r EventMessageBoardRepository) ProcessData(c *gin.Context, EventMessageBoard *models.EventMessageBoard, payload EventMessageBoardRequest) {
-	EventMessageBoard.EventMessageBoardBaseMessage = payload.EventMessageBoardBaseMessage
+func (r EventAnnouncementRepository) ProcessData(c *gin.Context, EventMessageBoard *models.EventMessageBoard, payload EventAnnouncementRequest) {
+	EventMessageBoard.EventMessageBoardAnnouncement = payload.EventMessageBoardAnnouncement
+	EventMessageBoard.EventMessageBoardCategory = payload.EventMessageBoardCategory
 
 	isPinned := 0
 	if payload.EventMessageBoardIsPinned > 0 {
 		isPinned = payload.EventMessageBoardIsPinned
 	}
 	EventMessageBoard.EventMessageBoardIsPinned = &isPinned
-}
-
-func (r EventMessageBoardRepository) Pin(c *gin.Context) {
-	err := EventRepository{}.ReadOne(c, &models.Events{})
-	if err != nil {
-		return
-	}
-
-	userDetail := helpers.GetAuthUser(c)
-
-	var payload EventMessageBoardPinRequest
-	validateError := helpers.Validate(c, &payload)
-	if validateError != nil {
-		return
-	}
-
-	var EventMessageBoard models.EventMessageBoard
-	errMb := r.ReadOne(c, &EventMessageBoard)
-	isPinned := 1
-	if errMb == nil {
-		insert := models.EventMessageBoard{
-			EventMessageBoardEvent: EventMessageBoard.EventMessageBoardEvent,
-			// EventMessageBoardBaseMessage: ,
-			// EventMessageBoardStatus: ,
-			EventMessageBoardCategory:     payload.EventMessageBoardCategory,
-			EventMessageBoardAnnouncement: EventMessageBoard.EventMessageBoardBaseMessage,
-			EventMessageBoardMessageId:    EventMessageBoard.EventMessageBoardId,
-			EventMessageBoardCreatedBy:    userDetail.UsersId,
-			EventMessageBoardCreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
-			EventMessageBoardIsPinned:     &isPinned,
-		}
-
-		result, err := config.DB.Collection("EventMessageBoard").InsertOne(context.TODO(), insert)
-		if err != nil {
-			fmt.Println("ERROR", err.Error())
-			return
-		}
-
-		var EventMessageBoard models.EventMessageBoard
-		config.DB.Collection("EventMessageBoard").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&EventMessageBoard)
-		c.JSON(http.StatusOK, EventMessageBoard)
-	}
-
 }

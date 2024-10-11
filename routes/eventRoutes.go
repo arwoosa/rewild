@@ -10,6 +10,7 @@ import (
 func EventRoutes(r *gin.Engine) *gin.Engine {
 	repo := repository.EventRepository{}
 	repoMessageBoard := repository.EventMessageBoardRepository{}
+	repoAnnouncement := repository.EventAnnouncementRepository{}
 	//repoDetail := repository.PocketListItemsRepository{}
 	repoReferenceLinks := repository.EventReferenceLinksRepository{}
 	repoSchedule := repository.EventScheduleRepository{}
@@ -39,6 +40,15 @@ func EventRoutes(r *gin.Engine) *gin.Engine {
 		messageBoard.PUT("/:messageBoardId", repoMessageBoard.Update)
 		messageBoard.DELETE("/:messageBoardId", repoMessageBoard.Delete)
 		messageBoard.POST("/:messageBoardId/pin", repoMessageBoard.Pin)
+	}
+
+	announcement := detail.Group("/announcement", middleware.AuthMiddleware())
+	{
+		announcement.GET("", repoAnnouncement.Retrieve)
+		announcement.POST("", repoAnnouncement.Create)
+		announcement.GET("/:messageBoardId", repoAnnouncement.Read)
+		announcement.PUT("/:messageBoardId", repoAnnouncement.Update)
+		announcement.DELETE("/:messageBoardId", repoAnnouncement.Delete)
 	}
 
 	referenceLinks := detail.Group("/reference-links", middleware.AuthMiddleware())
