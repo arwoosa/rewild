@@ -68,7 +68,7 @@ func (r CollaborativeLogAlbumLinkRepository) Create(c *gin.Context) {
 		return
 	}
 
-	allowedString := []string{"photos.google.com", "icloud.com", "flickr.com", "mega.com"}
+	allowedString := []string{"photos.google.com", "icloud.com", "flickr.com", "mega.com", "mega.nz"}
 
 	userDetail := helpers.GetAuthUser(c)
 	var payload CollaborativeLogAlbumLinkRequest

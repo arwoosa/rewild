@@ -151,6 +151,7 @@ func (r RewildingRepository) Create(c *gin.Context) {
 	elevation := helpers.GoogleMapsElevation(c, payload.RewildingLat, payload.RewildingLng)
 
 	location := helpers.GooglePlacesToLocationArray(geocode.AddressComponents)
+
 	area, _ := helpers.GooglePlacesGetArea(geocode.AddressComponents, "administrative_area_level_1")
 	_, countryCode := helpers.GooglePlacesGetArea(geocode.AddressComponents, "country")
 

@@ -36,6 +36,7 @@ type AppLimit struct {
 	LengthEventName                int64
 	LengthEventMessageBoardMessage int64
 	LengthEventAccountingMessage   int64
+	LengthEventInvitationMessage   int64
 	MinimumTopRanking              int64
 }
 
@@ -74,6 +75,7 @@ func InitialiseConfig() {
 	APP_LIMIT.LengthEventName = 0
 	APP_LIMIT.LengthEventMessageBoardMessage = 0
 	APP_LIMIT.LengthEventAccountingMessage = 0
+	APP_LIMIT.LengthEventInvitationMessage = 0
 	APP_LIMIT.MinimumTopRanking = 0
 
 	polaroidLimit, err := strconv.ParseInt(os.Getenv("EVENT_POLAROID_LIMIT"), 10, 64)
@@ -83,6 +85,7 @@ func InitialiseConfig() {
 	lengthEventName, lengthEventNameErr := strconv.ParseInt(os.Getenv("LENGTH_EVENT_NAME"), 10, 64)
 	lengthEventMessageBoardMessage, lengthEventMessageBoardMessageErr := strconv.ParseInt(os.Getenv("LENGTH_EVENT_MESSAGE_BOARD_MESSAGE"), 10, 64)
 	lengthEventAccountingMessage, lengthEventAccountingMessageErr := strconv.ParseInt(os.Getenv("LENGTH_EVENT_ACCOUNTING_MESSAGE"), 10, 64)
+	lengthEventInvitationMessage, lengthEventInvitationMessageErr := strconv.ParseInt(os.Getenv("LENGTH_EVENT_INVITATION_MESSAGE"), 10, 64)
 	minimumTopRanking, minimumTopRankingErr := strconv.ParseInt(os.Getenv("MINIMUM_TOP_RANKING"), 10, 64)
 	if err == nil {
 		APP_LIMIT.EventPolaroidLimit = polaroidLimit
@@ -107,5 +110,8 @@ func InitialiseConfig() {
 	}
 	if lengthEventAccountingMessageErr == nil {
 		APP_LIMIT.LengthEventAccountingMessage = lengthEventAccountingMessage
+	}
+	if lengthEventInvitationMessageErr == nil {
+		APP_LIMIT.LengthEventInvitationMessage = lengthEventInvitationMessage
 	}
 }

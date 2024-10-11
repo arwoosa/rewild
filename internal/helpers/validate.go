@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"unicode/utf8"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"
@@ -127,5 +128,17 @@ func ValidateStringStyle1(stringTest string, stringLength int) (bool, string) {
 	if !match {
 		return false, "latin and chinese characters with max length of " + maxStringLength
 	}
+	return true, ""
+}
+
+func ValidateStringLength(stringTest string, stringLength int) (bool, string) {
+	messageLen := utf8.RuneCountInString(stringTest)
+	messageMaxLen := int(stringLength)
+	if messageLen > messageMaxLen {
+		strLen := strconv.Itoa(messageLen)
+		strMaxLen := strconv.Itoa(messageMaxLen)
+		return false, "max length of " + strMaxLen + " characters. (Current: " + strLen + ")"
+	}
+
 	return true, ""
 }

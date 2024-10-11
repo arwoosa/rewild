@@ -129,13 +129,19 @@ func (r EventScheduleRepository) Create(c *gin.Context) {
 
 	var Event models.Events
 	eventId := helpers.StringToPrimitiveObjId(c.Param("id"))
+	config.DB.Collection("Events").FindOne(context.TODO(), bson.D{{Key: "_id", Value: eventId}}).Decode(&Event)
+
 	eventSchedule := []interface{}{}
+
+	if helpers.MongoZeroID(Event.EventsId) {
+		helpers.ResponseNoData(c, "No Data")
+		return
+	}
 
 	days := int(math.Ceil(Event.EventsDateEnd.Time().Sub(Event.EventsDate.Time()).Hours() / 24))
 	if days == 0 {
 		days = 1
 	}
-
 	if len(payload.EventSchedule) != days {
 		helpers.ResponseBadRequestError(c, "Schedule does not match number of days ("+strconv.Itoa(days)+")")
 		return
@@ -145,7 +151,6 @@ func (r EventScheduleRepository) Create(c *gin.Context) {
 		"event_schedules_event": eventId,
 	}
 	config.DB.Collection("EventSchedules").DeleteMany(context.TODO(), filters)
-	config.DB.Collection("Events").FindOne(context.TODO(), bson.D{{Key: "_id", Value: eventId}}).Decode(&Event)
 
 	for i, v := range payload.EventSchedule {
 		scheduleDate := Event.EventsDate.Time().AddDate(0, 0, i).Format("2006-01-02")

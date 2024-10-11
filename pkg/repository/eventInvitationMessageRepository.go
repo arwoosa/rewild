@@ -39,6 +39,12 @@ func (r EventInvitationMessageRepository) Update(c *gin.Context) {
 		return
 	}
 
+	match, errMessage := helpers.ValidateStringLength(payload.EventsInvitationMessage, int(config.APP_LIMIT.LengthEventInvitationMessage))
+	if !match {
+		helpers.ResponseBadRequestError(c, "Message can only contain "+errMessage)
+		return
+	}
+
 	Event.EventsInvitationTemplate = payload.EventsInvitationTemplate
 	Event.EventsInvitationMessage = payload.EventsInvitationMessage
 
@@ -74,9 +80,9 @@ func (r EventInvitationMessageRepository) Join(c *gin.Context) {
 		status = GetEventParticipantStatus("APPLIED")
 	}
 
-	if *Events.EventsParticipantLimit < int(countParticipant+1) {
+	if *Events.EventsParticipantLimit != 0 && *Events.EventsParticipantLimit < int(countParticipant+1) {
 		eventParticipantLimit := strconv.Itoa(*Events.EventsParticipantLimit)
-		helpers.ResponseBadRequestError(c, "This event can only be attended by "+eventParticipantLimit+" paricipants")
+		helpers.ResponseBadRequestError(c, "This event can only be attended by "+eventParticipantLimit+" participants")
 		return
 	}
 

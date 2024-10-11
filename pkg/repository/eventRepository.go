@@ -44,6 +44,8 @@ func (r EventRepository) Retrieve(c *gin.Context) {
 
 	eventPeriodBegin := c.Query("event_period_begin")
 	eventPeriodEnd := c.Query("event_period_end")
+	eventRewilding := c.Query("event_rewilding")
+	eventIsPast := c.Query("event_past")
 
 	var eventBegin time.Time
 	var eventEnd time.Time
@@ -51,6 +53,8 @@ func (r EventRepository) Retrieve(c *gin.Context) {
 	match := bson.M{
 		"events_deleted": bson.M{"$exists": false},
 	}
+
+	currentTime := primitive.NewDateTimeFromTime(time.Now())
 
 	if eventPeriodBegin != "" && eventPeriodEnd == "" {
 		eventBegin = helpers.StringToDatetime(eventPeriodBegin + " 00:00:00")
@@ -75,8 +79,15 @@ func (r EventRepository) Retrieve(c *gin.Context) {
 			"$gte": primitive.NewDateTimeFromTime(eventBegin),
 			"$lte": primitive.NewDateTimeFromTime(eventEnd),
 		}
+	} else if eventIsPast == "1" {
+		match["events_date"] = bson.M{"$lt": currentTime}
 	} else {
-		match["events_date"] = bson.M{"$gte": primitive.NewDateTimeFromTime(time.Now())}
+		match["events_date"] = bson.M{"$gte": currentTime}
+	}
+
+	if eventRewilding != "" {
+		rewildingId := helpers.StringToPrimitiveObjId(eventRewilding)
+		match["events_rewilding"] = rewildingId
 	}
 
 	filterPeriod := bson.D{{
@@ -189,7 +200,7 @@ func (r EventRepository) Create(c *gin.Context) {
 
 	match, errMessage := helpers.ValidateStringStyle1(payload.EventsName, int(config.APP_LIMIT.LengthEventName))
 	if !match {
-		helpers.ResponseError(c, "Name can only contain "+errMessage)
+		helpers.ResponseBadRequestError(c, "Name can only contain "+errMessage)
 		return
 	}
 
@@ -384,7 +395,7 @@ func (r EventRepository) Update(c *gin.Context) {
 	if err == nil {
 		match, errMessage := helpers.ValidateStringStyle1(payload.EventsName, int(config.APP_LIMIT.LengthEventName))
 		if !match {
-			helpers.ResponseError(c, "Name can only contain "+errMessage)
+			helpers.ResponseBadRequestError(c, "Name can only contain "+errMessage)
 			return
 		}
 
