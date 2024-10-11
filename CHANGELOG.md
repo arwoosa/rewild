@@ -1,3 +1,14 @@
+# CHANGELOG 1.1.18
+## Changes
+- Add in mega.nz
+- Event filter by rewilding
+- Event accounting paid by
+- Event invitation message length
+- String length for UTF8 characters (message board message, event invitation)
+- Fix schedule bug
+- Retrieve past events event?event_past=1
+- Separate announcement from message board endpoints
+
 # CHANGELOG 1.1.17
 ## Changes
 - 1.2a, 1.3 - RewildingSearch: Rename helpers to rewilding-searchText, rewilding-searchNearby, rewilding-autocomplete

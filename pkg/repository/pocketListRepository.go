@@ -51,7 +51,7 @@ func (r PocketListRepository) Create(c *gin.Context) {
 
 	match, errMessage := helpers.ValidateStringStyle1(payload.PocketListsName, int(config.APP_LIMIT.LengthPocketListName))
 	if !match {
-		helpers.ResponseError(c, "Name can only contain "+errMessage)
+		helpers.ResponseBadRequestError(c, "Name can only contain "+errMessage)
 		return
 	}
 

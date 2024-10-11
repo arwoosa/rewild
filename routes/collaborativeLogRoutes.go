@@ -32,7 +32,7 @@ func CollaborativeLogRoutes(r *gin.Engine) *gin.Engine {
 		// albumLink.DELETE("/:messageBoardId", repoAlbumLink.Delete)
 	}
 
-	polaroid := detail.Group("/polaroid", middleware.AuthMiddleware())
+	polaroid := detail.Group("/polaroids", middleware.AuthMiddleware())
 	{
 		polaroid.GET("", repoPolaroid.Retrieve)
 		polaroid.POST("", repoPolaroid.Create)

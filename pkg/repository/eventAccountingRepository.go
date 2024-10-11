@@ -18,7 +18,8 @@ import (
 type EventAccountingRepository struct{}
 type EventAccountingRequest struct {
 	EventAccountingMessage string  `json:"event_accounting_message" validate:"required"`
-	EventAccountingAmount  float64 `json:"event_accounting_amount" validate:"required"`
+	EventAccountingAmount  float64 `json:"event_accounting_amount" validate:"required,max=999999"`
+	EventAccountingPaidBy  string  `json:"event_accounting_paid_by" validate:"required"`
 }
 
 func (r EventAccountingRepository) Retrieve(c *gin.Context) {
@@ -75,7 +76,7 @@ func (r EventAccountingRepository) Create(c *gin.Context) {
 
 	match, errMessage := helpers.ValidateStringStyle1(payload.EventAccountingMessage, int(config.APP_LIMIT.LengthEventAccountingMessage))
 	if !match {
-		helpers.ResponseError(c, "Name can only contain "+errMessage)
+		helpers.ResponseBadRequestError(c, "Name can only contain "+errMessage)
 		return
 	}
 
@@ -136,7 +137,7 @@ func (r EventAccountingRepository) Update(c *gin.Context) {
 
 	match, errMessage := helpers.ValidateStringStyle1(payload.EventAccountingMessage, int(config.APP_LIMIT.LengthEventAccountingMessage))
 	if !match {
-		helpers.ResponseError(c, "Name can only contain "+errMessage)
+		helpers.ResponseBadRequestError(c, "Name can only contain "+errMessage)
 		return
 	}
 
@@ -168,6 +169,8 @@ func (r EventAccountingRepository) Delete(c *gin.Context) {
 }
 
 func (r EventAccountingRepository) ProcessData(c *gin.Context, EventAccounting *models.EventAccounting, payload EventAccountingRequest) {
+	paidBy := helpers.StringToPrimitiveObjId(payload.EventAccountingPaidBy)
 	EventAccounting.EventAccountingMessage = payload.EventAccountingMessage
 	EventAccounting.EventAccountingAmount = payload.EventAccountingAmount
+	EventAccounting.EventAccountingPaidBy = paidBy
 }
