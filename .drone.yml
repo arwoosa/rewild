@@ -15,7 +15,6 @@ steps:
   commands:
   - docker-compose -f docker-dev.yml down
   - docker container prune -f
-  - docker rmi $(docker images --filter "dangling=true" -q --no-trunc)
   - docker-compose -f docker-dev.yml up -d
 trigger:
   branch:
