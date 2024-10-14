@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.19
+## Changes
+- Retrieve achievement based on rewilding achievement type
+
 # CHANGELOG 1.1.18
 ## Changes
 - Add in mega.nz
