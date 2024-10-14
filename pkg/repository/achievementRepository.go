@@ -35,6 +35,8 @@ func (t AchievementRepository) Retrieve(c *gin.Context) {
 }
 
 func (t AchievementRepository) GetAchievementsByUserId(c *gin.Context, userId primitive.ObjectID, results *[]models.EventsCountryCount) error {
+	achievementType := c.Query("achievement_type")
+
 	currentTime := primitive.NewDateTimeFromTime(time.Now())
 	lookupStage := bson.D{{Key: "$lookup", Value: bson.M{
 		"from":         "EventParticipants",
@@ -51,6 +53,10 @@ func (t AchievementRepository) GetAchievementsByUserId(c *gin.Context, userId pr
 		"events_date": bson.M{"$lt": currentTime},
 	}
 
+	if achievementType != "" {
+		match["events_rewilding_detail.rewilding_achievement_type"] = achievementType
+	}
+
 	filterStage := bson.D{{Key: "$match", Value: match}}
 	groupStage := bson.D{
 		{Key: "$group", Value: bson.M{
@@ -62,9 +68,23 @@ func (t AchievementRepository) GetAchievementsByUserId(c *gin.Context, userId pr
 	pipeline := mongo.Pipeline{
 		lookupStage,
 		unwindStage,
-		filterStage,
-		groupStage,
 	}
+
+	if achievementType != "" {
+		rewildLookup := bson.D{{Key: "$lookup", Value: bson.M{
+			"from":         "Rewilding",
+			"localField":   "events_rewilding",
+			"foreignField": "_id",
+			"as":           "events_rewilding_detail",
+		}}}
+		rewildUnwind := bson.D{
+			{Key: "$unwind", Value: "$events_rewilding_detail"},
+		}
+
+		pipeline = append(pipeline, rewildLookup, rewildUnwind)
+	}
+
+	pipeline = append(pipeline, filterStage, groupStage)
 
 	cursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), pipeline)
 	cursor.All(context.TODO(), results)
