@@ -1,3 +1,12 @@
+# CHANGELOG 1.1.20
+## Changes
+- Event accounting paid by - Validation against participant list
+- Create event cover photo 
+- Change reference to include link to the cover image
+- GET /pocket-list/{pocketListId}/items auto generate URL
+- DELETE /pocket-list/{pocketListId}/items - bulk pocket list item delete
+- PUT /pocket-list/{pocketListId}/items - bulk pocket list item move
+
 # CHANGELOG 1.1.19
 ## Changes
 - Retrieve achievement based on rewilding achievement type

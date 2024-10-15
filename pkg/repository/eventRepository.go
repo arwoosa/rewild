@@ -24,6 +24,7 @@ type EventRequest struct {
 	EventsDeadline         string   `json:"events_deadline" form:"events_deadline" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
 	EventsName             string   `json:"events_name" form:"events_name" validate:"required"`
 	EventsPlace            string   `json:"events_place" form:"events_place" validate:"required_without=EventsRewilding"`
+	EventsPhotoCover       string   `json:"events_photo_cover" form:"events_photo_cover"`
 	EventsRewilding        string   `json:"events_rewilding" form:"events_rewilding" validate:"required_without=EventsPlace"`
 	EventsType             string   `json:"events_type" form:"events_type" validate:"required"`
 	EventsParticipantLimit int      `json:"events_participant_limit" form:"events_participant_limit"`
@@ -251,6 +252,16 @@ func (r EventRepository) Create(c *gin.Context) {
 		if err != nil {
 			return
 		}
+
+		if payload.EventsPhotoCover == "" {
+			helpers.ResponseBadRequestError(c, "Please select a cover photo")
+			return
+		} else {
+			if payload.EventsPhotoCover != "DEFAULT_0" && payload.EventsPhotoCover != "DEFAULT_1" {
+				helpers.ResponseBadRequestError(c, "Invalid cover photo. Use either DEFAULT_0 or DEFAULT_1")
+				return
+			}
+		}
 	} else {
 		cloudflare := CloudflareRepository{}
 		cloudflareResponse, postErr := cloudflare.Post(c, file)
@@ -261,6 +272,7 @@ func (r EventRepository) Create(c *gin.Context) {
 		fileName := cloudflare.ImageDelivery(cloudflareResponse.Result.Id, "public")
 		insert.EventsPhoto = fileName
 	}
+
 	r.ProcessData(c, &insert, payload)
 
 	result, err := config.DB.Collection("Events").InsertOne(context.TODO(), insert)
@@ -449,6 +461,18 @@ func (r EventRepository) ProcessData(c *gin.Context, Events *models.Events, payl
 	Events.EventsLng = eventsLng
 	Events.EventsParticipantLimit = &payload.EventsParticipantLimit
 	Events.EventsCountryCode = payload.EventsCountryCode
+
+	if Events.EventsPhoto == "" && payload.EventsPhotoCover != "" {
+		coverImage := config.APP.BaseUrl + "event/cover/"
+		if payload.EventsPhotoCover == "DEFAULT_1" {
+			var RefRewildingTypes models.RefRewildingTypes
+			config.DB.Collection("RefRewildingTypes").FindOne(context.TODO(), bson.D{{Key: "_id", Value: helpers.StringToPrimitiveObjId(payload.EventsType)}}).Decode(&RefRewildingTypes)
+			coverImage += RefRewildingTypes.RefRewildingTypesDefaultImage
+		} else {
+			coverImage += "藍天.png"
+		}
+		Events.EventsPhoto = coverImage
+	}
 
 	Events.EventsStatisticDistance = eventStatisticDistance
 	Events.EventsStatisticTime = eventDurationSecond
