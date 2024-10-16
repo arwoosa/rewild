@@ -37,5 +37,6 @@ services:
       - LENGTH_EVENT_ACCOUNTING_MESSAGE=30
       - LENGTH_EVENT_INVITATION_MESSAGE=50
       - MINIMUM_TOP_RANKING=2
+      - APP_BASE_URL=https://dev.oosa.life/api/
     networks:
     - oosa-network
