@@ -9,6 +9,7 @@ import (
 	"oosa_rewild/internal/models"
 	"oosa_rewild/pkg/service"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -25,6 +26,13 @@ type PocketListItemsRequest struct {
 }
 type PocketListItemsUpdateRequest struct {
 	PocketListItemsMst string `json:"pocket_list_items_mst"`
+}
+type PocketListItemsUpdateBulkRequest struct {
+	PocketListItemsId  []string `json:"pocket_list_items_id" validate:"required"`
+	PocketListItemsMst string   `json:"pocket_list_items_mst"`
+}
+type PocketListItemsDeleteBulkRequest struct {
+	PocketListItemsId []string `json:"pocket_list_items_id" validate:"required"`
 }
 
 func (r PocketListItemsRepository) Retrieve(c *gin.Context) {
@@ -64,7 +72,23 @@ func (r PocketListItemsRepository) Retrieve(c *gin.Context) {
 		helpers.ResponseNoData(c, "No Data")
 		return
 	}
+
+	r.RetrievePhoto(&results)
 	c.JSON(http.StatusOK, results)
+}
+
+func (r PocketListItemsRepository) RetrievePhoto(results *[]models.PocketListItems) {
+	for idx, val := range *results {
+		if len(val.PocketListItemsRewildingDetail.RewildingPhotos) > 0 {
+			for photoIdx, photo := range val.PocketListItemsRewildingDetail.RewildingPhotos {
+				if photo.RewildingPhotosPath == "" {
+					rewildingId := val.PocketListItemsRewildingDetail.RewildingID
+					photoId := photo.RewildingPhotosID
+					(*results)[idx].PocketListItemsRewildingDetail.RewildingPhotos[photoIdx].RewildingPhotosPath = config.APP.BaseUrl + "rewilding/" + rewildingId.Hex() + "/photos/" + photoId.Hex()
+				}
+			}
+		}
+	}
 }
 
 func (r PocketListItemsRepository) Create(c *gin.Context) {
@@ -189,6 +213,86 @@ func (r PocketListItemsRepository) Update(c *gin.Context) {
 	}
 }
 
+func (r PocketListItemsRepository) UpdateBulk(c *gin.Context) {
+	pocketListId := c.Param("id")
+	var payload PocketListItemsUpdateBulkRequest
+	var PocketLists models.PocketLists
+	var PocketListItemsId []primitive.ObjectID
+	validateError := helpers.Validate(c, &payload)
+	if validateError != nil {
+		return
+	}
+
+	err := PocketListRepository{}.ReadOne(c, &PocketLists, "")
+	if err != nil {
+		return
+	}
+
+	var newPocketList models.PocketLists
+	errNewPocketList := PocketListRepository{}.ReadById(c, &newPocketList, helpers.StringToPrimitiveObjId(payload.PocketListItemsMst))
+	if errNewPocketList != nil {
+		return
+	}
+
+	PocketListId := helpers.StringToPrimitiveObjId(pocketListId)
+	NewPocketListId := helpers.StringToPrimitiveObjId(payload.PocketListItemsMst)
+
+	for _, v := range payload.PocketListItemsId {
+		PocketListItemsId = append(PocketListItemsId, helpers.StringToPrimitiveObjId(v))
+	}
+
+	PocketListItemsOld, filterItemsOld := r.GetPocketListItems(PocketListId, PocketListItemsId)
+	PocketListItemsNew, _ := r.GetPocketListItems(NewPocketListId, nil)
+
+	// Make sure not in new pocket list ID
+	var PocketListNewRewilding []string
+	var PocketListNewError []string
+	var PocketListMoved []string
+	for _, v := range PocketListItemsNew {
+		PocketListNewRewilding = append(PocketListNewRewilding, v.PocketListItemsRewilding.Hex())
+	}
+
+	for _, v := range PocketListItemsOld {
+		if helpers.StringInSlice(v.PocketListItemsRewilding.Hex(), PocketListNewRewilding) {
+			PocketListNewError = append(PocketListNewError, v.PocketListItemsName)
+		} else {
+			PocketListMoved = append(PocketListMoved, v.PocketListItemsName)
+		}
+	}
+
+	maxPocketListItems := int(config.APP_LIMIT.PocketListItems)
+	if newPocketList.PocketListsCount >= maxPocketListItems {
+		helpers.ResponseError(c, "Cannot add to pocket list. Max allowed "+strconv.Itoa(int(maxPocketListItems)))
+		return
+	}
+
+	if len(PocketListNewError) > 0 {
+		grammar := "is"
+		if len(PocketListNewError) > 1 {
+			grammar = "are"
+		}
+		helpers.ResponseBadRequestError(c, strings.Join(PocketListNewError, ", ")+" "+grammar+" already in '"+newPocketList.PocketListsName+"' and cannot be moved")
+		return
+	}
+
+	if len(payload.PocketListItemsId) != len(PocketListItemsOld) {
+		helpers.ResponseBadRequestError(c, "Some items staged for moving does not belong to this pocket list")
+		return
+	}
+
+	upd := bson.D{{Key: "$set", Value: bson.D{{Key: "pocket_list_items_mst", Value: NewPocketListId}}}}
+	_, updErr := config.DB.Collection("PocketListItems").UpdateMany(context.TODO(), filterItemsOld, upd)
+
+	if updErr != nil {
+		helpers.ResponseBadRequestError(c, updErr.Error())
+		return
+	}
+
+	PocketListRepository{}.UpdateCount(c, pocketListId)
+	PocketListRepository{}.UpdateCount(c, payload.PocketListItemsMst)
+	helpers.ResponseSuccessMessage(c, strings.Join(PocketListMoved, ", ")+" moved to '"+newPocketList.PocketListsName+"'")
+}
+
 func (r PocketListItemsRepository) Delete(c *gin.Context) {
 	pocketListId := c.Param("id")
 	err := PocketListRepository{}.ReadOne(c, &models.PocketLists{}, "")
@@ -204,6 +308,53 @@ func (r PocketListItemsRepository) Delete(c *gin.Context) {
 		PocketListRepository{}.UpdateCount(c, pocketListId)
 		helpers.ResultMessageSuccess(c, "Pocket list item record deleted")
 	}
+}
+
+func (r PocketListItemsRepository) DeleteMultiple(c *gin.Context) {
+	pocketListId := c.Param("id")
+	PocketListId := helpers.StringToPrimitiveObjId(pocketListId)
+	var payload PocketListItemsDeleteBulkRequest
+	var PocketLists models.PocketLists
+	var PocketListItemsId []primitive.ObjectID
+	validateError := helpers.Validate(c, &payload)
+	if validateError != nil {
+		return
+	}
+
+	err := PocketListRepository{}.ReadOne(c, &PocketLists, "")
+	if err != nil {
+		return
+	}
+
+	for _, v := range payload.PocketListItemsId {
+		PocketListItemsId = append(PocketListItemsId, helpers.StringToPrimitiveObjId(v))
+	}
+
+	PocketListItems, filterDelete := r.GetPocketListItems(PocketListId, PocketListItemsId)
+
+	if len(payload.PocketListItemsId) != len(PocketListItems) {
+		helpers.ResponseBadRequestError(c, "Some items staged for deletion does not belong to this pocket list")
+		return
+	}
+
+	config.DB.Collection("PocketListItems").DeleteMany(context.TODO(), filterDelete)
+	PocketListRepository{}.UpdateCount(c, pocketListId)
+	helpers.ResponseSuccessMessage(c, "Pocket list items removed from "+PocketLists.PocketListsName)
+}
+
+func (r PocketListItemsRepository) GetPocketListItems(PocketListId primitive.ObjectID, PocketListItemsId []primitive.ObjectID) ([]models.PocketListItems, primitive.D) {
+	var PocketListItems []models.PocketListItems
+	filter := bson.D{
+		{Key: "pocket_list_items_mst", Value: PocketListId},
+	}
+
+	if PocketListItemsId != nil {
+		filter = append(filter, primitive.E{Key: "_id", Value: bson.M{"$in": PocketListItemsId}})
+	}
+
+	cursor, _ := config.DB.Collection("PocketListItems").Find(context.TODO(), filter)
+	cursor.All(context.TODO(), &PocketListItems)
+	return PocketListItems, filter
 }
 
 func (r PocketListItemsRepository) GetPocketListItemByMstRewildingId(mstId primitive.ObjectID, rewildingId primitive.ObjectID) error {

@@ -26,11 +26,12 @@ type RefRewildingAreas struct {
 }
 
 type RefRewildingTypes struct {
-	RefRewildingTypesId     primitive.ObjectID `bson:"_id,omitempty" json:"ref_rewilding_types_id"`
-	RefRewildingTypesName   string             `bson:"ref_rewilding_types_name,omitempty" json:"ref_rewilding_types_name"`
-	RefRewildingTypesNameEn string             `bson:"ref_rewilding_types_name_en,omitempty" json:"ref_rewilding_types_name_en"`
-	RefRewildingTypesGoogle string             `bson:"ref_rewilding_types_google,omitempty" json:"ref_rewilding_types_google"`
-	RefRewildingTypesKey    string             `bson:"ref_rewilding_types_key,omitempty" json:"ref_rewilding_types_key"`
+	RefRewildingTypesId           primitive.ObjectID `bson:"_id,omitempty" json:"ref_rewilding_types_id"`
+	RefRewildingTypesName         string             `bson:"ref_rewilding_types_name,omitempty" json:"ref_rewilding_types_name"`
+	RefRewildingTypesNameEn       string             `bson:"ref_rewilding_types_name_en,omitempty" json:"ref_rewilding_types_name_en"`
+	RefRewildingTypesGoogle       string             `bson:"ref_rewilding_types_google,omitempty" json:"ref_rewilding_types_google"`
+	RefRewildingTypesKey          string             `bson:"ref_rewilding_types_key,omitempty" json:"ref_rewilding_types_key"`
+	RefRewildingTypesDefaultImage string             `bson:"ref_rewilding_types_default_image,omitempty" json:"ref_rewilding_types_default_image"`
 }
 
 type RefRewildingWikiTypes struct {

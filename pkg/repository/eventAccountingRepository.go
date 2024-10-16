@@ -69,10 +69,13 @@ func (r EventAccountingRepository) Create(c *gin.Context) {
 
 	userDetail := helpers.GetAuthUser(c)
 	var payload EventAccountingRequest
+	var EventParticipants models.EventParticipants
 	validateError := helpers.Validate(c, &payload)
 	if validateError != nil {
 		return
 	}
+
+	eventId := helpers.StringToPrimitiveObjId(c.Param("id"))
 
 	match, errMessage := helpers.ValidateStringStyle1(payload.EventAccountingMessage, int(config.APP_LIMIT.LengthEventAccountingMessage))
 	if !match {
@@ -80,8 +83,19 @@ func (r EventAccountingRepository) Create(c *gin.Context) {
 		return
 	}
 
+	filterParticipant := bson.D{
+		{Key: "event_participants_event", Value: eventId},
+		{Key: "event_participants_user", Value: helpers.StringToPrimitiveObjId(payload.EventAccountingPaidBy)},
+	}
+	filterParticipantErr := config.DB.Collection("EventParticipants").FindOne(context.TODO(), filterParticipant).Decode(&EventParticipants)
+
+	if filterParticipantErr != nil {
+		helpers.ResponseBadRequestError(c, "Payee is not an event participant")
+		return
+	}
+
 	insert := models.EventAccounting{
-		EventAccountingEvent:     helpers.StringToPrimitiveObjId(c.Param("id")),
+		EventAccountingEvent:     eventId,
 		EventAccountingCreatedBy: userDetail.UsersId,
 		EventAccountingCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
