@@ -28,6 +28,8 @@ func PocketListRoutes(r *gin.Engine) *gin.Engine {
 	{
 		detailItems.GET("", repoDetail.Retrieve)
 		detailItems.POST("", repoDetail.Create)
+		detailItems.PUT("", repoDetail.UpdateBulk)
+		detailItems.DELETE("", repoDetail.DeleteMultiple)
 		detailItems.GET("/:itemsId", repoDetail.Read)
 		detailItems.PUT("/:itemsId", repoDetail.Update)
 		detailItems.DELETE("/:itemsId", repoDetail.Delete)

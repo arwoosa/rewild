@@ -15,5 +15,9 @@ func RefRewildingTypes() []models.RefRewildingTypes {
 		return RefRewildingTypes
 	}
 	cursor.All(context.TODO(), &RefRewildingTypes)
+
+	for idx, val := range RefRewildingTypes {
+		RefRewildingTypes[idx].RefRewildingTypesDefaultImage = config.APP.BaseUrl + "event/cover/" + val.RefRewildingTypesDefaultImage
+	}
 	return RefRewildingTypes
 }

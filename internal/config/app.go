@@ -9,6 +9,7 @@ import (
 )
 
 type AppConfig struct {
+	BaseUrl                    string
 	GoogleOauthClientId        string
 	GoogleApiKey               string
 	AppPort                    string
@@ -50,6 +51,7 @@ func InitialiseConfig() {
 		godotenv.Load()
 	}
 
+	APP.BaseUrl = os.Getenv("APP_BASE_URL")
 	APP.GoogleOauthClientId = os.Getenv("GOOGLE_OAUTH_CLIENT_ID")
 	APP.GoogleApiKey = os.Getenv("GOOGLE_API_KEY")
 	APP.AppPort = os.Getenv("APP_PORT")
