@@ -14,6 +14,27 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+func ValidateObject(c *gin.Context, arr interface{}) error {
+	errorList := []string{}
+
+	validate := validator.New()
+
+	err := validate.Struct(arr)
+
+	if err != nil {
+		validationErrors := err.(validator.ValidationErrors)
+		for _, e := range validationErrors {
+			//translatedErr := fmt.Errorf(e.Translate(trans))
+			//errs = append(errs, translatedErr)
+			errorList = append(errorList, e.Error())
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"code": -2, "message": "Validation error! Please check your inputs!", "data": errorList, "validation": "oosa_api"})
+		return err
+	}
+
+	return nil
+}
+
 func Validate(c *gin.Context, arr interface{}) error {
 	errorList := []string{}
 	if err := c.Bind(&arr); err != nil {

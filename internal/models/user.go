@@ -24,6 +24,8 @@ type Users struct {
 	UsersEventCompleted                   int                `bson:"users_event_completed,omitempty" json:"-"`
 	UsersEventScheduled                   int                `bson:"users_event_scheduled,omitempty" json:"-"`
 	UsersBreathingPoints                  int                `bson:"users_breathing_points,omitempty" json:"users_breathing_points"`
+	UsersFollowingCount                   int                `bson:"users_following_count,omitempty" json:"users_following_count"`
+	UsersFollowerCount                    int                `bson:"users_follower_count,omitempty" json:"users_follower_count"`
 }
 
 type UsersAgg struct {
