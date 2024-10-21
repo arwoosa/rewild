@@ -2,11 +2,11 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
 	"oosa_rewild/internal/models"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -20,6 +20,23 @@ type EventAnnouncementRequest struct {
 	EventMessageBoardAnnouncement string `json:"event_message_board_announcement" validate:"required"`
 	EventMessageBoardCategory     string `json:"event_message_board_category" validate:"required"`
 	EventMessageBoardIsPinned     int    `json:"event_message_board_is_pinned"`
+}
+type EventAnnouncementRequestBulkRequestValidate struct {
+	Data []EventAnnouncementBulkRequest `json:"data" validate:"required,dive"`
+}
+type EventAnnouncementBulkRequest struct {
+	EventMessageBoardBaseMessage []string `json:"event_announcement_message" validate:"required,dive"`
+	EventMessageBoardCategory    string   `json:"event_announcement_category"  validate:"required"`
+}
+
+type EventAnnouncementResponseObject struct {
+	EventAnnouncement          []EventAnnouncementResponse `json:"event_announcement"`
+	EventAnnouncementCreatedAt primitive.DateTime          `json:"event_announcement_created_at"`
+	EventAnnouncementEventId   string                      `json:"event_announcement_event_id"`
+}
+type EventAnnouncementResponse struct {
+	EventAnnouncementMessage  []string `json:"event_announcement_message"`
+	EventAnnouncementCategory string   `json:"event_announcement_category"`
 }
 
 func (r EventAnnouncementRepository) Retrieve(c *gin.Context) {
@@ -70,11 +87,89 @@ func (r EventAnnouncementRepository) Retrieve(c *gin.Context) {
 		helpers.ResponseNoData(c, "No Data")
 		return
 	}
-	c.JSON(http.StatusOK, results)
+
+	var announcementCategory []string
+	var EventAnnouncement []EventAnnouncementResponse
+	for _, v := range results {
+		idx := helpers.IndexStringInSlice(v.EventMessageBoardCategory, announcementCategory)
+		if idx == -1 {
+			announcementCategory = append(announcementCategory, v.EventMessageBoardCategory)
+			EventAnnouncement = append(EventAnnouncement, EventAnnouncementResponse{
+				EventAnnouncementMessage:  []string{v.EventMessageBoardAnnouncement},
+				EventAnnouncementCategory: v.EventMessageBoardCategory,
+			})
+		} else {
+			EventAnnouncement[idx].EventAnnouncementMessage = append(EventAnnouncement[idx].EventAnnouncementMessage, v.EventMessageBoardAnnouncement)
+		}
+	}
+
+	EventAnnouncementResponseObject := []EventAnnouncementResponseObject{{
+		EventAnnouncement:          EventAnnouncement,
+		EventAnnouncementCreatedAt: results[0].EventMessageBoardCreatedAt,
+		EventAnnouncementEventId:   results[0].EventMessageBoardEvent.Hex(),
+	}}
+
+	c.JSON(http.StatusOK, EventAnnouncementResponseObject)
 }
 
 func (r EventAnnouncementRepository) Create(c *gin.Context) {
+	eventId := helpers.StringToPrimitiveObjId(c.Param("id"))
 	err := EventRepository{}.ReadOne(c, &models.Events{})
+	if err != nil {
+		return
+	}
+
+	userDetail := helpers.GetAuthUser(c)
+	var payload []EventAnnouncementBulkRequest
+	errBind := c.BindJSON(&payload)
+	if errBind != nil {
+		helpers.ResponseBadRequestError(c, err.Error())
+		return
+	}
+
+	payloadValidate := EventAnnouncementRequestBulkRequestValidate{
+		Data: payload,
+	}
+
+	validateError := helpers.ValidateObject(c, payloadValidate)
+	if validateError != nil {
+		return
+	}
+
+	var strLenErr []string
+	var insertAnnouncement []interface{}
+	for _, v := range payload {
+		for _, message := range v.EventMessageBoardBaseMessage {
+			match, errMessage := helpers.ValidateStringLength(message, int(config.APP_LIMIT.LengthEventMessageBoardMessage))
+			if !match {
+				strLenErr = append(strLenErr, "Message board can only contain "+errMessage)
+			} else {
+				insertAnnouncement = append(insertAnnouncement, models.EventMessageBoard{
+					EventMessageBoardEvent:        eventId,
+					EventMessageBoardAnnouncement: message,
+					EventMessageBoardCategory:     v.EventMessageBoardCategory,
+					EventMessageBoardCreatedBy:    userDetail.UsersId,
+					EventMessageBoardCreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
+				})
+			}
+		}
+	}
+
+	if len(strLenErr) > 0 {
+		helpers.ResponseBadRequestError(c, strings.Join(strLenErr, ", "))
+		return
+	}
+
+	filterDelete := bson.D{
+		{Key: "event_message_board_event", Value: eventId},
+		{Key: "event_message_board_announcement", Value: bson.M{"$exists": true}},
+	}
+	config.DB.Collection("EventMessageBoard").DeleteMany(context.TODO(), filterDelete)
+	config.DB.Collection("EventMessageBoard").InsertMany(context.TODO(), insertAnnouncement)
+
+	r.Retrieve(c)
+
+	/*err := EventRepository{}.ReadOne(c, &models.Events{})
 	if err != nil {
 		return
 	}
@@ -110,7 +205,7 @@ func (r EventAnnouncementRepository) Create(c *gin.Context) {
 
 	var EventMessageBoard models.EventMessageBoard
 	config.DB.Collection("EventMessageBoard").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&EventMessageBoard)
-	c.JSON(http.StatusOK, EventMessageBoard)
+	c.JSON(http.StatusOK, EventMessageBoard)*/
 }
 
 func (r EventAnnouncementRepository) Read(c *gin.Context) {

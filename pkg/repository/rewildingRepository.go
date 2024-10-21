@@ -144,6 +144,12 @@ func (r RewildingRepository) Create(c *gin.Context) {
 		return
 	}
 
+	match, errMessage := helpers.ValidateStringStyle1(payload.RewildingName, int(config.APP_LIMIT.LengthRewildingName))
+	if !match {
+		helpers.ResponseBadRequestError(c, "Name can only contain "+errMessage)
+		return
+	}
+
 	lat := payload.RewildingLat
 	lng := payload.RewildingLng
 
@@ -198,6 +204,19 @@ func (r RewildingRepository) Create(c *gin.Context) {
 		}
 	}
 
+	maxRewildingImage := int(config.APP_LIMIT.LengthRewildingImage)
+	if len(files) > maxRewildingImage {
+		helpers.ResponseBadRequestError(c, "Cannot upload images. Max allowed: "+strconv.Itoa(maxRewildingImage))
+		return
+	}
+
+	maxReferenceLinks := int(config.APP_LIMIT.LengthRewildingReferenceLink)
+	if len(payload.RewildingReferenceInformation) > maxReferenceLinks {
+		helpers.ResponseBadRequestError(c, "Reference link exceed maximum allowed. Max allowed: "+strconv.Itoa(maxReferenceLinks))
+		return
+
+	}
+
 	for _, file := range files {
 		_, validateErr := helpers.ValidatePhoto(c, file, true)
 
@@ -229,6 +248,12 @@ func (r RewildingRepository) Create(c *gin.Context) {
 		RewildingCreatedBy:     userDetail.UsersId,
 		RewildingCreatedAt:     primitive.NewDateTimeFromTime(time.Now()),
 		RewildingPhotos:        RewildingPhotos,
+	}
+
+	RefAchievementPlaces, RefAchievementPlacesErr := helpers.RewildingAchievementByLatLng(c, payload.RewildingLat, payload.RewildingLng)
+	if RefAchievementPlacesErr == nil {
+		insert.RewildingAchievementType = RefAchievementPlaces.RefAchievementPlacesType
+		insert.RewildingAchievementTypeID = RefAchievementPlaces.RefAchievementPlacesID
 	}
 
 	var referenceLinks []models.RewildingReferenceLinks
@@ -377,6 +402,10 @@ func (r RewildingRepository) SearchText(c *gin.Context) {
 	}
 
 	Rewilding := r.GooglePlaceToRewildingList(c, places.Places)
+	if len(Rewilding) == 0 {
+		helpers.ResponseNoData(c, "No Data")
+		return
+	}
 	c.JSON(http.StatusOK, Rewilding)
 }
 
@@ -429,6 +458,10 @@ func (r RewildingRepository) SearchNearby(c *gin.Context) {
 	}
 
 	Rewilding := r.GooglePlaceToRewildingList(c, places.Places)
+	if len(Rewilding) == 0 {
+		helpers.ResponseNoData(c, "No Data")
+		return
+	}
 	c.JSON(http.StatusOK, Rewilding)
 }
 

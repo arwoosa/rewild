@@ -34,6 +34,9 @@ type AppLimit struct {
 	PocketListItems                int64
 	EventPolaroidLimit             int64
 	LengthPocketListName           int64
+	LengthRewildingName            int64
+	LengthRewildingImage           int64
+	LengthRewildingReferenceLink   int64
 	LengthEventName                int64
 	LengthEventMessageBoardMessage int64
 	LengthEventAccountingMessage   int64
@@ -74,6 +77,9 @@ func InitialiseConfig() {
 	APP_LIMIT.PocketList = 0
 	APP_LIMIT.PocketListItems = 0
 	APP_LIMIT.LengthPocketListName = 0
+	APP_LIMIT.LengthRewildingName = 0
+	APP_LIMIT.LengthRewildingImage = 0
+	APP_LIMIT.LengthRewildingReferenceLink = 0
 	APP_LIMIT.LengthEventName = 0
 	APP_LIMIT.LengthEventMessageBoardMessage = 0
 	APP_LIMIT.LengthEventAccountingMessage = 0
@@ -84,6 +90,9 @@ func InitialiseConfig() {
 	pocketListLimit, pocketlistLimitErr := strconv.ParseInt(os.Getenv("POCKET_LIST_LIMIT"), 10, 64)
 	pocketListitemsLimit, pocketlistitemsLimitErr := strconv.ParseInt(os.Getenv("POCKET_LIST_ITEMS_LIMIT"), 10, 64)
 	lengthPocketListName, lengthPocketListNameErr := strconv.ParseInt(os.Getenv("LENGTH_POCKET_LIST_NAME"), 10, 64)
+	lengthRewildingName, lengthRewildingNameErr := strconv.ParseInt(os.Getenv("LENGTH_REWILDING_NAME"), 10, 64)
+	lengthRewildingImage, lengthRewildingImageErr := strconv.ParseInt(os.Getenv("LENGTH_REWILDING_IMAGE"), 10, 64)
+	lengthRewildingReferenceLink, lengthRewildingReferenceLinkErr := strconv.ParseInt(os.Getenv("LENGTH_REWILDING_REFERENCE_LINK"), 10, 64)
 	lengthEventName, lengthEventNameErr := strconv.ParseInt(os.Getenv("LENGTH_EVENT_NAME"), 10, 64)
 	lengthEventMessageBoardMessage, lengthEventMessageBoardMessageErr := strconv.ParseInt(os.Getenv("LENGTH_EVENT_MESSAGE_BOARD_MESSAGE"), 10, 64)
 	lengthEventAccountingMessage, lengthEventAccountingMessageErr := strconv.ParseInt(os.Getenv("LENGTH_EVENT_ACCOUNTING_MESSAGE"), 10, 64)
@@ -100,6 +109,15 @@ func InitialiseConfig() {
 	}
 	if lengthPocketListNameErr == nil {
 		APP_LIMIT.LengthPocketListName = lengthPocketListName
+	}
+	if lengthRewildingNameErr == nil {
+		APP_LIMIT.LengthRewildingName = lengthRewildingName
+	}
+	if lengthRewildingImageErr == nil {
+		APP_LIMIT.LengthRewildingImage = lengthRewildingImage
+	}
+	if lengthRewildingReferenceLinkErr == nil {
+		APP_LIMIT.LengthRewildingReferenceLink = lengthRewildingReferenceLink
 	}
 	if lengthEventNameErr == nil {
 		APP_LIMIT.LengthEventName = lengthEventName

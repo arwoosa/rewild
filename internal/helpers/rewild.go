@@ -2,10 +2,12 @@ package helpers
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/models"
+	"sort"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -60,4 +62,25 @@ func RewildGooglePhotos(c *gin.Context, photos []*places.GoogleMapsPlacesV1Photo
 		})
 	}
 	return RewildingPhotos
+}
+
+func RewildingAchievementByLatLng(c *gin.Context, lat float64, lng float64) (models.RefAchievementPlaces, error) {
+	var RefAchievementPlaces []models.RefAchievementPlaces
+	cursor, _ := config.DB.Collection("RefAchievementPlaces").Find(context.TODO(), bson.D{})
+	cursor.All(context.TODO(), &RefAchievementPlaces)
+
+	for k, v := range RefAchievementPlaces {
+		dist := Haversine(lat, lng, v.RefAchievementPlacesLat, v.RefAchievementPlacesLng)
+		RefAchievementPlaces[k].RefAchievementPlacesDistance = dist
+	}
+
+	sort.Slice(RefAchievementPlaces, func(i, j int) bool {
+		return RefAchievementPlaces[i].RefAchievementPlacesDistance < RefAchievementPlaces[j].RefAchievementPlacesDistance
+	})
+
+	if RefAchievementPlaces[0].RefAchievementPlacesDistance < 200 {
+		return RefAchievementPlaces[0], nil
+	}
+
+	return models.RefAchievementPlaces{}, errors.New("no achievement for this location")
 }

@@ -39,7 +39,7 @@ func GoogleToRewilding(c *gin.Context, googlePlaceId string) primitive.ObjectID 
 
 	RewildingPhotos, _ := helpers.RewildSaveGooglePhotos(c, places.Photos)
 
-	upsert := bson.D{{Key: "$set", Value: bson.D{
+	newRewilding := bson.D{
 		{Key: "rewilding_area", Value: area},
 		{Key: "rewilding_location", Value: location},
 		{Key: "rewilding_country_code", Value: countryCode},
@@ -50,7 +50,15 @@ func GoogleToRewilding(c *gin.Context, googlePlaceId string) primitive.ObjectID 
 		{Key: "rewilding_elevation", Value: elevation.Elevation},
 		{Key: "rewilding_photos", Value: RewildingPhotos},
 		{Key: "rewilding_apply_official", Value: true},
-	}}}
+	}
+	RefAchievementPlaces, RefAchievementPlacesErr := helpers.RewildingAchievementByLatLng(c, places.Location.Latitude, places.Location.Longitude)
+	if RefAchievementPlacesErr == nil {
+		newRewilding = append(newRewilding,
+			bson.E{Key: "rewilding_achievement_type", Value: RefAchievementPlaces.RefAchievementPlacesType},
+			bson.E{Key: "rewilding_achievement_type_id", Value: RefAchievementPlaces.RefAchievementPlacesID},
+		)
+	}
+	upsert := bson.D{{Key: "$set", Value: newRewilding}}
 
 	filters := bson.D{
 		{Key: "rewilding_place_id", Value: places.Id},
