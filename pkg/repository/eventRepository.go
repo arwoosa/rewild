@@ -433,6 +433,7 @@ func (r EventRepository) Update(c *gin.Context) {
 }
 
 func (r EventRepository) ProcessData(c *gin.Context, Events *models.Events, payload EventRequest) {
+	var Rewilding models.Rewilding
 	eventsLat := payload.EventsLat
 	eventsLng := payload.EventsLng
 	meetingPointLat := payload.EventsMeetingPointLat
@@ -461,6 +462,11 @@ func (r EventRepository) ProcessData(c *gin.Context, Events *models.Events, payl
 	Events.EventsLng = eventsLng
 	Events.EventsParticipantLimit = &payload.EventsParticipantLimit
 	Events.EventsCountryCode = payload.EventsCountryCode
+
+	config.DB.Collection("Rewilding").FindOne(context.TODO(), bson.D{{Key: "_id", Value: Events.EventsRewilding}}).Decode(&Rewilding)
+
+	Events.EventsRewildingAchievementType = Rewilding.RewildingAchievementType
+	Events.EventsRewildingAchievementTypeID = Rewilding.RewildingAchievementTypeID
 
 	if Events.EventsPhoto == "" && payload.EventsPhotoCover != "" {
 		coverImage := config.APP.BaseUrl + "event/cover/"

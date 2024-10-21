@@ -1,3 +1,10 @@
+# CHANGELOG 1.1.21
+## Changes
+- CRUD /event/{eventId}/announcement Use one body structure
+- POST rewilding name: 30 chars, images: max 3, reference link: max 3
+- GET rewilding-searchText, GET rewilding-searchNearby handle if no places found
+- All rewilding create will be run across the achievement database to get 百岳, 小百岳, 保護區 data. Creation of event will automatically add this flag to the data
+
 # CHANGELOG 1.1.20
 ## Changes
 - Event accounting paid by - Validation against participant list

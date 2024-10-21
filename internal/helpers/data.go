@@ -17,6 +17,15 @@ func StringInSlice(a string, list []string) bool {
 	return false
 }
 
+func IndexStringInSlice(a string, list []string) int {
+	for key, b := range list {
+		if b == a {
+			return key
+		}
+	}
+	return -1
+}
+
 func MongoZeroID(a primitive.ObjectID) bool {
 	zeroValue, _ := primitive.ObjectIDFromHex("000000000000000000000000")
 	return a == zeroValue
