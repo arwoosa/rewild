@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.22
+## Changes
+- Event cover image - Rename to utf8
+
 # CHANGELOG 1.1.21
 ## Changes
 - CRUD /event/{eventId}/announcement Use one body structure

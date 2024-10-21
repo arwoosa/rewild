@@ -475,7 +475,7 @@ func (r EventRepository) ProcessData(c *gin.Context, Events *models.Events, payl
 			config.DB.Collection("RefRewildingTypes").FindOne(context.TODO(), bson.D{{Key: "_id", Value: helpers.StringToPrimitiveObjId(payload.EventsType)}}).Decode(&RefRewildingTypes)
 			coverImage += RefRewildingTypes.RefRewildingTypesDefaultImage
 		} else {
-			coverImage += "藍天.png"
+			coverImage += "default_oosa_event.png"
 		}
 		Events.EventsPhoto = coverImage
 	}
