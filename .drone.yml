@@ -14,7 +14,6 @@ steps:
 - name: restart service
   commands:
   - docker-compose -f docker-dev.yml down
-  - docker container prune -f
   - docker-compose -f docker-dev.yml up -d
 trigger:
   branch:
