@@ -86,7 +86,7 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 	countPolaroid := r.CountTotalPolaroids(Events.EventsId)
 	fmt.Println("countPolaroid", countPolaroid)
 	if countPolaroid >= config.APP_LIMIT.EventPolaroidLimit {
-		helpers.ResponseBadRequestError(c, "Unable to add more polaroids. Maximum allowed: "+strconv.Itoa(int(countPolaroid)))
+		helpers.ResponseBadRequestError(c, "Unable to add more polaroids. Maximum allowed: "+strconv.Itoa(int(config.APP_LIMIT.EventPolaroidLimit)))
 		return
 	}
 
@@ -186,12 +186,30 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 		EventPolaroidsCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
+	radius := helpers.Haversine(lat, lng, Events.EventsLat, Events.EventsLng)
+
+	eligibleAchievement := false
+	if Events.EventsRewildingAchievementType != "" {
+		if Events.EventsRewildingAchievementType == "big" || Events.EventsRewildingAchievementType == "small" {
+			if radius <= 200 {
+				eligibleAchievement = true
+			}
+		} else if Events.EventsRewildingAchievementType == "protect" {
+			if radius <= 2000 {
+				eligibleAchievement = true
+			}
+		}
+	}
+
+	insert.EventPolaroidsRadiusFromEvent = radius
+	insert.EventPolaroidsAchievementEligible = &eligibleAchievement
+
 	result, err := config.DB.Collection("EventPolaroids").InsertOne(context.TODO(), insert)
 	if err != nil {
 		fmt.Println("ERROR", err.Error())
 		return
 	}
-
+	r.EventAchievementEligibility(c, Events)
 	var EventPolaroids models.EventPolaroids
 	config.DB.Collection("EventPolaroids").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&EventPolaroids)
 	c.JSON(http.StatusOK, EventPolaroids)
@@ -204,4 +222,17 @@ func (r CollaborativeLogPolaroidRepository) CountTotalPolaroids(eventId primitiv
 		return 0
 	}
 	return count
+}
+
+func (r CollaborativeLogPolaroidRepository) EventAchievementEligibility(c *gin.Context, Event models.Events) {
+	filter := bson.D{{Key: "event_polaroids_event", Value: Event.EventsId}, {Key: "event_polaroids_achievement_eligible", Value: true}}
+	count, _ := config.DB.Collection("EventPolaroids").CountDocuments(context.TODO(), filter)
+	if count > 0 {
+		filterUpd := bson.D{{Key: "_id", Value: Event.EventsId}}
+		eligible := true
+		eventUpd := bson.D{{Key: "$set", Value: map[string]interface{}{
+			"events_rewilding_achievement_eligible": &eligible,
+		}}}
+		config.DB.Collection("Events").UpdateOne(context.TODO(), filterUpd, eventUpd)
+	}
 }
