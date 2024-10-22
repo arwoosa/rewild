@@ -17,7 +17,7 @@ import (
 type AchievementRepository struct{}
 
 func (t AchievementRepository) Retrieve(c *gin.Context) {
-	var results []models.EventsCountryCount
+	var results []models.AchievementRewilding
 	userDetail := helpers.GetAuthUser(c)
 
 	err := t.GetAchievementsByUserId(c, userDetail.UsersId, &results)
@@ -34,7 +34,7 @@ func (t AchievementRepository) Retrieve(c *gin.Context) {
 	c.JSON(http.StatusOK, results)
 }
 
-func (t AchievementRepository) GetAchievementsByUserId(c *gin.Context, userId primitive.ObjectID, results *[]models.EventsCountryCount) error {
+func (t AchievementRepository) GetAchievementsByUserId(c *gin.Context, userId primitive.ObjectID, results *[]models.AchievementRewilding) error {
 	achievementType := c.Query("achievement_type")
 
 	currentTime := primitive.NewDateTimeFromTime(time.Now())
@@ -54,14 +54,15 @@ func (t AchievementRepository) GetAchievementsByUserId(c *gin.Context, userId pr
 	}
 
 	if achievementType != "" {
-		match["events_rewilding_detail.rewilding_achievement_type"] = achievementType
+		match["events_rewilding_achievement_type"] = achievementType
+		match["events_rewilding_achievement_eligible"] = true
 	}
 
 	filterStage := bson.D{{Key: "$match", Value: match}}
 	groupStage := bson.D{
 		{Key: "$group", Value: bson.M{
-			"_id":                  "$events_country_code",
-			"events_country_count": bson.M{"$sum": 1},
+			"_id":             "$events_rewilding",
+			"rewilding_count": bson.M{"$sum": 1},
 		}},
 	}
 
@@ -70,22 +71,27 @@ func (t AchievementRepository) GetAchievementsByUserId(c *gin.Context, userId pr
 		unwindStage,
 	}
 
-	if achievementType != "" {
-		rewildLookup := bson.D{{Key: "$lookup", Value: bson.M{
-			"from":         "Rewilding",
-			"localField":   "events_rewilding",
-			"foreignField": "_id",
-			"as":           "events_rewilding_detail",
-		}}}
-		rewildUnwind := bson.D{
-			{Key: "$unwind", Value: "$events_rewilding_detail"},
-		}
-
-		pipeline = append(pipeline, rewildLookup, rewildUnwind)
+	rewildLookup := bson.D{{Key: "$lookup", Value: bson.M{
+		"from":         "Rewilding",
+		"localField":   "_id",
+		"foreignField": "_id",
+		"as":           "RewildingDetail",
+	}}}
+	rewildUnwind := bson.D{
+		{Key: "$unwind", Value: "$RewildingDetail"},
 	}
+	replaceRoot := bson.D{{
+		Key: "$replaceRoot", Value: bson.M{
+			"newRoot": bson.M{
+				"$mergeObjects": bson.A{
+					"$RewildingDetail",
+					bson.M{"rewilding_count": "$rewilding_count"},
+				},
+			},
+		},
+	}}
 
-	pipeline = append(pipeline, filterStage, groupStage)
-
+	pipeline = append(pipeline, filterStage, groupStage, rewildLookup, rewildUnwind, replaceRoot)
 	cursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), pipeline)
 	cursor.All(context.TODO(), results)
 

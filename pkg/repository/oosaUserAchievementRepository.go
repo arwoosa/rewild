@@ -12,7 +12,7 @@ import (
 type OosaUserAchievementRepository struct{}
 
 func (r OosaUserAchievementRepository) Retrieve(c *gin.Context) {
-	var results []models.EventsCountryCount
+	var results []models.AchievementRewilding
 	userIdVal := c.Param("id")
 	userId, _ := primitive.ObjectIDFromHex(userIdVal)
 

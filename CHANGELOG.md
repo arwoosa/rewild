@@ -1,3 +1,12 @@
+# CHANGELOG 1.1.23
+## Changes
+- GET /achievement Load from rewilding event data
+- Event polaroids to count image lat lng radius
+
+# CHANGELOG 1.1.22
+## Changes
+- Event cover image - Rename to utf8
+
 # CHANGELOG 1.1.21
 ## Changes
 - CRUD /event/{eventId}/announcement Use one body structure
