@@ -54,8 +54,18 @@ type EventsCountryCount struct {
 }
 
 type AchievementRewilding struct {
-	RewildingID    string  `bson:"_id,omitempty" json:"rewilding_id"`
-	RewildingCount int     `bson:"rewilding_count,omitempty" json:"rewilding_count"`
-	RewildingLat   float64 `bson:"rewilding_lat,omitempty" json:"rewilding_lat"`
-	RewildingLng   float64 `bson:"rewilding_lng,omitempty" json:"rewilding_lng"`
+	RewildingID    primitive.ObjectID `bson:"_id,omitempty" json:"achievement_released_id"`
+	RewildingName  string             `bson:"rewilding_name,omitempty" json:"achievement_released_name"`
+	RewildingLat   float64            `bson:"rewilding_lat,omitempty" json:"achievement_released_lat"`
+	RewildingLng   float64            `bson:"rewilding_lng,omitempty" json:"achievement_released_lng"`
+	RewildingCount int                `bson:"rewilding_count,omitempty" json:"achievement_released_count"`
+}
+
+type AchievementPlaces struct {
+	AchievementID    primitive.ObjectID `bson:"_id,omitempty" json:"achievement_released_id"`
+	AchievementType  string             `bson:"ref_achievement_places_type,omitempty" json:"-"`
+	AchievementName  string             `bson:"ref_achievement_places_name,omitempty" json:"achievement_released_name"`
+	AchievementLat   float64            `bson:"ref_achievement_places_lat,omitempty" json:"achievement_released_lat"`
+	AchievementLng   float64            `bson:"ref_achievement_places_lng,omitempty" json:"achievement_released_lng"`
+	AchievementCount int                `bson:"ref_achievement_places_count,omitempty" json:"achievement_released_count"`
 }

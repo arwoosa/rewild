@@ -1,3 +1,12 @@
+# CHANGELOG 1.1.24
+## Changes
+- .env.example LENGTH_REWILDING_NAME, LENGTH_REWILDING_IMAGE, LENGTH_REWILDING_REFERENCE_LINK
+
+# CHANGELOG 1.1.24
+## Changes
+- Change to achievement object
+- GET achievement/places - Retrieve 百岳, 小百岳, 保護區
+
 # CHANGELOG 1.1.23
 ## Changes
 - GET /achievement Load from rewilding event data

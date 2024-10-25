@@ -10,9 +10,10 @@ import (
 func AchievementRoutes(r *gin.Engine) *gin.Engine {
 	repo := repository.AchievementRepository{}
 
-	main := r.Group("/achievement", middleware.AuthMiddleware())
+	main := r.Group("achievement", middleware.AuthMiddleware())
 	{
 		main.GET("", repo.Retrieve)
+		main.GET("/places", repo.Places)
 	}
 
 	return r
