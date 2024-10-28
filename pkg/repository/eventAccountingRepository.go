@@ -7,6 +7,8 @@ import (
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
 	"oosa_rewild/internal/models"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -20,6 +22,9 @@ type EventAccountingRequest struct {
 	EventAccountingMessage string  `json:"event_accounting_message" validate:"required"`
 	EventAccountingAmount  float64 `json:"event_accounting_amount" validate:"required,max=999999"`
 	EventAccountingPaidBy  string  `json:"event_accounting_paid_by" validate:"required"`
+}
+type EventAccountingRequestBulkRequestValidate struct {
+	Data []EventAccountingRequest `json:"data" validate:"required,dive"`
 }
 
 func (r EventAccountingRepository) Retrieve(c *gin.Context) {
@@ -62,55 +67,73 @@ func (r EventAccountingRepository) Retrieve(c *gin.Context) {
 }
 
 func (r EventAccountingRepository) Create(c *gin.Context) {
+	eventId := helpers.StringToPrimitiveObjId(c.Param("id"))
 	err := EventRepository{}.ReadOne(c, &models.Events{})
 	if err != nil {
 		return
 	}
 
 	userDetail := helpers.GetAuthUser(c)
-	var payload EventAccountingRequest
-	var EventParticipants models.EventParticipants
-	validateError := helpers.Validate(c, &payload)
+	var payload []EventAccountingRequest
+
+	errBind := c.BindJSON(&payload)
+	if errBind != nil {
+		helpers.ResponseBadRequestError(c, err.Error())
+		return
+	}
+
+	payloadValidate := EventAccountingRequestBulkRequestValidate{
+		Data: payload,
+	}
+
+	validateError := helpers.ValidateObject(c, payloadValidate)
 	if validateError != nil {
 		return
 	}
 
-	eventId := helpers.StringToPrimitiveObjId(c.Param("id"))
+	var strLenErr []string
+	var insertAccounting []interface{}
+	for k, v := range payload {
+		match, errMessage := helpers.ValidateStringLength(v.EventAccountingMessage, int(config.APP_LIMIT.LengthEventAccountingMessage))
+		fmt.Println(match, v.EventAccountingMessage, int(config.APP_LIMIT.LengthEventAccountingMessage))
+		if !match {
+			strLenErr = append(strLenErr, "Accounting message at index "+strconv.Itoa(k)+" can only contain "+errMessage)
+		} else {
+			var EventParticipants models.EventParticipants
+			filterParticipant := bson.D{
+				{Key: "event_participants_event", Value: eventId},
+				{Key: "event_participants_user", Value: helpers.StringToPrimitiveObjId(v.EventAccountingPaidBy)},
+			}
+			filterParticipantErr := config.DB.Collection("EventParticipants").FindOne(context.TODO(), filterParticipant).Decode(&EventParticipants)
 
-	match, errMessage := helpers.ValidateStringStyle1(payload.EventAccountingMessage, int(config.APP_LIMIT.LengthEventAccountingMessage))
-	if !match {
-		helpers.ResponseBadRequestError(c, "Name can only contain "+errMessage)
+			if filterParticipantErr != nil {
+				strLenErr = append(strLenErr, "Payee at index "+strconv.Itoa(k)+" is not an event participant")
+				continue
+			}
+
+			insertAccounting = append(insertAccounting, models.EventAccounting{
+				EventAccountingEvent:     eventId,
+				EventAccountingMessage:   v.EventAccountingMessage,
+				EventAccountingAmount:    v.EventAccountingAmount,
+				EventAccountingPaidBy:    helpers.StringToPrimitiveObjId(v.EventAccountingPaidBy),
+				EventAccountingCreatedBy: userDetail.UsersId,
+				EventAccountingCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+			})
+		}
+	}
+
+	if len(strLenErr) > 0 {
+		helpers.ResponseBadRequestError(c, strings.Join(strLenErr, ", "))
 		return
 	}
 
-	filterParticipant := bson.D{
-		{Key: "event_participants_event", Value: eventId},
-		{Key: "event_participants_user", Value: helpers.StringToPrimitiveObjId(payload.EventAccountingPaidBy)},
+	filterDelete := bson.D{
+		{Key: "event_accounting_event", Value: eventId},
 	}
-	filterParticipantErr := config.DB.Collection("EventParticipants").FindOne(context.TODO(), filterParticipant).Decode(&EventParticipants)
+	config.DB.Collection("EventAccounting").DeleteMany(context.TODO(), filterDelete)
+	config.DB.Collection("EventAccounting").InsertMany(context.TODO(), insertAccounting)
 
-	if filterParticipantErr != nil {
-		helpers.ResponseBadRequestError(c, "Payee is not an event participant")
-		return
-	}
-
-	insert := models.EventAccounting{
-		EventAccountingEvent:     eventId,
-		EventAccountingCreatedBy: userDetail.UsersId,
-		EventAccountingCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-	}
-
-	r.ProcessData(c, &insert, payload)
-
-	result, err := config.DB.Collection("EventAccounting").InsertOne(context.TODO(), insert)
-	if err != nil {
-		fmt.Println("ERROR", err.Error())
-		return
-	}
-
-	var EventAccounting models.EventAccounting
-	config.DB.Collection("EventAccounting").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&EventAccounting)
-	c.JSON(http.StatusOK, EventAccounting)
+	r.Retrieve(c)
 }
 
 func (r EventAccountingRepository) Read(c *gin.Context) {
