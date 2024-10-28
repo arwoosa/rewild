@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.26
+## Changes
+- GET /event/:eventId/participants show label descriptor
+
 # CHANGELOG 1.1.25
 ## Changes
 - GET /event/:eventId/schedule, POST /event/:eventId/schedule: Fix to day counter 
