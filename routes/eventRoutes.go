@@ -28,7 +28,7 @@ func EventRoutes(r *gin.Engine) *gin.Engine {
 	detail := main.Group("/:id", middleware.AuthMiddleware())
 	{
 		detail.GET("", repo.Read)
-		detail.POST("", repo.Update)
+		detail.PUT("", repo.Update)
 		detail.DELETE("", repo.Delete)
 	}
 

@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.27
+## Changes
+- POST /event/:eventId reverted to PUT /event/:eventId
+
 # CHANGELOG 1.1.26
 ## Changes
 - GET /event/:eventId/participants show label descriptor
