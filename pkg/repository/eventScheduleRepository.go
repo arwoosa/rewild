@@ -47,7 +47,12 @@ func (r EventScheduleRepository) Retrieve(c *gin.Context) {
 	cursor, _ := config.DB.Collection("EventSchedules").Find(context.TODO(), filter)
 	cursor.All(context.TODO(), &results)
 
-	days := int(math.Ceil(Event.EventsDateEnd.Time().Sub(Event.EventsDate.Time()).Hours() / 24))
+	endDate := Event.EventsDateEnd.Time()
+	startTime := Event.EventsDate.Time()
+	endDateCompare := time.Date(endDate.Year(), endDate.Month(), endDate.Day(), 23, 59, 59, 0, endDate.Location())
+	startTimeCompare := time.Date(startTime.Year(), startTime.Month(), startTime.Day(), 23, 59, 59, 0, startTime.Location())
+
+	days := int(math.Ceil(endDateCompare.Sub(startTimeCompare).Hours()/24)) + 1
 
 	mappedItem := map[string][]EventScheduleRequestTime{}
 
@@ -138,10 +143,13 @@ func (r EventScheduleRepository) Create(c *gin.Context) {
 		return
 	}
 
-	days := int(math.Ceil(Event.EventsDateEnd.Time().Sub(Event.EventsDate.Time()).Hours() / 24))
-	if days == 0 {
-		days = 1
-	}
+	endDate := Event.EventsDateEnd.Time()
+	startTime := Event.EventsDate.Time()
+	endDateCompare := time.Date(endDate.Year(), endDate.Month(), endDate.Day(), 23, 59, 59, 0, endDate.Location())
+	startTimeCompare := time.Date(startTime.Year(), startTime.Month(), startTime.Day(), 23, 59, 59, 0, startTime.Location())
+
+	days := int(math.Ceil(endDateCompare.Sub(startTimeCompare).Hours()/24)) + 1
+
 	if len(payload.EventSchedule) != days {
 		helpers.ResponseBadRequestError(c, "Schedule does not match number of days ("+strconv.Itoa(days)+")")
 		return

@@ -1,3 +1,13 @@
+# CHANGELOG 1.1.26
+## Changes
+- GET /event/:eventId/participants show label descriptor
+
+# CHANGELOG 1.1.25
+## Changes
+- GET /event/:eventId/schedule, POST /event/:eventId/schedule: Fix to day counter 
+- PUT /event/:eventId changed to POST /event/:eventId to support image upload
+- POST /event/:eventId/accounting insert many at once (delete old record and reinsert)
+
 # CHANGELOG 1.1.24
 ## Changes
 - .env.example LENGTH_REWILDING_NAME, LENGTH_REWILDING_IMAGE, LENGTH_REWILDING_REFERENCE_LINK

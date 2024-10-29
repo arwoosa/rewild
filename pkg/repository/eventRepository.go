@@ -398,7 +398,7 @@ func (r EventRepository) Update(c *gin.Context) {
 	userDetail := helpers.GetAuthUser(c)
 	var Events models.Events
 	var payload EventRequest
-	validateError := helpers.Validate(c, &payload)
+	validateError := helpers.ValidateForm(c, &payload)
 	if validateError != nil {
 		return
 	}
@@ -414,6 +414,34 @@ func (r EventRepository) Update(c *gin.Context) {
 		Events.EventsUpdatedBy = userDetail.UsersId
 		Events.EventsUpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
+		file, err := helpers.ValidatePhotoRequest(c, "events_photo", false)
+
+		if file == nil {
+			// HAS FILE
+			if err != nil {
+				return
+			}
+
+			if payload.EventsPhotoCover == "" {
+				helpers.ResponseBadRequestError(c, "Please select a cover photo")
+				return
+			} else {
+				if payload.EventsPhotoCover != "DEFAULT_0" && payload.EventsPhotoCover != "DEFAULT_1" {
+					helpers.ResponseBadRequestError(c, "Invalid cover photo. Use either DEFAULT_0 or DEFAULT_1")
+					return
+				}
+			}
+			Events.EventsPhoto = ""
+		} else {
+			cloudflare := CloudflareRepository{}
+			cloudflareResponse, postErr := cloudflare.Post(c, file)
+			if postErr != nil {
+				helpers.ResponseBadRequestError(c, postErr.Error())
+				return
+			}
+			fileName := cloudflare.ImageDelivery(cloudflareResponse.Result.Id, "public")
+			Events.EventsPhoto = fileName
+		}
 		r.ProcessData(c, &Events, payload)
 		filters := bson.D{{Key: "_id", Value: Events.EventsId}}
 		upd := bson.D{{Key: "$set", Value: Events}}

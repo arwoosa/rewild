@@ -7,6 +7,7 @@ type EventParticipants struct {
 	EventParticipantsEvent           primitive.ObjectID          `bson:"event_participants_event,omitempty" json:"event_participants_event"`
 	EventParticipantsUser            primitive.ObjectID          `bson:"event_participants_user,omitempty" json:"event_participants_user"`
 	EventParticipantsStatus          int64                       `bson:"event_participants_status" json:"event_participants_status"`
+	EventParticipantsStatusLabel     string                      `bson:"event_participants_status_label,omitempty" json:"event_participants_status_label"`
 	EventParticipantsIsPaid          int64                       `bson:"event_participants_is_paid,omitempty" json:"event_participants_is_paid"`
 	EventParticipantsPaidAmount      float64                     `bson:"event_participants_paid_amount,omitempty" json:"event_participants_paid_amount"`
 	EventParticipantsPaidAt          string                      `bson:"event_participants_paid_at,omitempty" json:"event_participants_paid_at"`
