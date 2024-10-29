@@ -30,6 +30,16 @@ func GetEventParticipantStatus(status string) int64 {
 	return ParticipantStatus[status]
 }
 
+func GetEventParticipantStatusLabel(status int64) string {
+	ParticipantStatus := map[int64]string{
+		0: "PENDING",
+		1: "ACCEPTED",
+		2: "REJECTED",
+		3: "APPLIED",
+	}
+	return ParticipantStatus[status]
+}
+
 func (r EventParticipantsRepository) Retrieve(c *gin.Context) {
 	eventId := helpers.StringToPrimitiveObjId(c.Param("id"))
 	err := EventRepository{}.ReadOne(c, &models.Events{})
@@ -65,6 +75,10 @@ func (r EventParticipantsRepository) Retrieve(c *gin.Context) {
 	if len(results) == 0 {
 		helpers.ResponseNoData(c, "No Data")
 		return
+	}
+
+	for k, v := range results {
+		results[k].EventParticipantsStatusLabel = GetEventParticipantStatusLabel(v.EventParticipantsStatus)
 	}
 	c.JSON(http.StatusOK, results)
 }
@@ -122,6 +136,8 @@ func (r EventParticipantsRepository) Create(c *gin.Context) {
 
 	var EventParticipants models.EventParticipants
 	config.DB.Collection("EventParticipants").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&EventParticipants)
+
+	EventParticipants.EventParticipantsStatusLabel = GetEventParticipantStatusLabel(EventParticipants.EventParticipantsStatus)
 
 	NotificationMessage := models.NotificationMessage{
 		Message: "你有一張來自{0}的邀請函",
