@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.28
+## Changes
+- PUT /event/:eventId allow update to not pass in events_photo or events_photo_cover
+
 # CHANGELOG 1.1.27
 ## Changes
 - POST /event/:eventId reverted to PUT /event/:eventId

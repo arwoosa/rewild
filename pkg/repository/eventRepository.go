@@ -422,16 +422,13 @@ func (r EventRepository) Update(c *gin.Context) {
 				return
 			}
 
-			if payload.EventsPhotoCover == "" {
-				helpers.ResponseBadRequestError(c, "Please select a cover photo")
-				return
-			} else {
+			if payload.EventsPhotoCover != "" {
 				if payload.EventsPhotoCover != "DEFAULT_0" && payload.EventsPhotoCover != "DEFAULT_1" {
 					helpers.ResponseBadRequestError(c, "Invalid cover photo. Use either DEFAULT_0 or DEFAULT_1")
 					return
 				}
+				Events.EventsPhoto = ""
 			}
-			Events.EventsPhoto = ""
 		} else {
 			cloudflare := CloudflareRepository{}
 			cloudflareResponse, postErr := cloudflare.Post(c, file)
