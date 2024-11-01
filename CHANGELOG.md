@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.29
+## Changes
+- my/event?past=true allows pagination use ?page=[x]
+
 # CHANGELOG 1.1.28
 ## Changes
 - PUT /event/:eventId allow update to not pass in events_photo or events_photo_cover

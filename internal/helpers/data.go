@@ -2,9 +2,12 @@ package helpers
 
 import (
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -71,4 +74,23 @@ func TimeIsBetween(t, min, max time.Time) bool {
 func StringToDatetime(value string) time.Time {
 	dt, _ := time.Parse("2006-01-02 15:04:05", value)
 	return dt
+}
+
+func DataPaginate(c *gin.Context, length int64) []bson.D {
+	var params []bson.D
+	pageQuery := c.Query("page")
+
+	if pageQuery == "" {
+		pageQuery = "1"
+	}
+
+	page, err := strconv.ParseInt(pageQuery, 10, 64)
+
+	if err != nil {
+		page = 1
+	}
+
+	skip := (page - 1) * length
+
+	return append(params, bson.D{{Key: "$skip", Value: skip}}, bson.D{{Key: "$limit", Value: length}})
 }
