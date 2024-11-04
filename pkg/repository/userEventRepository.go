@@ -67,6 +67,7 @@ func (r UserEventRepository) GetEventByUserId(c *gin.Context, userId primitive.O
 
 	filterStage := bson.D{{Key: "$match", Value: match}}
 
+	paginate := helpers.DataPaginate(c, 5)
 	pipeline := mongo.Pipeline{
 		lookupStage,
 		unwindStage,
@@ -82,15 +83,37 @@ func (r UserEventRepository) GetEventByUserId(c *gin.Context, userId primitive.O
 		bson.D{{
 			Key: "$unwind", Value: "$events_created_by_user",
 		}},
-		bson.D{{Key: "$limit", Value: 5}},
+		bson.D{{
+			Key: "$facet", Value: bson.D{
+				{Key: "data", Value: bson.A{
+					paginate[0],
+					paginate[1],
+				}},
+				{Key: "pagination", Value: bson.A{
+					bson.D{{Key: "$count", Value: "total"}},
+				}},
+			},
+		}},
 	}
 
-	cursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), pipeline)
-	cursor.All(context.TODO(), Events)
+	var EventsPaginated []EventsPaginated
 
+	cursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), pipeline)
+	cursor.All(context.TODO(), &EventsPaginated)
+
+	*Events = EventsPaginated[0].Data
 	if len(*Events) > 0 {
 		*Events = EventRepository{}.RetrieveParticipantDetails(*Events)
 	}
 
 	return err
+}
+
+type Pagination struct {
+	Total int64 `bson:"total" json:"total"`
+}
+
+type EventsPaginated struct {
+	Data       []models.Events `bson:"data" json:"data"`
+	Pagination []Pagination    `bson:"pagination" json:"pagination"`
 }
