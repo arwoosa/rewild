@@ -113,10 +113,42 @@ func (t AchievementRepository) Places(c *gin.Context) {
 	pipeline := mongo.Pipeline{
 		matchStage,
 		bson.D{{Key: "$lookup", Value: bson.M{
-			"from":         "Events",
-			"localField":   "_id",
-			"foreignField": "events_rewilding_achievement_type_id",
-			"as":           "Events",
+			"as":   "Events",
+			"from": "Events",
+			"let":  bson.M{"ref_achievement_places_id": "$_id"},
+			"pipeline": []bson.M{
+				{
+					"$match": bson.M{
+						"$expr": bson.M{
+							"$eq": bson.A{"$events_rewilding_achievement_type_id", "$$ref_achievement_places_id"},
+						},
+					},
+				},
+				{"$match": bson.M{"events_rewilding_achievement_eligible": true}},
+				{
+					"$lookup": bson.M{
+						"as":   "Participant",
+						"from": "EventParticipants",
+						"let":  bson.M{"event_id": "$_id"},
+						"pipeline": []bson.M{
+							{"$match": bson.M{
+								"$expr": bson.M{
+									"$eq": bson.A{"$event_participants_event", "$$event_id"}},
+							}},
+							{"$match": bson.M{"event_participants_user": userDetail.UsersId}},
+						},
+					},
+				},
+				{
+					"$set": bson.M{"ref_achievement_places_count": bson.M{"$size": "$Participant"}},
+				},
+				{
+					"$group": bson.M{
+						"_id":   "events_rewilding_achievement_type_id",
+						"count": bson.M{"$sum": "$ref_achievement_places_count"},
+					},
+				},
+			},
 		}}},
 		bson.D{
 			{Key: "$unwind", Value: bson.M{
@@ -125,20 +157,9 @@ func (t AchievementRepository) Places(c *gin.Context) {
 			}},
 		},
 		bson.D{
-			{Key: "$lookup", Value: bson.M{
-				"from":         "EventParticipants",
-				"localField":   "Events._id",
-				"foreignField": "event_participants_event",
-				"as":           "EventParticipants",
-				"pipeline": []bson.M{
-					{"$match": bson.M{"event_participants_user": userDetail.UsersId}},
-				},
-			}},
-		},
-		bson.D{
 			{Key: "$set", Value: bson.M{
-				"ref_achievement_places_count": bson.M{"$size": "$EventParticipants"},
-			}},
+				"ref_achievement_places_count": "$Events.count"},
+			},
 		},
 	}
 

@@ -15,7 +15,7 @@ func UserRoutes(r *gin.Engine) *gin.Engine {
 	me := r.Group("/user/:id", middleware.AuthMiddleware())
 	{
 		//me.GET("", repoUser.Read)
-		me.GET("/event", repoUserEvent.Retrieve)
+		me.GET("/events", repoUserEvent.Retrieve)
 		me.GET("/achievement", repoUserAchievement.Retrieve)
 	}
 
