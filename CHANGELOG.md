@@ -1,3 +1,8 @@
+# CHANGELOG 1.1.30
+## Changes
+- Rename GET user/:id/event to GET user/:id/events
+- GET achievement/places - Bugfix
+
 # CHANGELOG 1.1.29
 ## Changes
 - my/event?past=true allows pagination use ?page=[x]
