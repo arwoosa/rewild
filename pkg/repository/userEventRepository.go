@@ -55,7 +55,7 @@ func (r UserEventRepository) GetEventByUserId(c *gin.Context, userId primitive.O
 		"events_deleted": bson.M{"$exists": false},
 	}
 
-	if isPast != "" {
+	if isPast != "" && isPast == "true" {
 		match["events_date"] = bson.M{"$lt": currentTime}
 	} else {
 		match["events_date"] = bson.M{"$gte": currentTime}

@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.31
+## Changes
+- /user/{userId}/events?past=false
+
 # CHANGELOG 1.1.30
 ## Changes
 - Rename GET user/:id/event to GET user/:id/events
