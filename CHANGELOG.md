@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.32
+## Changes
+- Automatically create user friend suggested on event
+
 # CHANGELOG 1.1.31
 ## Changes
 - /user/{userId}/events?past=false

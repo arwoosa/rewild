@@ -144,6 +144,7 @@ func (r EventParticipantsRepository) Create(c *gin.Context) {
 		Data:    []map[string]interface{}{helpers.NotificationFormatUser(userDetail)},
 	}
 	helpers.NotificationsCreate(c, helpers.NOTIFICATION_INVITATION, invitedUser, NotificationMessage, EventParticipants.EventParticipantsId)
+	EventRepository{}.HandleParticipantFriend(c, eventId)
 	c.JSON(http.StatusOK, EventParticipants)
 }
 
