@@ -7,6 +7,7 @@ import (
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
 	"oosa_rewild/internal/models"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -71,7 +72,9 @@ func (r EventMessageBoardRepository) Retrieve(c *gin.Context) {
 }
 
 func (r EventMessageBoardRepository) Create(c *gin.Context) {
-	err := EventRepository{}.ReadOne(c, &models.Events{})
+	eventId := helpers.StringToPrimitiveObjId(c.Param("id"))
+	var Events models.Events
+	err := EventRepository{}.ReadOne(c, &Events)
 	if err != nil {
 		return
 	}
@@ -83,6 +86,21 @@ func (r EventMessageBoardRepository) Create(c *gin.Context) {
 		return
 	}
 
+	currentTime := time.Now()
+	if currentTime.After(Events.EventsDateEnd.Time()) {
+		helpers.ResponseBadRequestError(c, "This event has ended")
+		return
+	}
+
+	countFilter := bson.D{{Key: "event_message_board_event", Value: eventId}}
+	countMessages, _ := config.DB.Collection("EventMessageBoard").CountDocuments(context.TODO(), countFilter)
+
+	if countMessages+1 > config.APP_LIMIT.EventMessageBoardLimit {
+		errMessage := "Maximum number of messages encountered (" + strconv.Itoa(int(config.APP_LIMIT.EventMessageBoardLimit)) + ")"
+		helpers.ResponseBadRequestError(c, errMessage)
+		return
+	}
+
 	match, errMessage := helpers.ValidateStringLength(payload.EventMessageBoardBaseMessage, int(config.APP_LIMIT.LengthEventMessageBoardMessage))
 	if !match {
 		helpers.ResponseBadRequestError(c, "Message board can only contain "+errMessage)
@@ -90,7 +108,7 @@ func (r EventMessageBoardRepository) Create(c *gin.Context) {
 	}
 
 	insert := models.EventMessageBoard{
-		EventMessageBoardEvent: helpers.StringToPrimitiveObjId(c.Param("id")),
+		EventMessageBoardEvent: eventId,
 		// EventMessageBoardStatus
 		// EventMessageBoardCategory
 		EventMessageBoardCreatedBy: userDetail.UsersId,

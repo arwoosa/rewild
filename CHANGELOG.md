@@ -1,3 +1,13 @@
+# CHANGELOG 1.1.33
+## Changes
+- Collaborative log message length limit (20)
+- Event join message length limit (50)
+- Event accounting max record (100)
+- Event announcement per category limit (20)
+- Event message board maximum limit (9999)
+- Event message board disable create after event ends
+- My event pagination changes. When ?page= is not passed, load all
+
 # CHANGELOG 1.1.32
 ## Changes
 - Automatically create user friend suggested on event

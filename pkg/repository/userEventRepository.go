@@ -68,6 +68,14 @@ func (r UserEventRepository) GetEventByUserId(c *gin.Context, userId primitive.O
 	filterStage := bson.D{{Key: "$match", Value: match}}
 
 	paginate := helpers.DataPaginate(c, 5)
+	dataFacet := bson.A{}
+
+	if c.Query("page") != "" {
+		dataFacet = bson.A{
+			paginate[0],
+			paginate[1],
+		}
+	}
 	pipeline := mongo.Pipeline{
 		lookupStage,
 		unwindStage,
@@ -85,10 +93,7 @@ func (r UserEventRepository) GetEventByUserId(c *gin.Context, userId primitive.O
 		}},
 		bson.D{{
 			Key: "$facet", Value: bson.D{
-				{Key: "data", Value: bson.A{
-					paginate[0],
-					paginate[1],
-				}},
+				{Key: "data", Value: dataFacet},
 				{Key: "pagination", Value: bson.A{
 					bson.D{{Key: "$count", Value: "total"}},
 				}},

@@ -33,6 +33,9 @@ type AppLimit struct {
 	PocketList                     int64
 	PocketListItems                int64
 	EventPolaroidLimit             int64
+	EventAccountingLimit           int64
+	EventAnnouncementLimit         int64
+	EventMessageBoardLimit         int64
 	LengthPocketListName           int64
 	LengthRewildingName            int64
 	LengthRewildingImage           int64
@@ -41,6 +44,8 @@ type AppLimit struct {
 	LengthEventMessageBoardMessage int64
 	LengthEventAccountingMessage   int64
 	LengthEventInvitationMessage   int64
+	LengthEventPolaroidMessage     int64
+	LengthEventParticipantMessage  int64
 	MinimumTopRanking              int64
 }
 
@@ -74,6 +79,9 @@ func InitialiseConfig() {
 	APP.OpenWeatherApiKey = os.Getenv("OPENWEATHER_API_KEY")
 
 	APP_LIMIT.EventPolaroidLimit = 0
+	APP_LIMIT.EventAccountingLimit = 0
+	APP_LIMIT.EventAnnouncementLimit = 0
+	APP_LIMIT.EventMessageBoardLimit = 0
 	APP_LIMIT.PocketList = 0
 	APP_LIMIT.PocketListItems = 0
 	APP_LIMIT.LengthPocketListName = 0
@@ -84,9 +92,14 @@ func InitialiseConfig() {
 	APP_LIMIT.LengthEventMessageBoardMessage = 0
 	APP_LIMIT.LengthEventAccountingMessage = 0
 	APP_LIMIT.LengthEventInvitationMessage = 0
+	APP_LIMIT.LengthEventPolaroidMessage = 0
+	APP_LIMIT.LengthEventParticipantMessage = 0
 	APP_LIMIT.MinimumTopRanking = 0
 
 	polaroidLimit, err := strconv.ParseInt(os.Getenv("EVENT_POLAROID_LIMIT"), 10, 64)
+	eventAccountingLimit, eventAccountingLimitErr := strconv.ParseInt(os.Getenv("EVENT_ACCOUNTING_LIMIT"), 10, 64)
+	eventAnnouncementLimit, eventAnnouncementLimitErr := strconv.ParseInt(os.Getenv("EVENT_ANNOUNCEMENT_LIMIT"), 10, 64)
+	eventMessageBoardLimit, eventMessageBoardLimitErr := strconv.ParseInt(os.Getenv("EVENT_MESSAGE_BOARD_LIMIT"), 10, 64)
 	pocketListLimit, pocketlistLimitErr := strconv.ParseInt(os.Getenv("POCKET_LIST_LIMIT"), 10, 64)
 	pocketListitemsLimit, pocketlistitemsLimitErr := strconv.ParseInt(os.Getenv("POCKET_LIST_ITEMS_LIMIT"), 10, 64)
 	lengthPocketListName, lengthPocketListNameErr := strconv.ParseInt(os.Getenv("LENGTH_POCKET_LIST_NAME"), 10, 64)
@@ -97,9 +110,20 @@ func InitialiseConfig() {
 	lengthEventMessageBoardMessage, lengthEventMessageBoardMessageErr := strconv.ParseInt(os.Getenv("LENGTH_EVENT_MESSAGE_BOARD_MESSAGE"), 10, 64)
 	lengthEventAccountingMessage, lengthEventAccountingMessageErr := strconv.ParseInt(os.Getenv("LENGTH_EVENT_ACCOUNTING_MESSAGE"), 10, 64)
 	lengthEventInvitationMessage, lengthEventInvitationMessageErr := strconv.ParseInt(os.Getenv("LENGTH_EVENT_INVITATION_MESSAGE"), 10, 64)
+	lengthEventPolaroidMessage, lengthEventPolaroidMessageErr := strconv.ParseInt(os.Getenv("LENGTH_EVENT_POLAROID_MESSAGE"), 10, 64)
+	lengthEventParticipantMessage, lengthEventParticipantMessageErr := strconv.ParseInt(os.Getenv("LENGTH_EVENT_PARTICIPANT_MESSAGE"), 10, 64)
 	minimumTopRanking, minimumTopRankingErr := strconv.ParseInt(os.Getenv("MINIMUM_TOP_RANKING"), 10, 64)
 	if err == nil {
 		APP_LIMIT.EventPolaroidLimit = polaroidLimit
+	}
+	if eventAccountingLimitErr == nil {
+		APP_LIMIT.EventAccountingLimit = eventAccountingLimit
+	}
+	if eventAnnouncementLimitErr == nil {
+		APP_LIMIT.EventAnnouncementLimit = eventAnnouncementLimit
+	}
+	if eventMessageBoardLimitErr == nil {
+		APP_LIMIT.EventMessageBoardLimit = eventMessageBoardLimit
 	}
 	if pocketlistLimitErr == nil {
 		APP_LIMIT.PocketList = pocketListLimit
@@ -133,5 +157,11 @@ func InitialiseConfig() {
 	}
 	if lengthEventInvitationMessageErr == nil {
 		APP_LIMIT.LengthEventInvitationMessage = lengthEventInvitationMessage
+	}
+	if lengthEventPolaroidMessageErr == nil {
+		APP_LIMIT.LengthEventPolaroidMessage = lengthEventPolaroidMessage
+	}
+	if lengthEventParticipantMessageErr == nil {
+		APP_LIMIT.LengthEventParticipantMessage = lengthEventParticipantMessage
 	}
 }
