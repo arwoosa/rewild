@@ -84,9 +84,14 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 	}
 
 	countPolaroid := r.CountTotalPolaroids(Events.EventsId)
-	fmt.Println("countPolaroid", countPolaroid)
 	if countPolaroid >= config.APP_LIMIT.EventPolaroidLimit {
 		helpers.ResponseBadRequestError(c, "Unable to add more polaroids. Maximum allowed: "+strconv.Itoa(int(config.APP_LIMIT.EventPolaroidLimit)))
+		return
+	}
+
+	match, errMessage := helpers.ValidateStringLength(payload.EventPolaroidsMessage, int(config.APP_LIMIT.LengthEventPolaroidMessage))
+	if !match {
+		helpers.ResponseBadRequestError(c, errMessage)
 		return
 	}
 

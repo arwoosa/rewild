@@ -71,6 +71,12 @@ func (r EventInvitationMessageRepository) Join(c *gin.Context) {
 		helpers.ResponseError(c, "Invalid event")
 	}
 
+	match, errMessage := helpers.ValidateStringLength(payload.EventParticipantsRequestMessage, int(config.APP_LIMIT.LengthEventParticipantMessage))
+	if !match {
+		helpers.ResponseBadRequestError(c, errMessage)
+		return
+	}
+
 	countFilter := bson.D{{Key: "event_participants_event", Value: id}}
 	opts := options.Count().SetHint("_id_")
 	countParticipant, _ := config.DB.Collection("EventParticipants").CountDocuments(context.TODO(), countFilter, opts)

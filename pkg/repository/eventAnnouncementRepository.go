@@ -6,6 +6,7 @@ import (
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
 	"oosa_rewild/internal/models"
+	"strconv"
 	"strings"
 	"time"
 
@@ -139,6 +140,10 @@ func (r EventAnnouncementRepository) Create(c *gin.Context) {
 	var strLenErr []string
 	var insertAnnouncement []interface{}
 	for _, v := range payload {
+		if len(v.EventMessageBoardBaseMessage) > int(config.APP_LIMIT.EventAnnouncementLimit) {
+			strLenErr = append(strLenErr, "Category '"+v.EventMessageBoardCategory+"' can only contain "+strconv.Itoa(int(config.APP_LIMIT.EventAnnouncementLimit))+" announcements")
+		}
+
 		for _, message := range v.EventMessageBoardBaseMessage {
 			match, errMessage := helpers.ValidateStringLength(message, int(config.APP_LIMIT.LengthEventMessageBoardMessage))
 			if !match {

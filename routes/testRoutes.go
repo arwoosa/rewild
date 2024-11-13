@@ -15,6 +15,8 @@ func TestRoutes(r *gin.Engine) *gin.Engine {
 		main.GET("/badge", middleware.AuthMiddleware(), repo.CreateBadge)
 		main.GET("/notifications", middleware.AuthMiddleware(), repo.CreateNotification)
 		main.GET("/exp", middleware.AuthMiddleware(), repo.CreateExp)
+		main.GET("/pairs", repo.CreatePairs)
+		main.GET("event/:eventId/friends", repo.EventFriend)
 	}
 
 	return r

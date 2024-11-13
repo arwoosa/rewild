@@ -91,6 +91,13 @@ func (r EventAccountingRepository) Create(c *gin.Context) {
 		return
 	}
 
+	lenAccounting := len(payload)
+	if lenAccounting > int(config.APP_LIMIT.EventAccountingLimit) {
+		errMessage := "Unable to add accounting records. Maximum allowed: " + strconv.Itoa(int(config.APP_LIMIT.EventAccountingLimit))
+		helpers.ResponseBadRequestError(c, errMessage)
+		return
+	}
+
 	var strLenErr []string
 	var insertAccounting []interface{}
 	for k, v := range payload {
