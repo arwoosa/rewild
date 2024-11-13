@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -11,14 +12,9 @@ import (
 	"strconv"
 	"time"
 
-	exif "github.com/dsoprea/go-exif/v3"
-	exifcommon "github.com/dsoprea/go-exif/v3/common"
-	hemp "github.com/dsoprea/go-heic-exif-extractor/v2"
-	jis "github.com/dsoprea/go-jpeg-image-structure/v2"
-	pis "github.com/dsoprea/go-png-image-structure/v2"
-	riimage "github.com/dsoprea/go-utility/v2/image"
-	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"
+	"github.com/rwcarlsen/goexif/exif"
+	"github.com/rwcarlsen/goexif/mknote"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -112,7 +108,21 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 		return
 	}
 
+	lat := float64(0)
+	lng := float64(0)
+
 	b, _ := io.ReadAll(uploadedFile)
+	reader := bytes.NewReader(b)
+
+	exif.RegisterParsers(mknote.All...)
+	x, err := exif.Decode(reader)
+	if err != nil {
+		//helpers.ResponseBadRequestError(c, "EXIF: "+err.Error())
+	} else {
+		lat, lng, _ = x.LatLong()
+	}
+
+	/*b, _ := io.ReadAll(uploadedFile)
 	mimeType := mimetype.Detect(b)
 
 	var ecc riimage.MediaContext
@@ -141,8 +151,6 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 	lngRef := ""
 	var latInterface []exifcommon.Rational
 	var lngInterface []exifcommon.Rational
-	lat := float64(0)
-	lng := float64(0)
 
 	for _, v := range exifChildren {
 		entries := v.Entries()
@@ -169,7 +177,7 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 	if len(lngInterface) > 0 && lngRef != "" {
 		deg, _ := exif.NewGpsDegreesFromRationals(lngRef, lngInterface)
 		lng = deg.Decimal()
-	}
+	}*/
 
 	cloudflare := CloudflareRepository{}
 	cloudflareResponse, postErr := cloudflare.Post(c, file)
@@ -193,7 +201,8 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 
 	radius := helpers.Haversine(lat, lng, Events.EventsLat, Events.EventsLng)
 
-	eligibleAchievement := false
+	eligibleAchievement := true
+	/*eligibleAchievement := false
 	if Events.EventsRewildingAchievementType != "" {
 		if Events.EventsRewildingAchievementType == "big" || Events.EventsRewildingAchievementType == "small" {
 			if radius <= 200 {
@@ -204,7 +213,7 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 				eligibleAchievement = true
 			}
 		}
-	}
+	}*/
 
 	insert.EventPolaroidsRadiusFromEvent = radius
 	insert.EventPolaroidsAchievementEligible = &eligibleAchievement

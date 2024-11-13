@@ -1,3 +1,9 @@
+# CHANGELOG 1.1.34
+## Changes
+- Change exif lat long library 
+- Handle images without lat long
+- Removal of checks for image GPS info for achievements
+
 # CHANGELOG 1.1.33
 ## Changes
 - Collaborative log message length limit (20)
