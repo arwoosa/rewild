@@ -312,6 +312,7 @@ func (r EventRepository) Create(c *gin.Context) {
 	// Create badge record
 	helpers.BadgeEvents(c, Events.EventsId)
 	r.HandleParticipation(c, userDetail.UsersId, Events.EventsId)
+	r.HandleParticipantFriend(c, Events.EventsId)
 	c.JSON(http.StatusOK, Events)
 }
 
@@ -331,6 +332,53 @@ func (r EventRepository) HandleParticipation(c *gin.Context, userId primitive.Ob
 	if expAwarded > 0 {
 		helpers.ExpAward(c, helpers.EXP_REWILDING, expAwarded, eventId)
 	}
+}
+
+func (r EventRepository) HandleParticipantFriend(c *gin.Context, eventId primitive.ObjectID) {
+	var EventParticipants []models.EventParticipants
+
+	filters := bson.D{{Key: "event_participants_event", Value: eventId}}
+
+	cursor, _ := config.DB.Collection("EventParticipants").Find(context.TODO(), filters)
+	cursor.All(context.TODO(), &EventParticipants)
+
+	lenParticipants := len(EventParticipants)
+	for i := 0; i < lenParticipants; i++ {
+		for j := i + 1; j < lenParticipants; j++ {
+			var UserFriends models.UserFriends
+			err := r.CheckIfFriend(c, EventParticipants[i].EventParticipantsUser, EventParticipants[j].EventParticipantsUser, &UserFriends)
+			if err == mongo.ErrNoDocuments {
+				suggestedStatus := 0
+				ins := models.UserFriends{
+					UserFriendsStatus:    &suggestedStatus,
+					UserFriendsUser1:     EventParticipants[i].EventParticipantsUser,
+					UserFriendsUser2:     EventParticipants[j].EventParticipantsUser,
+					UserFriendsCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				}
+				config.DB.Collection("UserFriends").InsertOne(context.TODO(), ins)
+			}
+		}
+	}
+}
+
+func (r EventRepository) CheckIfFriend(c *gin.Context, user1 primitive.ObjectID, user2 primitive.ObjectID, UserFriends *models.UserFriends) error {
+	err := config.DB.Collection("UserFriends").FindOne(context.TODO(), bson.D{
+		{
+			Key: "$or", Value: []bson.D{
+				{
+					{Key: "user_friends_user_1", Value: user2},
+					{Key: "user_friends_user_2", Value: user1},
+				},
+				{
+					{Key: "user_friends_user_1", Value: user1},
+					{Key: "user_friends_user_2", Value: user2},
+				},
+			},
+		},
+		{Key: "user_friends_status", Value: bson.M{"$ne": 3}},
+	}).Decode(&UserFriends)
+
+	return err
 }
 
 func (r EventRepository) Read(c *gin.Context) {
