@@ -1,3 +1,12 @@
+# CHANGELOG 1.1.35
+## Changes
+- Check radius, save radius as meter (note: haversine in system returns km)
+- Event participant feeling validation
+- Collaborative log random count
+- Event album link update
+- Collaboratinve log polaroid check lat and lng. Use param ?is_check=true
+- my/event?has_polaroid=[true,false] Allows retrieval on event with or without polaroids
+
 # CHANGELOG 1.1.34
 ## Changes
 - Change exif lat long library 
