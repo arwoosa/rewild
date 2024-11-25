@@ -3,7 +3,7 @@ networks:
     external: true
     name: network.oosa
 
-name: oosa-service
+name: oosa-api-service
 services:
   oosa_rewild:
     container_name: oosa_rewild

@@ -14,8 +14,8 @@ steps:
 
 - name: restart service
   commands:
-  - docker-compose -f ./.docker/docker-test.yml down
-  - docker-compose -f ./.docker/docker-test.yml up -d
+  - docker compose -f ./.docker/docker-test.yml down
+  - docker compose -f ./.docker/docker-test.yml up -d
 
 trigger:
   branch:
