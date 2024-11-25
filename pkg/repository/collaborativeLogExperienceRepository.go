@@ -36,6 +36,12 @@ func (r CollaborativeLogExperienceRepository) Create(c *gin.Context) {
 		helpers.ResultEmpty(c, err)
 	}
 
+	allowedFeelings := []string{"EXPERIENCE_1", "EXPERIENCE_2", "EXPERIENCE_3", "EXPERIENCE_4", "EXPERIENCE_5", "EXPERIENCE_6"}
+	if !helpers.StringInSlice(payload.EventsExperience, allowedFeelings) {
+		helpers.ResponseBadRequestError(c, "Unsupported feelings")
+		return
+	}
+
 	EventParticipants.EventParticipantsExperience = payload.EventsExperience
 	updFilter := bson.D{
 		{Key: "_id", Value: EventParticipants.EventParticipantsId},
