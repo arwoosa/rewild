@@ -67,28 +67,35 @@ func (r CollaborativeLogPolaroidRepository) Retrieve(c *gin.Context) {
 }
 
 func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
+	userDetail := helpers.GetAuthUser(c)
+	isCheck := false
+	if c.Query("is_check") != "" {
+		isCheck = true
+	}
+
 	var payload CollaborativeLogPolaroidRequest
 	validateError := helpers.ValidateForm(c, &payload)
 	if validateError != nil {
 		return
 	}
-
 	var Events models.Events
 	err := CollaborativeLogRepository{}.ReadOne(c, &Events)
 	if err != nil {
 		return
 	}
 
-	countPolaroid := r.CountTotalPolaroids(Events.EventsId)
-	if countPolaroid >= config.APP_LIMIT.EventPolaroidLimit {
-		helpers.ResponseBadRequestError(c, "Unable to add more polaroids. Maximum allowed: "+strconv.Itoa(int(config.APP_LIMIT.EventPolaroidLimit)))
-		return
-	}
+	if !isCheck {
+		countPolaroid := r.CountTotalPolaroids(Events.EventsId)
+		if countPolaroid >= config.APP_LIMIT.EventPolaroidLimit {
+			helpers.ResponseBadRequestError(c, "Unable to add more polaroids. Maximum allowed: "+strconv.Itoa(int(config.APP_LIMIT.EventPolaroidLimit)))
+			return
+		}
 
-	match, errMessage := helpers.ValidateStringLength(payload.EventPolaroidsMessage, int(config.APP_LIMIT.LengthEventPolaroidMessage))
-	if !match {
-		helpers.ResponseBadRequestError(c, errMessage)
-		return
+		match, errMessage := helpers.ValidateStringLength(payload.EventPolaroidsMessage, int(config.APP_LIMIT.LengthEventPolaroidMessage))
+		if !match {
+			helpers.ResponseBadRequestError(c, errMessage)
+			return
+		}
 	}
 
 	file, fileErr := c.FormFile("event_polaroids_file")
@@ -179,15 +186,17 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 		lng = deg.Decimal()
 	}*/
 
-	cloudflare := CloudflareRepository{}
-	cloudflareResponse, postErr := cloudflare.Post(c, file)
-	if postErr != nil {
-		helpers.ResponseBadRequestError(c, postErr.Error())
-		return
+	fileName := ""
+	if !isCheck {
+		cloudflare := CloudflareRepository{}
+		cloudflareResponse, postErr := cloudflare.Post(c, file)
+		if postErr != nil {
+			helpers.ResponseBadRequestError(c, postErr.Error())
+			return
+		}
+		fileName = cloudflare.ImageDelivery(cloudflareResponse.Result.Id, "public")
 	}
-	fileName := cloudflare.ImageDelivery(cloudflareResponse.Result.Id, "public")
 
-	userDetail := helpers.GetAuthUser(c)
 	insert := models.EventPolaroids{
 		EventPolaroidsEvent:     Events.EventsId,
 		EventPolaroidsUrl:       fileName,
@@ -199,10 +208,9 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 		EventPolaroidsCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	radius := helpers.Haversine(lat, lng, Events.EventsLat, Events.EventsLng)
+	radius := helpers.Haversine(lat, lng, Events.EventsLat, Events.EventsLng) * 1000
 
-	eligibleAchievement := true
-	/*eligibleAchievement := false
+	eligibleAchievement := false
 	if Events.EventsRewildingAchievementType != "" {
 		if Events.EventsRewildingAchievementType == "big" || Events.EventsRewildingAchievementType == "small" {
 			if radius <= 200 {
@@ -213,20 +221,25 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 				eligibleAchievement = true
 			}
 		}
-	}*/
+	}
 
 	insert.EventPolaroidsRadiusFromEvent = radius
 	insert.EventPolaroidsAchievementEligible = &eligibleAchievement
 
-	result, err := config.DB.Collection("EventPolaroids").InsertOne(context.TODO(), insert)
-	if err != nil {
-		fmt.Println("ERROR", err.Error())
-		return
+	if !isCheck {
+		result, err := config.DB.Collection("EventPolaroids").InsertOne(context.TODO(), insert)
+		if err != nil {
+			fmt.Println("ERROR", err.Error())
+			return
+		}
+		r.EventAchievementEligibility(c, Events)
+		r.CountUploadPolaroidByParticipant(c, Events.EventsId, userDetail.UsersId)
+		var EventPolaroids models.EventPolaroids
+		config.DB.Collection("EventPolaroids").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&EventPolaroids)
+		c.JSON(http.StatusOK, EventPolaroids)
+	} else {
+		c.JSON(http.StatusOK, insert)
 	}
-	r.EventAchievementEligibility(c, Events)
-	var EventPolaroids models.EventPolaroids
-	config.DB.Collection("EventPolaroids").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&EventPolaroids)
-	c.JSON(http.StatusOK, EventPolaroids)
 }
 
 func (r CollaborativeLogPolaroidRepository) CountTotalPolaroids(eventId primitive.ObjectID) int64 {
@@ -249,4 +262,22 @@ func (r CollaborativeLogPolaroidRepository) EventAchievementEligibility(c *gin.C
 		}}}
 		config.DB.Collection("Events").UpdateOne(context.TODO(), filterUpd, eventUpd)
 	}
+}
+
+func (r CollaborativeLogPolaroidRepository) CountUploadPolaroidByParticipant(c *gin.Context, eventId primitive.ObjectID, userId primitive.ObjectID) {
+	var EventParticipants models.EventParticipants
+	filter := bson.D{
+		{Key: "event_participants_event", Value: eventId},
+		{Key: "event_participants_user", Value: userId},
+	}
+	config.DB.Collection("EventParticipants").FindOne(context.TODO(), filter).Decode(&EventParticipants)
+
+	countFilter := bson.D{{Key: "event_polaroids_event", Value: eventId}, {Key: "event_polaroids_created_by", Value: userId}}
+	count, _ := config.DB.Collection("EventPolaroids").CountDocuments(context.TODO(), countFilter)
+
+	filterUpd := bson.D{{Key: "_id", Value: EventParticipants.EventParticipantsId}}
+	eventParticipantUpd := bson.D{{Key: "$set", Value: map[string]interface{}{
+		"event_participants_polaroid_count": count,
+	}}}
+	config.DB.Collection("EventParticipants").UpdateOne(context.TODO(), filterUpd, eventParticipantUpd)
 }

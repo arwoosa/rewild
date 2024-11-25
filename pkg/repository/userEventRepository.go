@@ -36,6 +36,7 @@ func (r UserEventRepository) Retrieve(c *gin.Context) {
 
 func (r UserEventRepository) GetEventByUserId(c *gin.Context, userId primitive.ObjectID, Events *[]models.Events) error {
 	isPast := c.Query("past")
+	hasPolaroid := c.Query("has_polaroid")
 	countryCode := c.Query("country_code")
 	currentTime := primitive.NewDateTimeFromTime(time.Now())
 
@@ -53,6 +54,15 @@ func (r UserEventRepository) GetEventByUserId(c *gin.Context, userId primitive.O
 	match := bson.M{
 		"EventParticipants.event_participants_user": userId,
 		"events_deleted": bson.M{"$exists": false},
+	}
+
+	if hasPolaroid == "true" {
+		match["EventParticipants.event_participants_polaroid_count"] = bson.M{"$gt": 0}
+	} else if hasPolaroid == "false" {
+		match["$or"] = []bson.M{
+			{"EventParticipants.event_participants_polaroid_count": bson.M{"$exists": false}},
+			{"EventParticipants.event_participants_polaroid_count": bson.M{"$eq": 0}},
+		}
 	}
 
 	if isPast != "" && isPast == "true" {

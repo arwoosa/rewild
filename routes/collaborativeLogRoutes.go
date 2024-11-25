@@ -13,6 +13,7 @@ func CollaborativeLogRoutes(r *gin.Engine) *gin.Engine {
 	repoPolaroid := repository.CollaborativeLogPolaroidRepository{}
 	repoQuestionnaire := repository.CollaborativeLogQuestionnaireRepository{}
 	repoExperience := repository.CollaborativeLogExperienceRepository{}
+	randomCountRepo := repository.CollaborativeLogRandomCountRepository{}
 
 	main := r.Group("/collaborative-log")
 	{
@@ -27,9 +28,9 @@ func CollaborativeLogRoutes(r *gin.Engine) *gin.Engine {
 	{
 		albumLink.GET("", repoAlbumLink.Retrieve)
 		albumLink.POST("", repoAlbumLink.Create)
-		// albumLink.GET("/:messageBoardId", repoAlbumLink.Read)
-		// albumLink.PUT("/:messageBoardId", repoAlbumLink.Update)
-		// albumLink.DELETE("/:messageBoardId", repoAlbumLink.Delete)
+		// albumLink.GET("/:albumLinkId", repoAlbumLink.Read)
+		albumLink.PUT("/:albumLinkId", repoAlbumLink.Update)
+		// albumLink.DELETE("/:albumLinkId", repoAlbumLink.Delete)
 	}
 
 	polaroid := detail.Group("/polaroids", middleware.AuthMiddleware())
@@ -49,6 +50,12 @@ func CollaborativeLogRoutes(r *gin.Engine) *gin.Engine {
 	experience := detail.Group("/experience", middleware.AuthMiddleware())
 	{
 		experience.POST("", repoExperience.Create)
+	}
+
+	randomCount := detail.Group("/random-count", middleware.AuthMiddleware())
+	{
+		randomCount.GET("", randomCountRepo.Read)
+		randomCount.PUT("", randomCountRepo.Update)
 	}
 
 	/*detail := main.Group("/:id", middleware.AuthMiddleware())
