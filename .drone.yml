@@ -1,0 +1,23 @@
+---
+kind: pipeline
+type: exec
+name: default
+
+platform:
+  os: darwin
+  arch: amd64
+
+steps:
+- name: test-build-docker-image
+  commands:
+  - docker build -t oosa-rewild:test -f Dockerfile.test .
+
+- name: restart service
+  commands:
+  - docker-compose -f ./.docker/docker-test.yml down
+  - docker-compose -f ./.docker/docker-test.yml up -d
+
+trigger:
+  branch:
+  - test
+...
