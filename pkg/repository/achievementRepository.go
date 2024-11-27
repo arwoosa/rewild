@@ -6,6 +6,7 @@ import (
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
 	"oosa_rewild/internal/models"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -36,39 +37,81 @@ func (t AchievementRepository) Retrieve(c *gin.Context) {
 
 func (t AchievementRepository) GetAchievementsByUserId(c *gin.Context, userId primitive.ObjectID, results *[]models.AchievementRewilding) error {
 	achievementType := c.Query("achievement_type")
+	starType := c.Query("star_type")
+	country := c.Query("country")
+	otherUserId := c.Query("user_id")
+	otherUserObjId := helpers.StringToPrimitiveObjId(otherUserId)
 
 	currentTime := primitive.NewDateTimeFromTime(time.Now())
 	lookupStage := bson.D{{Key: "$lookup", Value: bson.M{
-		"from":         "EventParticipants",
-		"localField":   "_id",
-		"foreignField": "event_participants_event",
-		"as":           "EventParticipants",
+		"as":   "EventParticipants",
+		"from": "EventParticipants",
+		"let":  bson.M{"event_id": "$_id"},
+		"pipeline": []bson.M{
+			{"$match": bson.M{
+				"$expr": bson.M{
+					"$eq": bson.A{"$event_participants_event", "$$event_id"}},
+			}},
+			{"$match": bson.M{"event_participants_user": userId}},
+		},
 	}}}
+
+	lookupOtherUser := bson.D{{
+		Key: "$lookup", Value: bson.M{
+			"as":   "OtherParticipant",
+			"from": "EventParticipants",
+			"let":  bson.M{"event_id": "$_id"},
+			"pipeline": []bson.M{
+				{"$match": bson.M{
+					"$expr": bson.M{
+						"$eq": bson.A{"$event_participants_event", "$$event_id"}},
+				}},
+				{"$match": bson.M{"event_participants_user": otherUserObjId}},
+			},
+		},
+	}}
+
 	unwindStage := bson.D{
 		{Key: "$unwind", Value: "$EventParticipants"},
 	}
 
 	match := bson.M{
-		"EventParticipants.event_participants_user": userId,
+		"EventParticipants.event_participants_achievement_eligible": true,
 		"events_date": bson.M{"$lt": currentTime},
 	}
 
 	if achievementType != "" {
 		match["events_rewilding_achievement_type"] = achievementType
-		match["events_rewilding_achievement_eligible"] = true
+	}
+
+	if starType != "" {
+		starTypeInt, _ := strconv.Atoi(starType)
+		match["EventParticipants.event_participants_star_type"] = starTypeInt
+	}
+
+	if country != "" {
+		match["events_country_code"] = country
 	}
 
 	filterStage := bson.D{{Key: "$match", Value: match}}
-	groupStage := bson.D{
-		{Key: "$group", Value: bson.M{
-			"_id":             "$events_rewilding",
-			"rewilding_count": bson.M{"$sum": 1},
-		}},
-	}
 
 	pipeline := mongo.Pipeline{
 		lookupStage,
-		unwindStage,
+	}
+
+	if !helpers.MongoZeroID(userId) && otherUserId != "" {
+		pipeline = append(pipeline, lookupOtherUser, bson.D{
+			{Key: "$unwind", Value: "$OtherParticipant"},
+		})
+	}
+
+	groupStage := bson.D{
+		{Key: "$group", Value: bson.M{
+			"_id":                        "$events_rewilding",
+			"rewilding_count":            bson.M{"$sum": 1},
+			"rewilding_star_type":        bson.M{"$min": "$EventParticipants.event_participants_star_type"},
+			"rewilding_star_unlocked_at": bson.M{"$min": "$EventParticipants.event_participants_achievement_unlocked_at"},
+		}},
 	}
 
 	rewildLookup := bson.D{{Key: "$lookup", Value: bson.M{
@@ -86,12 +129,14 @@ func (t AchievementRepository) GetAchievementsByUserId(c *gin.Context, userId pr
 				"$mergeObjects": bson.A{
 					"$RewildingDetail",
 					bson.M{"rewilding_count": "$rewilding_count"},
+					bson.M{"rewilding_star_type": "$rewilding_star_type"},
+					bson.M{"rewilding_star_unlocked_at": "$rewilding_star_unlocked_at"},
 				},
 			},
 		},
 	}}
 
-	pipeline = append(pipeline, filterStage, groupStage, rewildLookup, rewildUnwind, replaceRoot)
+	pipeline = append(pipeline, unwindStage, filterStage, groupStage, rewildLookup, rewildUnwind, replaceRoot)
 	cursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), pipeline)
 	cursor.All(context.TODO(), results)
 

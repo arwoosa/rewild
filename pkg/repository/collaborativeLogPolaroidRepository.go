@@ -129,6 +129,8 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 		lat, lng, _ = x.LatLong()
 	}
 
+	tm, _ := x.DateTime()
+
 	/*b, _ := io.ReadAll(uploadedFile)
 	mimeType := mimetype.Detect(b)
 
@@ -211,6 +213,13 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 	radius := helpers.Haversine(lat, lng, Events.EventsLat, Events.EventsLng) * 1000
 
 	eligibleAchievement := false
+	isEventPeriod := false
+	starType := 2
+
+	if tm.Before(Events.EventsDateEnd.Time()) && tm.After(Events.EventsDate.Time()) {
+		isEventPeriod = true
+	}
+
 	if Events.EventsRewildingAchievementType != "" {
 		if Events.EventsRewildingAchievementType == "big" || Events.EventsRewildingAchievementType == "small" {
 			if radius <= 200 {
@@ -221,10 +230,22 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 				eligibleAchievement = true
 			}
 		}
+	} else {
+		var Rewilding models.Rewilding
+		filter := bson.D{{Key: "_id", Value: Events.EventsRewilding}}
+		config.DB.Collection("Rewilding").FindOne(context.TODO(), filter).Decode(&Rewilding)
+		radius := helpers.Haversine(lat, lng, Rewilding.RewildingLat, Rewilding.RewildingLng) * 1000
+
+		if radius <= 2000 && isEventPeriod {
+			starType = 1
+		}
+		eligibleAchievement = true
 	}
 
+	insert.EventPolaroidsIsEventPeriod = &isEventPeriod
 	insert.EventPolaroidsRadiusFromEvent = radius
 	insert.EventPolaroidsAchievementEligible = &eligibleAchievement
+	insert.EventPolaroidsStarType = starType
 
 	if !isCheck {
 		result, err := config.DB.Collection("EventPolaroids").InsertOne(context.TODO(), insert)
@@ -252,8 +273,11 @@ func (r CollaborativeLogPolaroidRepository) CountTotalPolaroids(eventId primitiv
 }
 
 func (r CollaborativeLogPolaroidRepository) EventAchievementEligibility(c *gin.Context, Event models.Events) {
+	var EventPolaroids []models.EventPolaroids
+	var oneStarUsers []primitive.ObjectID
 	filter := bson.D{{Key: "event_polaroids_event", Value: Event.EventsId}, {Key: "event_polaroids_achievement_eligible", Value: true}}
 	count, _ := config.DB.Collection("EventPolaroids").CountDocuments(context.TODO(), filter)
+
 	if count > 0 {
 		filterUpd := bson.D{{Key: "_id", Value: Event.EventsId}}
 		eligible := true
@@ -261,6 +285,48 @@ func (r CollaborativeLogPolaroidRepository) EventAchievementEligibility(c *gin.C
 			"events_rewilding_achievement_eligible": &eligible,
 		}}}
 		config.DB.Collection("Events").UpdateOne(context.TODO(), filterUpd, eventUpd)
+
+		filterType2 := bson.D{
+			{Key: "event_polaroids_event", Value: Event.EventsId},
+			{Key: "event_polaroids_achievement_eligible", Value: true},
+		}
+		cursor, _ := config.DB.Collection("EventPolaroids").Find(context.TODO(), filterType2)
+		cursor.All(context.TODO(), &EventPolaroids)
+
+		if len(EventPolaroids) > 0 {
+			unlockedDate := EventPolaroids[0].EventPolaroidsCreatedAt
+
+			for _, v := range EventPolaroids {
+				if v.EventPolaroidsStarType == 1 {
+					oneStarUsers = append(oneStarUsers, v.EventPolaroidsCreatedBy)
+				}
+			}
+
+			filterTwoStars := bson.D{
+				{Key: "event_participants_event", Value: Event.EventsId},
+			}
+			if len(oneStarUsers) > 0 {
+				filterOneStars := bson.D{
+					{Key: "event_participants_event", Value: Event.EventsId},
+					{Key: "event_participants_user", Value: bson.M{"$in": oneStarUsers}},
+				}
+				updOneStarType := bson.D{{Key: "$set", Value: map[string]interface{}{
+					"event_participants_star_type":               1,
+					"event_participants_achievement_eligible":    &eligible,
+					"event_participants_achievement_unlocked_at": unlockedDate,
+				}}}
+				config.DB.Collection("EventParticipants").UpdateMany(context.TODO(), filterOneStars, updOneStarType)
+
+				filterTwoStars = append(filterTwoStars, primitive.E{Key: "event_participants_user", Value: bson.M{"$nin": oneStarUsers}})
+			}
+
+			updTwoStarType := bson.D{{Key: "$set", Value: map[string]interface{}{
+				"event_participants_star_type":               2,
+				"event_participants_achievement_eligible":    &eligible,
+				"event_participants_achievement_unlocked_at": unlockedDate,
+			}}}
+			config.DB.Collection("EventParticipants").UpdateMany(context.TODO(), filterTwoStars, updTwoStarType)
+		}
 	}
 }
 
