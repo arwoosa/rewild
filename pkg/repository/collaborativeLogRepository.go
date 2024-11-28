@@ -19,6 +19,7 @@ type CollaborativeLogRepository struct{}
 func (r CollaborativeLogRepository) Retrieve(c *gin.Context) {
 	userDetail := helpers.GetAuthUser(c)
 	userFilter := c.Query("user")
+	rewildingId := c.Query("rewilding_id")
 	var results []models.Events
 
 	if userFilter != "" {
@@ -72,7 +73,6 @@ func (r CollaborativeLogRepository) Retrieve(c *gin.Context) {
 			bson.D{{
 				Key: "$unwind", Value: "$events_created_by_user",
 			}},
-			bson.D{{Key: "$limit", Value: 1}},
 		}
 
 		cursor, err := config.DB.Collection("EventParticipants").Aggregate(context.TODO(), agg)
@@ -83,9 +83,37 @@ func (r CollaborativeLogRepository) Retrieve(c *gin.Context) {
 		}
 		cursor.All(context.TODO(), &results)
 	} else {
+		filterEvent := bson.M{
+			"events_date": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())},
+			"EventParticipants.event_participants_achievement_eligible": true,
+		}
+
+		if rewildingId != "" {
+			filterEvent["events_rewilding"] = helpers.StringToPrimitiveObjId(rewildingId)
+		}
+
+		lookupStage := bson.D{{Key: "$lookup", Value: bson.M{
+			"as":   "EventParticipants",
+			"from": "EventParticipants",
+			"let":  bson.M{"event_id": "$_id"},
+			"pipeline": []bson.M{
+				{"$match": bson.M{
+					"$expr": bson.M{
+						"$eq": bson.A{"$event_participants_event", "$$event_id"}},
+				}},
+				{"$match": bson.M{"event_participants_user": userDetail.UsersId}},
+			},
+		}}}
+
+		unwindStage := bson.D{
+			{Key: "$unwind", Value: "$EventParticipants"},
+		}
+
 		agg := mongo.Pipeline{
+			lookupStage,
+			unwindStage,
 			bson.D{{
-				Key: "$match", Value: bson.M{"events_date": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}},
+				Key: "$match", Value: filterEvent,
 			}},
 			bson.D{{
 				Key: "$lookup", Value: bson.M{
@@ -98,9 +126,7 @@ func (r CollaborativeLogRepository) Retrieve(c *gin.Context) {
 			bson.D{{
 				Key: "$unwind", Value: "$events_created_by_user",
 			}},
-			bson.D{{Key: "$limit", Value: 1}},
 		}
-
 		cursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), agg)
 		cursor.All(context.TODO(), &results)
 
