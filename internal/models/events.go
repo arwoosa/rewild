@@ -12,6 +12,7 @@ type Events struct {
 	EventsRewildingAchievementType     string               `bson:"events_rewilding_achievement_type,omitempty" json:"-"`
 	EventsRewildingAchievementTypeID   primitive.ObjectID   `bson:"events_rewilding_achievement_type_id,omitempty" json:"-"`
 	EventsRewildingAchievementEligible *bool                `bson:"events_rewilding_achievement_eligible,omitempty" json:"-"`
+	EventsRewildingAchievementStar     int                  `bson:"events_rewilding_achievement_star,omitempty" json:"events_rewilding_achievement_star,omitempty"`
 	EventsPlace                        string               `bson:"events_place,omitempty" json:"events_place"`
 	EventsCityId                       int                  `bson:"events_city_id,omitempty" json:"events_city_id"`
 	EventsType                         primitive.ObjectID   `bson:"events_type,omitempty" json:"events_type,omitempty"`
@@ -54,11 +55,13 @@ type EventsCountryCount struct {
 }
 
 type AchievementRewilding struct {
-	RewildingID    primitive.ObjectID `bson:"_id,omitempty" json:"achievement_released_id"`
-	RewildingName  string             `bson:"rewilding_name,omitempty" json:"achievement_released_name"`
-	RewildingLat   float64            `bson:"rewilding_lat,omitempty" json:"achievement_released_lat"`
-	RewildingLng   float64            `bson:"rewilding_lng,omitempty" json:"achievement_released_lng"`
-	RewildingCount int                `bson:"rewilding_count,omitempty" json:"achievement_released_count"`
+	AchievementRewildingID             primitive.ObjectID `bson:"_id,omitempty" json:"achievement_released_id"`
+	AchievementRewildingName           string             `bson:"rewilding_name,omitempty" json:"achievement_released_name"`
+	AchievementRewildingLat            float64            `bson:"rewilding_lat,omitempty" json:"achievement_released_lat"`
+	AchievementRewildingLng            float64            `bson:"rewilding_lng,omitempty" json:"achievement_released_lng"`
+	AchievementRewildingCount          int                `bson:"rewilding_count,omitempty" json:"achievement_released_count"`
+	AchievementRewildingStarType       int                `bson:"rewilding_star_type,omitempty" json:"achievement_released_star_type"`
+	AchievementRewildingStarUnlockedAt primitive.DateTime `bson:"rewilding_star_unlocked_at,omitempty" json:"achievement_released_star_unlocked_at"`
 }
 
 type AchievementPlaces struct {

@@ -15,7 +15,7 @@ func CollaborativeLogRoutes(r *gin.Engine) *gin.Engine {
 	repoExperience := repository.CollaborativeLogExperienceRepository{}
 	randomCountRepo := repository.CollaborativeLogRandomCountRepository{}
 
-	main := r.Group("/collaborative-log")
+	main := r.Group("/collaborative-log", middleware.AuthMiddleware())
 	{
 		main.GET("", repo.Retrieve)
 	}

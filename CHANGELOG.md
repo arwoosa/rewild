@@ -1,3 +1,8 @@
+# CHANGELOG 1.1.36
+## Changes
+- Achievement changes (filter, star type and addition of eligibility checking)
+- Collaborative log route change (load event with rewilding ID where there are achievements)
+
 # CHANGELOG 1.1.35
 ## Changes
 - Check radius, save radius as meter (note: haversine in system returns km)

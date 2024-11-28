@@ -12,6 +12,8 @@ type EventPolaroids struct {
 	EventPolaroidsAchievementEligible *bool              `bson:"event_polaroids_achievement_eligible,omitempty" json:"event_polaroids_achievement_eligible"`
 	EventPolaroidsMessage             string             `bson:"event_polaroids_message,omitempty" json:"event_polaroids_message"`
 	EventPolaroidsTag                 string             `bson:"event_polaroids_tag,omitempty" json:"event_polaroids_tag"`
+	EventPolaroidsIsEventPeriod       *bool              `bson:"event_polaroids_is_event_period,omitempty" json:"event_polaroids_is_event_period"`
+	EventPolaroidsStarType            int                `bson:"event_polaroids_star_type,omitempty" json:"event_polaroids_star_type"`
 	EventPolaroidsCreatedBy           primitive.ObjectID `bson:"event_polaroids_created_by,omitempty" json:"event_polaroids_created_by"`
 	EventPolaroidsCreatedAt           primitive.DateTime `bson:"event_polaroids_created_at,omitempty" json:"event_polaroids_created_at"`
 	EventPolaroidsCreatedByUser       *UsersAgg          `bson:"event_polaroids_created_by_user,omitempty" json:"event_polaroids_created_by_user,omitempty"`
