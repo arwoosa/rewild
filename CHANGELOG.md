@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.37
+## Changes
+- Fix star rule
+
 # CHANGELOG 1.1.36
 ## Changes
 - Achievement changes (filter, star type and addition of eligibility checking)
