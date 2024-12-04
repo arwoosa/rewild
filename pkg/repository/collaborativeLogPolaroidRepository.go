@@ -221,15 +221,21 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 	}
 
 	if Events.EventsRewildingAchievementType != "" {
-		if Events.EventsRewildingAchievementType == "big" || Events.EventsRewildingAchievementType == "small" {
+		/*if Events.EventsRewildingAchievementType == "big" || Events.EventsRewildingAchievementType == "small" {
 			if radius <= 200 {
 				eligibleAchievement = true
+				starType = 1
 			}
 		} else if Events.EventsRewildingAchievementType == "protect" {
 			if radius <= 2000 {
 				eligibleAchievement = true
+				starType = 1
 			}
+		}*/
+		if radius <= 2000 && isEventPeriod {
+			starType = 1
 		}
+		eligibleAchievement = true
 	} else {
 		var Rewilding models.Rewilding
 		filter := bson.D{{Key: "_id", Value: Events.EventsRewilding}}
