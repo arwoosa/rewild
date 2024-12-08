@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.38
+## Changes
+- Fixes to collaboration log and achievement
+
 # CHANGELOG 1.1.37
 ## Changes
 - Fix star rule
