@@ -35,6 +35,7 @@ func (r CollaborativeLogRepository) Retrieve(c *gin.Context) {
 						{"event_participants_user": userDetail.UsersId},
 						{"event_participants_user": helpers.StringToPrimitiveObjId(userFilter)},
 					},
+					"event_participants_star_type": bson.M{"$exists": true},
 				},
 			}},
 			bson.D{{
@@ -101,7 +102,10 @@ func (r CollaborativeLogRepository) Retrieve(c *gin.Context) {
 					"$expr": bson.M{
 						"$eq": bson.A{"$event_participants_event", "$$event_id"}},
 				}},
-				{"$match": bson.M{"event_participants_user": userDetail.UsersId}},
+				{"$match": bson.M{
+					"event_participants_user":      userDetail.UsersId,
+					"event_participants_star_type": bson.M{"$exists": true},
+				}},
 			},
 		}}}
 
@@ -126,6 +130,9 @@ func (r CollaborativeLogRepository) Retrieve(c *gin.Context) {
 			bson.D{{
 				Key: "$unwind", Value: "$events_created_by_user",
 			}},
+			bson.D{
+				{Key: "$sort", Value: bson.M{"events_date": -1}},
+			},
 		}
 		cursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), agg)
 		cursor.All(context.TODO(), &results)
