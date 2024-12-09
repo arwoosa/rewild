@@ -8,7 +8,7 @@ type EventPolaroids struct {
 	EventPolaroidsUrl                 string             `bson:"event_polaroids_url,omitempty" json:"event_polaroids_url"`
 	EventPolaroidsLat                 float64            `bson:"event_polaroids_lat,omitempty" json:"event_polaroids_lat"`
 	EventPolaroidsLng                 float64            `bson:"event_polaroids_lng,omitempty" json:"event_polaroids_lng"`
-	EventPolaroidsRadiusFromEvent     float64            `bson:"event_polaroids_radius_from_event,omitempty" json:"event_polaroids_radius_from_event"`
+	EventPolaroidsRadiusFromEvent     *float64           `bson:"event_polaroids_radius_from_event,omitempty" json:"event_polaroids_radius_from_event"`
 	EventPolaroidsAchievementEligible *bool              `bson:"event_polaroids_achievement_eligible,omitempty" json:"event_polaroids_achievement_eligible"`
 	EventPolaroidsMessage             string             `bson:"event_polaroids_message,omitempty" json:"event_polaroids_message"`
 	EventPolaroidsTag                 string             `bson:"event_polaroids_tag,omitempty" json:"event_polaroids_tag"`

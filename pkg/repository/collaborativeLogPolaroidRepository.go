@@ -131,63 +131,6 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 
 	tm, _ := x.DateTime()
 
-	/*b, _ := io.ReadAll(uploadedFile)
-	mimeType := mimetype.Detect(b)
-
-	var ecc riimage.MediaContext
-	switch mimeType.String() {
-	case "image/heic_":
-		ecc, _ = hemp.NewHeicExifMediaParser().ParseBytes(b)
-	case "image/jpeg":
-		ecc, _ = jis.NewJpegMediaParser().ParseBytes(b)
-	case "image/png":
-		ecc, _ = pis.NewPngMediaParser().ParseBytes(b)
-	default:
-		c.JSON(http.StatusBadRequest, "Mime: "+mimeType.String()+" not supported")
-		return
-	}
-
-	exif1, _, _ := ecc.Exif()
-
-	//fmt.Println("DumpTree", exif1.DumpTree())
-	//fmt.Println("DumpTags", exif1.DumpTags())
-	//fmt.Println("Children", exif1.Children())
-	//exif1.PrintTagTree(true)
-
-	exifChildren := exif1.Children()
-
-	latRef := ""
-	lngRef := ""
-	var latInterface []exifcommon.Rational
-	var lngInterface []exifcommon.Rational
-
-	for _, v := range exifChildren {
-		entries := v.Entries()
-		for _, v1 := range entries {
-			v1Val, _ := v1.Value()
-
-			switch v1.TagName() {
-			case "GPSLatitudeRef":
-				latRef = v1Val.(string)
-			case "GPSLatitude":
-				latInterface = v1Val.([]exifcommon.Rational)
-			case "GPSLongitudeRef":
-				lngRef = v1Val.(string)
-			case "GPSLongitude":
-				lngInterface = v1Val.([]exifcommon.Rational)
-			}
-		}
-	}
-
-	if len(latInterface) > 0 && latRef != "" {
-		deg, _ := exif.NewGpsDegreesFromRationals(latRef, latInterface)
-		lat = deg.Decimal()
-	}
-	if len(lngInterface) > 0 && lngRef != "" {
-		deg, _ := exif.NewGpsDegreesFromRationals(lngRef, lngInterface)
-		lng = deg.Decimal()
-	}*/
-
 	fileName := ""
 	if !isCheck {
 		cloudflare := CloudflareRepository{}
@@ -221,17 +164,6 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 	}
 
 	if Events.EventsRewildingAchievementType != "" {
-		/*if Events.EventsRewildingAchievementType == "big" || Events.EventsRewildingAchievementType == "small" {
-			if radius <= 200 {
-				eligibleAchievement = true
-				starType = 1
-			}
-		} else if Events.EventsRewildingAchievementType == "protect" {
-			if radius <= 2000 {
-				eligibleAchievement = true
-				starType = 1
-			}
-		}*/
 		if radius <= 2000 && isEventPeriod {
 			starType = 1
 		}
@@ -240,7 +172,7 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 		var Rewilding models.Rewilding
 		filter := bson.D{{Key: "_id", Value: Events.EventsRewilding}}
 		config.DB.Collection("Rewilding").FindOne(context.TODO(), filter).Decode(&Rewilding)
-		radius := helpers.Haversine(lat, lng, Rewilding.RewildingLat, Rewilding.RewildingLng) * 1000
+		//radius := helpers.Haversine(lat, lng, Rewilding.RewildingLat, Rewilding.RewildingLng) * 1000
 
 		if radius <= 2000 && isEventPeriod {
 			starType = 1
@@ -249,7 +181,7 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 	}
 
 	insert.EventPolaroidsIsEventPeriod = &isEventPeriod
-	insert.EventPolaroidsRadiusFromEvent = radius
+	insert.EventPolaroidsRadiusFromEvent = &radius
 	insert.EventPolaroidsAchievementEligible = &eligibleAchievement
 	insert.EventPolaroidsStarType = starType
 
