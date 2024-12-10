@@ -47,6 +47,7 @@ type AppLimit struct {
 	LengthEventPolaroidMessage     int64
 	LengthEventParticipantMessage  int64
 	MinimumTopRanking              int64
+	PolaroidAchievementRadius      float64
 }
 
 var APP AppConfig
@@ -95,6 +96,7 @@ func InitialiseConfig() {
 	APP_LIMIT.LengthEventPolaroidMessage = 0
 	APP_LIMIT.LengthEventParticipantMessage = 0
 	APP_LIMIT.MinimumTopRanking = 0
+	APP_LIMIT.PolaroidAchievementRadius = 0
 
 	polaroidLimit, err := strconv.ParseInt(os.Getenv("EVENT_POLAROID_LIMIT"), 10, 64)
 	eventAccountingLimit, eventAccountingLimitErr := strconv.ParseInt(os.Getenv("EVENT_ACCOUNTING_LIMIT"), 10, 64)
@@ -113,6 +115,8 @@ func InitialiseConfig() {
 	lengthEventPolaroidMessage, lengthEventPolaroidMessageErr := strconv.ParseInt(os.Getenv("LENGTH_EVENT_POLAROID_MESSAGE"), 10, 64)
 	lengthEventParticipantMessage, lengthEventParticipantMessageErr := strconv.ParseInt(os.Getenv("LENGTH_EVENT_PARTICIPANT_MESSAGE"), 10, 64)
 	minimumTopRanking, minimumTopRankingErr := strconv.ParseInt(os.Getenv("MINIMUM_TOP_RANKING"), 10, 64)
+	polaroidAchievementRadius, polaroidAchievementRadiusErr := strconv.ParseFloat(os.Getenv("POLAROID_ACHIEVEMENT_RADIUS"), 64)
+
 	if err == nil {
 		APP_LIMIT.EventPolaroidLimit = polaroidLimit
 	}
@@ -163,5 +167,8 @@ func InitialiseConfig() {
 	}
 	if lengthEventParticipantMessageErr == nil {
 		APP_LIMIT.LengthEventParticipantMessage = lengthEventParticipantMessage
+	}
+	if polaroidAchievementRadiusErr == nil {
+		APP_LIMIT.PolaroidAchievementRadius = polaroidAchievementRadius
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type EventInvitationRepository struct{}
@@ -21,24 +22,38 @@ type EventInvitationRequest struct {
 func (r EventInvitationRepository) Retrieve(c *gin.Context) {
 	userDetail := helpers.GetAuthUser(c)
 	fmt.Print("EventInvitationRepository: Retrieve")
-	var results []models.EventParticipants
-	filter := bson.D{
-		{Key: "event_participants_user", Value: userDetail.UsersId},
-		{Key: "event_participants_status", Value: GetEventParticipantStatus("PENDING")},
+	var EventParticipants []models.EventParticipants
+	agg := mongo.Pipeline{
+		bson.D{{
+			Key: "$match", Value: bson.M{
+				"event_participants_user":   userDetail.UsersId,
+				"event_participants_status": GetEventParticipantStatus("PENDING"),
+			},
+		}},
+		bson.D{{
+			Key: "$lookup", Value: bson.M{
+				"from":         "Users",
+				"localField":   "event_participants_created_by",
+				"foreignField": "_id",
+				"as":           "event_participants_invited_by",
+			},
+		}},
+		bson.D{{
+			Key: "$unwind", Value: "$event_participants_invited_by",
+		}},
 	}
-
-	cursor, err := config.DB.Collection("EventParticipants").Find(context.TODO(), filter)
-	cursor.All(context.TODO(), &results)
+	cursor, err := config.DB.Collection("EventParticipants").Aggregate(context.TODO(), agg)
+	cursor.All(context.TODO(), &EventParticipants)
 
 	if err != nil {
 		return
 	}
 
-	if len(results) == 0 {
+	if len(EventParticipants) == 0 {
 		helpers.ResponseNoData(c, "No Data")
 		return
 	}
-	c.JSON(http.StatusOK, results)
+	c.JSON(http.StatusOK, EventParticipants)
 }
 
 func (r EventInvitationRepository) Read(c *gin.Context) {
