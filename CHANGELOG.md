@@ -1,3 +1,8 @@
+# CHANGELOG 1.1.39
+## Changes
+- Fixes to polaroid (environment variable, participant check, participant polaroid count)
+- Show user event scheduled count in invitations
+
 # CHANGELOG 1.1.38
 ## Changes
 - Fixes to collaboration log and achievement

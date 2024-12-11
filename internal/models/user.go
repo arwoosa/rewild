@@ -34,3 +34,11 @@ type UsersAgg struct {
 	UsersEmail  string             `bson:"users_email,omitempty" json:"user_email"`
 	UsersAvatar string             `bson:"users_avatar,omitempty" json:"user_avatar"`
 }
+
+type UsersInvitation struct {
+	UsersId             primitive.ObjectID `bson:"_id,omitempty" json:"user_id"`
+	UsersName           string             `bson:"users_name,omitempty" json:"user_name"`
+	UsersEmail          string             `bson:"users_email,omitempty" json:"user_email"`
+	UsersAvatar         string             `bson:"users_avatar,omitempty" json:"user_avatar"`
+	UsersEventScheduled int                `bson:"users_event_scheduled,omitempty" json:"user_event_scheduled"`
+}

@@ -84,8 +84,17 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 		return
 	}
 
+	var EventParticipantsCheck models.EventParticipants
+	checkParticipant := config.DB.Collection("EventParticipants").FindOne(context.TODO(), bson.D{{Key: "event_participants_event", Value: Events.EventsId}, {Key: "event_participants_user", Value: userDetail.UsersId}}).Decode(&EventParticipantsCheck)
+
+	if checkParticipant == mongo.ErrNoDocuments {
+		helpers.ResponseBadRequestError(c, "You are not a participant of this event")
+		return
+	}
+
 	if !isCheck {
-		countPolaroid := r.CountTotalPolaroids(Events.EventsId)
+		// countPolaroid := r.CountTotalPolaroids(Events.EventsId)
+		countPolaroid := int64(EventParticipantsCheck.EventParticipantsPolaroidCount)
 		if countPolaroid >= config.APP_LIMIT.EventPolaroidLimit {
 			helpers.ResponseBadRequestError(c, "Unable to add more polaroids. Maximum allowed: "+strconv.Itoa(int(config.APP_LIMIT.EventPolaroidLimit)))
 			return
@@ -164,7 +173,7 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 	}
 
 	if Events.EventsRewildingAchievementType != "" {
-		if radius <= 2000 && isEventPeriod {
+		if radius <= config.APP_LIMIT.PolaroidAchievementRadius && isEventPeriod {
 			starType = 1
 		}
 		eligibleAchievement = true
@@ -174,7 +183,7 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 		config.DB.Collection("Rewilding").FindOne(context.TODO(), filter).Decode(&Rewilding)
 		//radius := helpers.Haversine(lat, lng, Rewilding.RewildingLat, Rewilding.RewildingLng) * 1000
 
-		if radius <= 2000 && isEventPeriod {
+		if radius <= config.APP_LIMIT.PolaroidAchievementRadius && isEventPeriod {
 			starType = 1
 		}
 		eligibleAchievement = true
