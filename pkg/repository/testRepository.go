@@ -11,7 +11,7 @@ import (
 type TestRepository struct{}
 
 func (r TestRepository) CreateBadge(c *gin.Context) {
-	helpers.BadgeAllocate(c, "M5", 0, primitive.NilObjectID)
+	helpers.BadgeAllocate(c, "M5", 0, primitive.NilObjectID, primitive.NilObjectID)
 }
 
 func (r TestRepository) CreateNotification(c *gin.Context) {
