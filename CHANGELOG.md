@@ -1,3 +1,11 @@
+# CHANGELOG 1.1.40
+## Changes
+- N4 Badge
+
+# CHANGELOG 1.1.40
+## Changes
+- Badges icons
+
 # CHANGELOG 1.1.39
 ## Changes
 - Fixes to polaroid (environment variable, participant check, participant polaroid count)
