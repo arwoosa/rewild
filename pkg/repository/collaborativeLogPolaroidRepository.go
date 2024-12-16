@@ -293,4 +293,5 @@ func (r CollaborativeLogPolaroidRepository) CountUploadPolaroidByParticipant(c *
 		"event_participants_polaroid_count": count,
 	}}}
 	config.DB.Collection("EventParticipants").UpdateOne(context.TODO(), filterUpd, eventParticipantUpd)
+	helpers.BadgeAllocate(c, "N4", helpers.BADGE_REWILDING, eventId, userId)
 }
