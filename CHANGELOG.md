@@ -1,4 +1,8 @@
-# CHANGELOG 1.1.40
+# CHANGELOG 1.1.42
+## Changes
+- P1, R1, R2 Badge
+
+# CHANGELOG 1.1.41
 ## Changes
 - N4 Badge
 

@@ -25,6 +25,8 @@ type EventParticipants struct {
 	EventParticipantsUserDetail            *UsersAgg                   `bson:"event_participants_user_detail,omitempty" json:"event_participants_user_detail,omitempty"`
 	EventParticipantsInvitation            *EventParticipantInvitation `bson:"event_participant_invitation,omitempty" json:"event_participant_invitation,omitempty"`
 	EventParticipantsInvitedBy             *UsersInvitation            `bson:"event_participants_invited_by,omitempty" json:"event_participants_invited_by,omitempty"`
+	EventParticipantBadges                 *UserBadges                 `bson:"event_participant_badges,omitempty" json:"event_participant_badges"`
+	EventParticipantsEventDetail           *Events                     `bson:"events_detail,omitempty" json:"-"`
 }
 type EventParticipantInvitation struct {
 	InvitationMessage  string `bson:"invitation_message,omitempty" json:"invitation_message"`
