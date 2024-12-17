@@ -75,6 +75,25 @@ func AuthMiddleware() gin.HandlerFunc {
 }
 
 func CheckIfAuth(c *gin.Context) {
+	headerUserId := c.GetHeader("X-User-Id")
+	if headerUserId != "" && headerUserId == "guest" {
+		return
+	} else if headerUserId != "" && headerUserId != "guest" {
+		var headerUser UserBindByHeader
+		err := c.BindHeader(&headerUser)
+		if err != nil || headerUser.Id == "" {
+			return
+		}
+		var user models.Users
+		err = config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "users_source_id", Value: headerUser.Id}}).Decode(&user)
+
+		if err != nil {
+			return
+		}
+		c.Set("user", &user)
+		return
+	}
+
 	reqToken := c.Request.Header.Get("Authorization")
 	if reqToken == "" {
 		return
