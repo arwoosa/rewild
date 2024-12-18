@@ -561,3 +561,54 @@ func (r EventRepository) Options(c *gin.Context) {
 	RefRewildingTypes := helpers.RefRewildingTypes()
 	c.JSON(http.StatusOK, gin.H{"rewilding_types": RefRewildingTypes})
 }
+
+func (r EventRepository) HandleBadges(c *gin.Context, eventId primitive.ObjectID) {
+	agg := mongo.Pipeline{
+		bson.D{{
+			Key: "$match", Value: bson.M{
+				"event_participants_event":  eventId,
+				"event_participants_status": GetEventParticipantStatus("ACCEPTED"),
+			},
+		}},
+		bson.D{{
+			Key: "$lookup", Value: bson.M{
+				"from":         "UserBadges",
+				"localField":   "event_participants_user",
+				"foreignField": "user_badges_events_participant_user",
+				"as":           "event_participant_badges",
+			},
+		}},
+		bson.D{{
+			Key: "$unwind", Value: bson.M{
+				"path":                       "$event_participant_badges",
+				"preserveNullAndEmptyArrays": true,
+			},
+		}},
+		bson.D{{
+			Key: "$lookup", Value: bson.M{
+				"from":         "Events",
+				"localField":   "event_participants_event",
+				"foreignField": "_id",
+				"as":           "events_detail",
+			},
+		}},
+		bson.D{{
+			Key: "$unwind", Value: bson.M{
+				"path": "$events_detail",
+			},
+		}},
+	}
+
+	var results []models.EventParticipants
+	cursor, err := config.DB.Collection("EventParticipants").Aggregate(context.TODO(), agg)
+	if err != nil {
+		panic(err)
+	}
+	cursor.All(context.TODO(), &results)
+
+	for _, v := range results {
+		if v.EventParticipantBadges == nil && v.EventParticipantsUser != v.EventParticipantsEventDetail.EventsCreatedBy {
+			helpers.BadgeAllocate(c, "R2", helpers.BADGE_EVENT_PARTICIPANTS, v.EventParticipantsUser, primitive.NilObjectID)
+		}
+	}
+}

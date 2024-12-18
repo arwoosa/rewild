@@ -13,9 +13,13 @@ import (
 )
 
 var (
-	BADGE_REWILDING = 1
-	BADGE_FRIENDS   = 2
-	BADGE_SOCIAL    = 3
+	BADGE_REWILDING          = 1
+	BADGE_FRIENDS            = 2
+	BADGE_SOCIAL             = 3
+	BADGE_EVENTS             = 4
+	BADGE_EVENT_PARTICIPANTS = 5
+	BADGE_EVENT_STARS        = 6
+	BADGE_OOSA_DAILY         = 7
 )
 
 func BadgeAllocate(c *gin.Context, badgeCode string, badgeSource int, badgeReference primitive.ObjectID, userId primitive.ObjectID) {
@@ -48,6 +52,12 @@ func BadgeAllocate(c *gin.Context, badgeCode string, badgeSource int, badgeRefer
 
 	if badgeSource == BADGE_REWILDING {
 		insert.UserBadgesRewilding = badgeReference
+	} else if badgeSource == BADGE_EVENTS {
+		insert.UserBadgesEvents = badgeReference
+	} else if badgeSource == BADGE_EVENT_PARTICIPANTS {
+		insert.UserBadgesEventsParticipantUser = badgeReference
+	} else if badgeSource == BADGE_EVENT_STARS {
+		insert.UserBadgesEvents = badgeReference
 	}
 
 	result, err := config.DB.Collection("UserBadges").InsertOne(context.TODO(), insert)
