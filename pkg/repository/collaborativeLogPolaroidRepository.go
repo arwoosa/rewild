@@ -204,6 +204,9 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 		r.CountUploadPolaroidByParticipant(c, Events.EventsId, userDetail.UsersId)
 		var EventPolaroids models.EventPolaroids
 		config.DB.Collection("EventPolaroids").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&EventPolaroids)
+
+		helpers.BadgeAllocate(c, "P1", helpers.BADGE_EVENTS, Events.EventsId, primitive.NilObjectID)
+		r.EventAchievementEligibility(c, Events)
 		c.JSON(http.StatusOK, EventPolaroids)
 	} else {
 		c.JSON(http.StatusOK, insert)
@@ -275,6 +278,79 @@ func (r CollaborativeLogPolaroidRepository) EventAchievementEligibility(c *gin.C
 			config.DB.Collection("EventParticipants").UpdateMany(context.TODO(), filterTwoStars, updTwoStarType)
 		}
 	}
+	r.HandleBadges(c, Event)
+}
+
+func (r CollaborativeLogPolaroidRepository) HandleBadges(c *gin.Context, Event models.Events) {
+	agg := mongo.Pipeline{
+		bson.D{{
+			Key: "$match", Value: bson.M{
+				"event_participants_event":                Event.EventsId,
+				"event_participants_status":               GetEventParticipantStatus("ACCEPTED"),
+				"event_participants_achievement_eligible": true,
+			},
+		}},
+		/*bson.D{{
+			Key: "$lookup", Value: bson.M{
+				"from":         "UserBadges",
+				"localField":   "event_participants_user",
+				"foreignField": "user_badges_events_participant_user",
+				"as":           "event_participant_badges",
+			},
+		}},
+		*/
+		bson.D{{Key: "$lookup", Value: bson.M{
+			"as":   "event_participant_badges",
+			"from": "UserBadges",
+			"let": bson.M{
+				"event_participants_event": "$event_participants_event",
+				"event_participants_user":  "$event_participants_user",
+			},
+			"pipeline": []bson.M{
+				/*{
+					"$match": bson.M{
+						"$expr": bson.M{
+							"$and": []bson.M{
+								{"eq": bson.A{"$user_badges_user", "$$event_participants_user"}},
+								//{"eq": bson.A{"$user_badges_events", "$$event_participants_event"}},
+							},
+						},
+					},
+				},*/
+				{"$match": bson.M{"user_badges_badge": helpers.StringToPrimitiveObjId("6695534c1da4d6fee70fc3ee")}},
+				{
+					"$match": bson.M{
+						"$expr": bson.M{
+							"$and": []bson.M{
+								{"$eq": bson.A{"$user_badges_user", "$$event_participants_user"}},
+								{"$eq": bson.A{"$user_badges_events", "$$event_participants_event"}},
+							}},
+					},
+				},
+			},
+		}}},
+		bson.D{{
+			Key: "$unwind", Value: bson.M{
+				"path":                       "$event_participant_badges",
+				"preserveNullAndEmptyArrays": true,
+			},
+		}},
+	}
+
+	var results []models.EventParticipants
+	cursor, err := config.DB.Collection("EventParticipants").Aggregate(context.TODO(), agg)
+	if err != nil {
+		panic(err)
+	}
+	cursor.All(context.TODO(), &results)
+
+	for _, v := range results {
+		if v.EventParticipantBadges == nil {
+			helpers.BadgeAllocate(c, "R1", helpers.BADGE_EVENT_STARS, v.EventParticipantsEvent, v.EventParticipantsUser)
+		}
+	}
+
+	c.JSON(200, results)
 }
 
 func (r CollaborativeLogPolaroidRepository) CountUploadPolaroidByParticipant(c *gin.Context, eventId primitive.ObjectID, userId primitive.ObjectID) {

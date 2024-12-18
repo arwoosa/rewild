@@ -129,5 +129,6 @@ func (r EventInvitationRepository) Update(c *gin.Context) {
 	upd := bson.D{{Key: "$set", Value: results}}
 	config.DB.Collection("EventParticipants").UpdateOne(context.TODO(), filter, upd)
 	EventRepository{}.HandleParticipation(c, userDetail.UsersId, id)
+	EventRepository{}.HandleBadges(c, id)
 	c.JSON(http.StatusOK, results)
 }

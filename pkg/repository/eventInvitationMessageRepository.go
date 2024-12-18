@@ -119,5 +119,9 @@ func (r EventInvitationMessageRepository) Join(c *gin.Context) {
 		return
 	}
 
+	if status == GetEventParticipantStatus("ACCEPTED") {
+		EventRepository{}.HandleBadges(c, id)
+	}
+
 	helpers.ResponseSuccessMessage(c, "Join request for event submitted")
 }
