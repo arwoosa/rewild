@@ -1,3 +1,10 @@
+# CHANGELOG 1.1.43
+## Changes
+- Event polaroids handle badges remove uninteded json response
+- event/{id} event_participants tag
+- Delete pocket list item when rewilding is deleted
+- Event participant bulk create
+
 # CHANGELOG 1.1.42
 ## Changes
 - P1, R1, R2 Badge
