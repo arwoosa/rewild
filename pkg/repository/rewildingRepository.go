@@ -321,6 +321,11 @@ func (r RewildingRepository) Delete(c *gin.Context) {
 		return
 	}
 
+	filterRewilding := bson.D{
+		{Key: "pocket_list_items_rewilding", Value: Rewilding.RewildingID},
+	}
+	config.DB.Collection("PocketListItems").DeleteMany(context.TODO(), filterRewilding)
+
 	updFilter := bson.D{{Key: "_id", Value: id}}
 	currentTime := primitive.NewDateTimeFromTime(time.Now())
 	Rewilding.RewildingDeletedAt = &currentTime

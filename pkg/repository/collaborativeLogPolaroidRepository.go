@@ -349,8 +349,6 @@ func (r CollaborativeLogPolaroidRepository) HandleBadges(c *gin.Context, Event m
 			helpers.BadgeAllocate(c, "R1", helpers.BADGE_EVENT_STARS, v.EventParticipantsEvent, v.EventParticipantsUser)
 		}
 	}
-
-	c.JSON(200, results)
 }
 
 func (r CollaborativeLogPolaroidRepository) CountUploadPolaroidByParticipant(c *gin.Context, eventId primitive.ObjectID, userId primitive.ObjectID) {

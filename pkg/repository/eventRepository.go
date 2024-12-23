@@ -409,6 +409,7 @@ func (r EventRepository) Read(c *gin.Context) {
 		if len(Events) == 0 {
 			helpers.ResponseNoData(c, "No data")
 		} else {
+			Events = r.RetrieveParticipantDetails(Events)
 			c.JSON(http.StatusOK, Events[0])
 		}
 	}
