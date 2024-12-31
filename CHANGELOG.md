@@ -1,3 +1,11 @@
+# CHANGELOG 1.1.45
+## Changes
+- Event participants applied update
+
+# CHANGELOG 1.1.44
+## Changes
+- Event participants applied
+
 # CHANGELOG 1.1.43
 ## Changes
 - Event polaroids handle badges remove uninteded json response
