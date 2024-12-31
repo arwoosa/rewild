@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.45
+## Changes
+- Event participants applied update
+
 # CHANGELOG 1.1.44
 ## Changes
 - Event participants applied

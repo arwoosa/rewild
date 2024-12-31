@@ -107,6 +107,7 @@ func (r EventInvitationRepository) Read(c *gin.Context) {
 }
 
 func (r EventInvitationRepository) Update(c *gin.Context) {
+	applied := c.Query("applied")
 	var payload EventInvitationRequest
 	validateError := helpers.Validate(c, &payload)
 	if validateError != nil {
@@ -121,6 +122,14 @@ func (r EventInvitationRepository) Update(c *gin.Context) {
 		{Key: "event_participants_user", Value: userDetail.UsersId},
 		{Key: "event_participants_status", Value: GetEventParticipantStatus("PENDING")},
 	}
+
+	if applied == "true" {
+		filter = bson.D{
+			{Key: "_id", Value: id},
+			{Key: "event_participants_status", Value: GetEventParticipantStatus("APPLIED")},
+		}
+	}
+
 	err := config.DB.Collection("EventParticipants").FindOne(context.TODO(), filter).Decode(&results)
 	if err != nil {
 		helpers.ResultEmpty(c, err)
