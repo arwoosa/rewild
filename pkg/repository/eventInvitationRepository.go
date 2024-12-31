@@ -21,15 +21,27 @@ type EventInvitationRequest struct {
 
 func (r EventInvitationRepository) Retrieve(c *gin.Context) {
 	userDetail := helpers.GetAuthUser(c)
-	fmt.Print("EventInvitationRepository: Retrieve")
+	applied := c.Query("applied")
+	fmt.Print("EventInvitationRepository: Retrieve", applied)
 	var EventParticipants []models.EventParticipants
-	agg := mongo.Pipeline{
-		bson.D{{
+
+	matchParam := bson.D{{
+		Key: "$match", Value: bson.M{
+			"event_participants_user":   userDetail.UsersId,
+			"event_participants_status": GetEventParticipantStatus("PENDING"),
+		},
+	}}
+
+	if applied == "true" {
+		matchParam = bson.D{{
 			Key: "$match", Value: bson.M{
-				"event_participants_user":   userDetail.UsersId,
-				"event_participants_status": GetEventParticipantStatus("PENDING"),
+				"event_participants_status": GetEventParticipantStatus("APPLIED"),
 			},
-		}},
+		}}
+	}
+
+	agg := mongo.Pipeline{
+		matchParam,
 		bson.D{{
 			Key: "$lookup", Value: bson.M{
 				"from":         "Users",
@@ -42,6 +54,27 @@ func (r EventInvitationRepository) Retrieve(c *gin.Context) {
 			Key: "$unwind", Value: "$event_participants_invited_by",
 		}},
 	}
+
+	if applied == "true" {
+		agg = append(agg,
+			bson.D{{
+				Key: "$lookup", Value: bson.M{
+					"from":         "Events",
+					"localField":   "event_participants_event",
+					"foreignField": "_id",
+					"as":           "event_participants_event_detail",
+				},
+			}},
+			bson.D{{
+				Key: "$unwind", Value: "$event_participants_event_detail",
+			}},
+			bson.D{{
+				Key: "$match", Value: bson.M{
+					"event_participants_event_detail.events_created_by": userDetail.UsersId,
+				},
+			}})
+	}
+
 	cursor, err := config.DB.Collection("EventParticipants").Aggregate(context.TODO(), agg)
 	cursor.All(context.TODO(), &EventParticipants)
 
