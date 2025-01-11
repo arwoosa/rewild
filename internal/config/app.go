@@ -13,11 +13,8 @@ type AppConfig struct {
 	GoogleOauthClientId        string
 	GoogleApiKey               string
 	AppPort                    string
-	DbApiHost                  string
-	DbApiPort                  string
+	DbConnection               string
 	DbApiDatabase              string
-	DbApiUsername              string
-	DbApiPassword              string
 	FlickrApiKey               string
 	FlickrSecret               string
 	FlickrUserName             string
@@ -64,11 +61,8 @@ func InitialiseConfig() {
 	APP.GoogleOauthClientId = os.Getenv("GOOGLE_OAUTH_CLIENT_ID")
 	APP.GoogleApiKey = os.Getenv("GOOGLE_API_KEY")
 	APP.AppPort = os.Getenv("APP_PORT")
-	APP.DbApiHost = os.Getenv("DB_API_HOST")
-	APP.DbApiPort = os.Getenv("DB_API_PORT")
+	APP.DbConnection = os.Getenv("DB_CONNECTION")
 	APP.DbApiDatabase = os.Getenv("DB_API_DATABASE")
-	APP.DbApiUsername = os.Getenv("DB_API_USERNAME")
-	APP.DbApiPassword = os.Getenv("DB_API_PASSWORD")
 	APP.FlickrApiKey = os.Getenv("FLICKR_API_KEY")
 	APP.FlickrSecret = os.Getenv("FLICKR_SECRET_KEY")
 	APP.FlickrUserName = os.Getenv("FLICKR_UPLOAD_USERNAME")
