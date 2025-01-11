@@ -1,0 +1,44 @@
+networks:
+  oosa-network:
+    external: true
+    name: network.oosa
+
+name: oosa-api-service
+services:
+  oosa_rewild:
+    container_name: oosa_rewild
+    image: oosa-rewild:test
+    restart: always
+    environment:
+      - APP_PORT=6080
+      - DB_API_HOST=oosa_mongodb
+      - DB_API_PORT=27017
+      - DB_API_DATABASE=oosa
+      - GOOGLE_API_KEY=AIzaSyD0nHbzl6s_ST88idwPVQJ6vWTCdSbG__E
+      - CLOUDFLARE_IMAGE_AUTH_TOKEN=LAtqwjUrfA9DH-st22XkYpR82Hnz2LwsK14M583r
+      - CLOURDLARE_IMAGE_ACCOUNT_ID=69e9668bb0036342460ed07037a7ae24
+      - CLOURDLARE_IMAGE_ACCOUNT_HASH=peXbMh4A5r2xX67SaM4zPQ
+      - CLOURDLARE_IMAGE_DELIVERY_URL=https://oosa.life/cdn-cgi/imagedelivery
+      - OPENWEATHER_API_BASE_URL=https://api.openweathermap.org/data/2.5/
+      - OPENWEATHER_API_KEY=87b75f52e03066a98c8d275f20fc02b9
+      - EVENT_POLAROID_LIMIT=3
+      - EVENT_ACCOUNTING_LIMIT=100
+      - EVENT_ANNOUNCEMENT_LIMIT=20
+      - EVENT_MESSAGE_BOARD_LIMIT=9999
+      - POCKET_LIST_LIMIT=3
+      - POCKET_LIST_ITEMS_LIMIT=10
+      - LENGTH_POCKET_LIST_NAME=30
+      - LENGTH_REWILDING_NAME=30
+      - LENGTH_REWILDING_IMAGE=3
+      - LENGTH_REWILDING_REFERENCE_LINK=3
+      - LENGTH_EVENT_NAME=20
+      - LENGTH_EVENT_MESSAGE_BOARD_MESSAGE=150
+      - LENGTH_EVENT_ACCOUNTING_MESSAGE=30
+      - LENGTH_EVENT_INVITATION_MESSAGE=50
+      - LENGTH_EVENT_POLAROID_MESSAGE=20
+      - POLAROID_ACHIEVEMENT_RADIUS=2000
+      - LENGTH_EVENT_PARTICIPANT_MESSAGE=50
+      - MINIMUM_TOP_RANKING=2
+      - APP_BASE_URL=https://dev.oosa.life/api/
+    networks:
+    - oosa-network
