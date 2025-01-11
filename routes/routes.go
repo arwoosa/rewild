@@ -26,6 +26,7 @@ func RegisterRoutes() *gin.Engine {
 	UserRoutes(r)
 	NewsRoutes(r)
 	StaticRoutes(r)
+	healthRoutes(r)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return r
