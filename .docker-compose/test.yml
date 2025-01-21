@@ -12,7 +12,7 @@ services:
     environment:
       - APP_PORT=6080
       - DB_API_HOST=
-      - DB_CONNECTION=mongodb://oosa_mongodb:27001/?timeoutMS=5000&maxPoolSize=20&w=majority
+      - DB_CONNECTION=mongodb://oosa_mongodb:27017/?timeoutMS=5000&maxPoolSize=20&w=majority
       - DB_API_DATABASE=oosa
       - GOOGLE_API_KEY=AIzaSyD0nHbzl6s_ST88idwPVQJ6vWTCdSbG__E
       - CLOUDFLARE_IMAGE_AUTH_TOKEN=LAtqwjUrfA9DH-st22XkYpR82Hnz2LwsK14M583r
