@@ -22,4 +22,32 @@ trigger:
   - main
   event:
   - push
+
+---
+
+kind: pipeline
+type: exec
+name: build-and-push
+
+platform:
+  os: darwin
+  arch: amd64
+  
+steps:
+- name: build-docker
+  commands:
+  - export PATH=$PATH:/opt/homebrew/bin
+  - export REGISTRY_PWD=$docker_password
+  - dagger call build-product --source=. --tag=${DRONE_TAG##v} --password=env:REGISTRY_PWD --user=$docker_user --image=app-rewild --dockerfile=.docker/Dockerfile.distroless
+  environment:
+    docker_user:
+        from_secret: docker_username
+    docker_password:
+        from_secret: docker_password
+trigger:
+  branch:
+  - main
+  event:
+  - tag
+
 ...
