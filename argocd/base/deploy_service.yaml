@@ -1,0 +1,190 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: rewild
+  name: rewild-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rewild
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: rewild
+    spec:
+      containers:
+      - image: sjc.vultrcr.com/oosa/app-rewild:v1.0.0
+        name: rewild
+        livenessProbe:
+          httpGet:
+            path: /health/alive
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 6
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 6
+        env:
+        - name: APP_PORT
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: APP_PORT
+        - name: DB_CONNECTION
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: DB_CONNECTION
+        - name: DB_API_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: DB_API_DATABASE
+        - name: GOOGLE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: GOOGLE_API_KEY
+        - name: CLOUDFLARE_IMAGE_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: CLOUDFLARE_IMAGE_AUTH_TOKEN
+        - name: CLOURDLARE_IMAGE_ACCOUNT_ID
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: CLOURDLARE_IMAGE_ACCOUNT_ID
+        - name: CLOURDLARE_IMAGE_ACCOUNT_HASH
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: CLOURDLARE_IMAGE_ACCOUNT_HASH
+        - name: CLOURDLARE_IMAGE_DELIVERY_URL
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: CLOURDLARE_IMAGE_DELIVERY_URL
+        - name: OPENWEATHER_API_BASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: OPENWEATHER_API_BASE_URL
+        - name: OPENWEATHER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: OPENWEATHER_API_KEY
+        - name: EVENT_POLAROID_LIMIT
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: EVENT_POLAROID_LIMIT
+        - name: EVENT_ACCOUNTING_LIMIT
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: EVENT_ACCOUNTING_LIMIT
+        - name: EVENT_ANNOUNCEMENT_LIMIT
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: EVENT_ANNOUNCEMENT_LIMIT
+        - name: EVENT_MESSAGE_BOARD_LIMIT
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: EVENT_MESSAGE_BOARD_LIMIT
+        - name: POCKET_LIST_LIMIT
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: POCKET_LIST_LIMIT
+        - name: POCKET_LIST_ITEMS_LIMIT
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: POCKET_LIST_ITEMS_LIMIT
+        - name: LENGTH_POCKET_LIST_NAME
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: LENGTH_POCKET_LIST_NAME
+        - name: LENGTH_REWILDING_NAME
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: LENGTH_REWILDING_NAME
+        - name: LENGTH_REWILDING_IMAGE
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: LENGTH_REWILDING_IMAGE
+        - name: LENGTH_REWILDING_REFERENCE_LINK
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: LENGTH_REWILDING_REFERENCE_LINK
+        - name: LENGTH_EVENT_NAME
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: LENGTH_EVENT_NAME
+        - name: LENGTH_EVENT_MESSAGE_BOARD_MESSAGE
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: LENGTH_EVENT_MESSAGE_BOARD_MESSAGE
+        - name: LENGTH_EVENT_ACCOUNTING_MESSAGE
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: LENGTH_EVENT_ACCOUNTING_MESSAGE
+        - name: LENGTH_EVENT_INVITATION_MESSAGE
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: LENGTH_EVENT_INVITATION_MESSAGE
+        - name: LENGTH_EVENT_POLAROID_MESSAGE
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: LENGTH_EVENT_POLAROID_MESSAGE
+        - name: POLAROID_ACHIEVEMENT_RADIUS
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: POLAROID_ACHIEVEMENT_RADIUS
+        - name: LENGTH_EVENT_PARTICIPANT_MESSAGE
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: LENGTH_EVENT_PARTICIPANT_MESSAGE
+        - name: MINIMUM_TOP_RANKING
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: MINIMUM_TOP_RANKING
+        - name: APP_BASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: APP_BASE_URL
+      volumes:
+        - name: rewild-secrets
+          secret:  
+            secretName: rewild-secrets
