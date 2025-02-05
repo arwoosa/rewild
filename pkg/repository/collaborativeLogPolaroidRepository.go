@@ -131,14 +131,15 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 	reader := bytes.NewReader(b)
 
 	exif.RegisterParsers(mknote.All...)
+	var tm time.Time
 	x, err := exif.Decode(reader)
 	if err != nil {
+		tm = time.Now()
 		//helpers.ResponseBadRequestError(c, "EXIF: "+err.Error())
 	} else {
 		lat, lng, _ = x.LatLong()
+		tm, _ = x.DateTime()
 	}
-
-	tm, _ := x.DateTime()
 
 	fileName := ""
 	if !isCheck {
