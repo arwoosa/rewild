@@ -130,7 +130,7 @@ func (r EventInvitationMessageRepository) Join(c *gin.Context) {
 		Message: "{0}提出加入{0}的申請!",
 		Data: []map[string]interface{}{
 			helpers.NotificationFormatUser(userDetail), //格式化使用者資訊
-			{"eventId": id.Hex()},
+			{"event_name": Events.EventsName},
 		},
 	}
 	helpers.NotificationsCreate(c, helpers.NOTIFICATION_JOINING_REQUEST, userDetail.UsersId, NotificationMessage, Events.EventsCreatedBy)
