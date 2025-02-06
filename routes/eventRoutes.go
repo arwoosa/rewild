@@ -82,7 +82,7 @@ func EventRoutes(r *gin.Engine) *gin.Engine {
 	participants := detail.Group("/participants", middleware.AuthMiddleware())
 	{
 		participants.GET("", repoParticipants.Retrieve)
-		participants.POST("", repoParticipants.Create)
+		participants.POST("", middleware.NotificationHeaderMiddleware(), repoParticipants.Create)
 		// participants.GET("/:accountingId", repoParticipants.Read)
 		// participants.PUT("/:accountingId", repoParticipants.Update)
 		participants.DELETE("/:participantId", repoParticipants.Delete)
@@ -95,7 +95,7 @@ func EventRoutes(r *gin.Engine) *gin.Engine {
 
 	join := detail.Group("/join", middleware.AuthMiddleware())
 	{
-		join.POST("", repoInvitation.Join)
+		join.POST("", middleware.NotificationHeaderMiddleware(), repoInvitation.Join)
 	}
 
 	return r

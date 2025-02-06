@@ -123,5 +123,17 @@ func (r EventInvitationMessageRepository) Join(c *gin.Context) {
 		EventRepository{}.HandleBadges(c, id)
 	}
 
+	// 補充缺失功能 建立通知函式，通知訊息給活動主持人，讓主持人知道有使用者申請加入活動
+	// 通知訊息中包含申請者資訊與事件資訊
+	// 而最後一個參數我們從 Events 中取得 EventsCreatedBy 作為行程主持人的 ObjectID
+	NotificationMessage := models.NotificationMessage{
+		Message: "{0}提出加入{0}的申請!",
+		Data: []map[string]interface{}{
+			helpers.NotificationFormatUser(userDetail), //格式化使用者資訊
+			{"eventId": id.Hex()},
+		},
+	}
+	helpers.NotificationsCreate(c, helpers.NOTIFICATION_JOINING_REQUEST, userDetail.UsersId, NotificationMessage, Events.EventsCreatedBy)
+
 	helpers.ResponseSuccessMessage(c, "Join request for event submitted")
 }

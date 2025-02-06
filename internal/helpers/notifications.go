@@ -4,6 +4,7 @@ import (
 	"context"
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/models"
+	"reflect"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -39,6 +40,93 @@ func NotificationsCreate(c *gin.Context, notifCode string, userId primitive.Obje
 		NotificationsCreatedBy:  userDetail.UsersId,
 	}
 	config.DB.Collection("Notifications").InsertOne(context.TODO(), insert)
+
+	newNotifPayload := map[string]interface{}{
+		"from":  userDetail.UsersId.Hex(),
+		"to":    []string{identifier.Hex()},
+		"event": notifCode,
+		"data":  message,
+	}
+
+	key := "notification"
+
+	existing, exists := c.Get(key)
+	if !exists {
+		c.Set(key, newNotifPayload)
+		return
+	}
+
+	switch notif := existing.(type) {
+	case []interface{}:
+		found := false
+		for i, n := range notif {
+			if existingNotif, ok := n.(map[string]interface{}); ok {
+				if isSameNotification(existingNotif, newNotifPayload) {
+					mergeToField(existingNotif, newNotifPayload)
+					notif[i] = existingNotif
+					found = true
+					break
+				}
+			}
+		}
+		if !found {
+			notif = append(notif, newNotifPayload)
+		}
+		c.Set(key, notif)
+	case map[string]interface{}:
+		if isSameNotification(notif, newNotifPayload) {
+			mergeToField(notif, newNotifPayload)
+			c.Set(key, notif)
+		} else {
+			c.Set(key, []interface{}{notif, newNotifPayload})
+		}
+	default:
+		c.Set(key, newNotifPayload)
+	}
+}
+
+func isSameNotification(a, b map[string]interface{}) bool {
+	if a["from"] != b["from"] {
+		return false
+	}
+	if a["event"] != b["event"] {
+		return false
+	}
+	return reflect.DeepEqual(a["data"], b["data"])
+}
+
+func mergeToField(existingNotif, newNotif map[string]interface{}) {
+	var existingTo []string
+	if toVal, ok := existingNotif["to"]; ok {
+		if arr, ok2 := toVal.([]string); ok2 {
+			existingTo = arr
+		} else {
+			existingTo = []string{}
+		}
+	}
+	var newTo []string
+	if toVal, ok := newNotif["to"]; ok {
+		if arr, ok2 := toVal.([]string); ok2 {
+			newTo = arr
+		} else {
+			newTo = []string{}
+		}
+	}
+	for _, recipient := range newTo {
+		if !stringInSlice(recipient, existingTo) {
+			existingTo = append(existingTo, recipient)
+		}
+	}
+	existingNotif["to"] = existingTo
+}
+
+func stringInSlice(s string, list []string) bool {
+	for _, v := range list {
+		if v == s {
+			return true
+		}
+	}
+	return false
 }
 
 func NotificationFormatEvent(Events models.Events) map[string]any {
