@@ -151,7 +151,7 @@ func (r EventParticipantsRepository) Create(c *gin.Context) {
 
 			NotificationMessage := models.NotificationMessage{
 				Message: "你有一張來自{0}的邀請函",
-				Data:    []map[string]interface{}{helpers.NotificationFormatUser(userDetail)},
+				Data:    []map[string]interface{}{helpers.NotificationFormatUser(userDetail), helpers.NotificationFormatEvent(Event)},
 			}
 			helpers.NotificationsCreate(c, helpers.NOTIFICATION_INVITATION, invitedUser, NotificationMessage, EventParticipants.EventParticipantsId)
 			EventRepository{}.HandleParticipantFriend(c, eventId)
