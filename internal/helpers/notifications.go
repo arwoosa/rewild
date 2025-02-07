@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -40,16 +41,23 @@ func NotificationsCreate(c *gin.Context, notifCode string, userId primitive.Obje
 		NotificationsCreatedBy:  userDetail.UsersId,
 	}
 	config.DB.Collection("Notifications").InsertOne(context.TODO(), insert)
+}
 
+func NotificationAddToContext(c *gin.Context, from primitive.ObjectID, event string, to primitive.ObjectID, data map[string]interface{}) {
+	userDetail := GetAuthUser(c)
+	userDoc, err := findUserSourceId(to)
+	if err != nil {
+
+		return
+	}
 	newNotifPayload := map[string]interface{}{
-		"from":  userDetail.UsersId.Hex(),
-		"to":    []string{identifier.Hex()},
-		"event": notifCode,
-		"data":  message,
+		"from":  userDetail.UsersSourceId,
+		"event": event,
+		"to":    []string{userDoc.UsersSourceId},
+		"data":  data,
 	}
 
-	key := "notification"
-
+	const key = "notification"
 	existing, exists := c.Get(key)
 	if !exists {
 		c.Set(key, newNotifPayload)
@@ -83,6 +91,17 @@ func NotificationsCreate(c *gin.Context, notifCode string, userId primitive.Obje
 	default:
 		c.Set(key, newNotifPayload)
 	}
+}
+
+func findUserSourceId(userId primitive.ObjectID) (*models.Users, error) {
+	collection := config.DB.Collection("Users")
+
+	var userDoc models.Users
+	err := collection.FindOne(context.TODO(), bson.M{"_id": userId}).Decode(&userDoc)
+	if err != nil {
+		return nil, err
+	}
+	return &userDoc, nil
 }
 
 func isSameNotification(a, b map[string]interface{}) bool {

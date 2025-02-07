@@ -114,6 +114,8 @@ func (r RewildingRepository) Retrieve(c *gin.Context) {
 }
 
 func (r RewildingRepository) Read(c *gin.Context) {
+	userDetail := helpers.GetAuthUser(c)
+
 	id, _ := primitive.ObjectIDFromHex(c.Param("id"))
 	var Rewilding models.Rewilding
 	err := config.DB.Collection("Rewilding").FindOne(context.TODO(), bson.D{{Key: "_id", Value: id}}).Decode(&Rewilding)
@@ -129,34 +131,37 @@ func (r RewildingRepository) Read(c *gin.Context) {
 
 	isBookmarked := false
 
-	pocketListItemsFilter := bson.D{{Key: "pocket_list_items_rewilding", Value: id}}
-	pliCursor, err := config.DB.Collection("PocketListItems").Find(context.TODO(), pocketListItemsFilter)
-	if err == nil {
-		defer pliCursor.Close(context.TODO())
-
-		var mstIDs []primitive.ObjectID
-		for pliCursor.Next(context.TODO()) {
-			var item models.PocketListItems
-			if err := pliCursor.Decode(&item); err == nil {
-				mstIDs = append(mstIDs, item.PocketListItemsMst)
-			}
+	if userDetail.UsersId != primitive.NilObjectID {
+		pipeline := mongo.Pipeline{
+			{
+				{Key: "$match", Value: bson.M{"pocket_lists_user": userDetail.UsersId}},
+			},
+			{
+				{Key: "$lookup", Value: bson.M{
+					"from":         "PocketListItems",
+					"localField":   "_id",
+					"foreignField": "pocket_list_items_mst",
+					"as":           "items",
+				}},
+			},
+			{
+				{Key: "$unwind", Value: bson.M{"path": "$items", "preserveNullAndEmptyArrays": true}},
+			},
+			{
+				{Key: "$match", Value: bson.M{"items.pocket_list_items_rewilding": id}},
+			},
 		}
 
-		if len(mstIDs) > 0 {
-			if user := helpers.GetAuthUser(c); user.UsersId != primitive.NilObjectID {
-				pocketListFilter := bson.D{
-					{Key: "_id", Value: bson.D{{Key: "$in", Value: mstIDs}}},
-					{Key: "pocket_lists_user", Value: user.UsersId},
-				}
-				if count, err := config.DB.Collection("PocketLists").CountDocuments(context.TODO(), pocketListFilter); err == nil {
-					isBookmarked = count > 0
-				} else {
-					log.Printf("PocketLists db_error: %v", err)
-				}
+		cursor, err := config.DB.Collection("PocketLists").Aggregate(context.TODO(), pipeline)
+		if err != nil {
+			log.Println("error in pipeline aggregate:", err)
+		} else {
+			defer cursor.Close(context.TODO())
+
+			if cursor.Next(context.TODO()) {
+				isBookmarked = true
 			}
 		}
-	} else {
-		log.Printf("PocketListItems db_error: %v", err)
 	}
 
 	c.JSON(200, struct {

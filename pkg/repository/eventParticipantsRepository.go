@@ -151,9 +151,15 @@ func (r EventParticipantsRepository) Create(c *gin.Context) {
 
 			NotificationMessage := models.NotificationMessage{
 				Message: "你有一張來自{0}的邀請函",
-				Data:    []map[string]interface{}{helpers.NotificationFormatUser(userDetail), helpers.NotificationFormatEvent(Event)},
+				Data:    []map[string]interface{}{helpers.NotificationFormatUser(userDetail)},
 			}
 			helpers.NotificationsCreate(c, helpers.NOTIFICATION_INVITATION, invitedUser, NotificationMessage, EventParticipants.EventParticipantsId)
+			var foundEvent models.Events
+			config.DB.Collection("Events").FindOne(context.TODO(), bson.M{"_id": eventId}).Decode(&foundEvent)
+			Data := map[string]interface{}{
+				"events_name": foundEvent.EventsName,
+			}
+			helpers.NotificationAddToContext(c, invitedUser, helpers.NOTIFICATION_INVITATION, EventParticipants.EventParticipantsId, Data)
 			EventRepository{}.HandleParticipantFriend(c, eventId)
 		}
 	}
