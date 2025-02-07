@@ -127,7 +127,45 @@ func (r RewildingRepository) Read(c *gin.Context) {
 		Rewilding.RewildingPhotos = make([]models.RewildingPhotos, 0)
 	}
 
-	c.JSON(200, Rewilding)
+	isBookmarked := false
+
+	pocketListItemsFilter := bson.D{{Key: "pocket_list_items_rewilding", Value: id}}
+	pliCursor, err := config.DB.Collection("PocketListItems").Find(context.TODO(), pocketListItemsFilter)
+	if err == nil {
+		defer pliCursor.Close(context.TODO())
+
+		var mstIDs []primitive.ObjectID
+		for pliCursor.Next(context.TODO()) {
+			var item models.PocketListItems
+			if err := pliCursor.Decode(&item); err == nil {
+				mstIDs = append(mstIDs, item.PocketListItemsMst)
+			}
+		}
+
+		if len(mstIDs) > 0 {
+			if user := helpers.GetAuthUser(c); user.UsersId != primitive.NilObjectID {
+				pocketListFilter := bson.D{
+					{Key: "_id", Value: bson.D{{Key: "$in", Value: mstIDs}}},
+					{Key: "pocket_lists_user", Value: user.UsersId},
+				}
+				if count, err := config.DB.Collection("PocketLists").CountDocuments(context.TODO(), pocketListFilter); err == nil {
+					isBookmarked = count > 0
+				} else {
+					log.Printf("PocketLists db_error: %v", err)
+				}
+			}
+		}
+	} else {
+		log.Printf("PocketListItems db_error: %v", err)
+	}
+
+	c.JSON(200, struct {
+		models.Rewilding
+		IsBookmarked bool `json:"isBookmarked"`
+	}{
+		Rewilding:    Rewilding,
+		IsBookmarked: isBookmarked,
+	})
 }
 
 func (r RewildingRepository) GetOneRewilding(stringId string, Rewilding *models.Rewilding) error {
@@ -533,6 +571,15 @@ func (r RewildingRepository) GooglePlaceToRewilding(c *gin.Context, placeId stri
 	gplaces := helpers.GooglePlaceById(c, placeId)
 
 	if gplaces != nil {
+		var existingRewilding models.Rewilding
+		filter := bson.M{"rewilding_place_id": placeId}
+
+		err := config.DB.Collection("Rewilding").FindOne(c.Request.Context(), filter).Decode(&existingRewilding)
+
+		if err != nil && err != mongo.ErrNoDocuments {
+			log.Printf("db_error: %v", err)
+		}
+
 		location := helpers.GooglePlacesV1ToLocationArray(gplaces.AddressComponents)
 		area, _ := helpers.GooglePlacesV1GetArea(gplaces.AddressComponents, "administrative_area_level_1")
 		_, countryCode := helpers.GooglePlacesV1GetArea(gplaces.AddressComponents, "country")
@@ -542,6 +589,7 @@ func (r RewildingRepository) GooglePlaceToRewilding(c *gin.Context, placeId stri
 		applyOfficial := false
 
 		return models.Rewilding{
+			RewildingID:            existingRewilding.RewildingID,
 			RewildingArea:          area,
 			RewildingLocation:      location,
 			RewildingCountryCode:   countryCode,
