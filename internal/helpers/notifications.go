@@ -44,16 +44,16 @@ func NotificationsCreate(c *gin.Context, notifCode string, userId primitive.Obje
 }
 
 func NotificationAddToContext(c *gin.Context, from primitive.ObjectID, event string, to primitive.ObjectID, data map[string]interface{}) {
-	userDetail := GetAuthUser(c)
-	userDoc, err := findUserSourceId(to)
+	userDocFrom, err := findUserSourceId(from)
+	userDocTo, err := findUserSourceId(to)
 	if err != nil {
 
 		return
 	}
 	newNotifPayload := map[string]interface{}{
-		"from":  userDetail.UsersSourceId,
+		"from":  userDocFrom.UsersSourceId,
 		"event": event,
-		"to":    []string{userDoc.UsersSourceId},
+		"to":    []string{userDocTo.UsersSourceId},
 		"data":  data,
 	}
 
