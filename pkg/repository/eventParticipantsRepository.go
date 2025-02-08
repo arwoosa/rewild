@@ -7,6 +7,7 @@ import (
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
 	"oosa_rewild/internal/models"
+	"strconv"
 	"strings"
 	"time"
 
@@ -99,6 +100,24 @@ func (r EventParticipantsRepository) Create(c *gin.Context) {
 	}
 
 	eventId := helpers.StringToPrimitiveObjId(c.Param("id"))
+
+	if Event.EventsParticipantLimit != nil && *Event.EventsParticipantLimit != 0 {
+		countFilter := bson.D{
+			{Key: "event_participants_event", Value: eventId},
+			{Key: "event_participants_status", Value: GetEventParticipantStatus("ACCEPTED")},
+		}
+		acceptedCount, err := config.DB.Collection("EventParticipants").CountDocuments(context.TODO(), countFilter)
+		if err != nil {
+			helpers.ResponseError(c, "Error checking accepted participants count")
+			return
+		}
+		// 若加上這次邀請的數量會超過上限，則回傳錯誤
+		if int(acceptedCount)+len(payload.EventParticipantsUser) > *Event.EventsParticipantLimit {
+			limitMsg := "This event can only be attended by " + strconv.Itoa(*Event.EventsParticipantLimit) + " participants"
+			helpers.ResponseBadRequestError(c, limitMsg)
+			return
+		}
+	}
 
 	var invitedUserMsg []string
 	invitedUserId := make([]primitive.ObjectID, 0)

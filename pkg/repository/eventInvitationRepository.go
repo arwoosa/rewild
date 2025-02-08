@@ -7,6 +7,7 @@ import (
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
 	"oosa_rewild/internal/models"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -151,13 +152,33 @@ func (r EventInvitationRepository) Update(c *gin.Context) {
 		return
 	}
 
-	ActiveParticipants := EventParticipantsRepository{}.ActiveParticipants(results.EventParticipantsEvent)
-
 	var Event models.Events
 	eventFilter := bson.D{
 		{Key: "_id", Value: results.EventParticipantsEvent},
 	}
-	config.DB.Collection("Events").FindOne(context.TODO(), eventFilter).Decode(&Event)
+	if err := config.DB.Collection("Events").FindOne(context.TODO(), eventFilter).Decode(&Event); err != nil {
+		helpers.ResponseError(c, "Event not found")
+		return
+	}
+
+	if payload.EventParticipantsStatus == GetEventParticipantStatus("ACCEPTED") {
+		countFilter := bson.D{
+			{Key: "event_participants_event", Value: results.EventParticipantsEvent},
+			{Key: "event_participants_status", Value: GetEventParticipantStatus("ACCEPTED")},
+		}
+		acceptedCount, err := config.DB.Collection("EventParticipants").CountDocuments(context.TODO(), countFilter)
+		if err != nil {
+			helpers.ResponseError(c, "Error checking accepted participants count")
+			return
+		}
+		if *Event.EventsParticipantLimit != 0 && int(acceptedCount+1) > *Event.EventsParticipantLimit {
+			limitMsg := "This event can only be attended by " + strconv.Itoa(*Event.EventsParticipantLimit) + " participants"
+			helpers.ResponseBadRequestError(c, limitMsg)
+			return
+		}
+	}
+
+	ActiveParticipants := EventParticipantsRepository{}.ActiveParticipants(results.EventParticipantsEvent)
 
 	for _, v := range ActiveParticipants {
 		NotificationMessage := models.NotificationMessage{
