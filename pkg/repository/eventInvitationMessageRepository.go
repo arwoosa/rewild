@@ -143,6 +143,6 @@ func (r EventInvitationMessageRepository) Join(c *gin.Context) {
 		"events_name": Events.EventsName,
 	}
 	helpers.NotificationAddToContext(c, Events.EventsCreatedBy, helpers.NOTIFICATION_JOINING_REQUEST, Events.EventsCreatedBy, Data)
-
+	helpers.NotificationWriteHeader(c)
 	helpers.ResponseSuccessMessage(c, "Join request for event submitted")
 }

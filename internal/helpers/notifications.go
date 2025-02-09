@@ -2,6 +2,9 @@ package helpers
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/models"
 	"reflect"
@@ -59,10 +62,9 @@ func NotificationAddToContext(c *gin.Context, from primitive.ObjectID, event str
 		"data":  data,
 	}
 
-	const key = "notification"
-	existing, exists := c.Get(key)
+	existing, exists := c.Get(config.APP.NotificationContextKey)
 	if !exists {
-		c.Set(key, newNotifPayload)
+		c.Set(config.APP.NotificationContextKey, newNotifPayload)
 		return
 	}
 
@@ -82,16 +84,38 @@ func NotificationAddToContext(c *gin.Context, from primitive.ObjectID, event str
 		if !found {
 			notif = append(notif, newNotifPayload)
 		}
-		c.Set(key, notif)
+		c.Set(config.APP.NotificationContextKey, notif)
 	case map[string]interface{}:
 		if isSameNotification(notif, newNotifPayload) {
 			mergeToField(notif, newNotifPayload)
-			c.Set(key, notif)
+			c.Set(config.APP.NotificationContextKey, notif)
 		} else {
-			c.Set(key, []interface{}{notif, newNotifPayload})
+			c.Set(config.APP.NotificationContextKey, []interface{}{notif, newNotifPayload})
 		}
 	default:
-		c.Set(key, newNotifPayload)
+		c.Set(config.APP.NotificationContextKey, newNotifPayload)
+	}
+}
+
+func NotificationWriteHeader(c *gin.Context) {
+	if notif, exists := c.Get(config.APP.NotificationContextKey); exists {
+		var notifSlice []interface{}
+		switch n := notif.(type) {
+		case []interface{}:
+			notifSlice = n
+		default:
+			notifSlice = []interface{}{n}
+		}
+
+		jsonData, err := json.Marshal(notifSlice)
+		if err != nil {
+			fmt.Println("ERROR marshaling notification:", err)
+			return
+		}
+
+		encoded := base64.StdEncoding.EncodeToString(jsonData)
+
+		c.Writer.Header().Set(config.APP.NotificationHeaderName, encoded)
 	}
 }
 

@@ -190,8 +190,8 @@ func (r EventParticipantsRepository) Create(c *gin.Context) {
 	}
 	participantsCursor, _ := config.DB.Collection("EventParticipants").Find(context.TODO(), eventParticipantFilter)
 	participantsCursor.All(context.TODO(), &EventParticipants)
-
 	if len(invitedUserId) > 0 {
+		helpers.NotificationWriteHeader(c)
 		c.JSON(http.StatusOK, EventParticipants)
 	} else {
 		helpers.ResponseError(c, strings.Join(invitedUserMsg, ", "))
