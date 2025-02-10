@@ -166,7 +166,7 @@ func (r RewildingRepository) Read(c *gin.Context) {
 
 	c.JSON(200, struct {
 		models.Rewilding
-		IsBookmarked bool `json:"isBookmarked"`
+		IsBookmarked bool `json:"rewilding_isbookmarked"`
 	}{
 		Rewilding:    Rewilding,
 		IsBookmarked: isBookmarked,
