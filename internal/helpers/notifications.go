@@ -2,15 +2,11 @@ package helpers
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
-	"fmt"
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/models"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -30,79 +26,7 @@ var (
 	NOTIFICATION_EVENT_JOIN_DENIED       = "EVENT_JOIN_DENIED"
 	NOTIFICATION_COLOG_PHOTO_UPLOADED    = "COLOG_PHOTO_UPLOADED"
 	NOTIFICATION_COLOG_REMIND            = "COLOG_REMIND"
-	notification_key                     = "NOTIFICATION"
 )
-
-type NotifyMsg interface {
-	AddTo(to primitive.ObjectID)
-	WriteToHeader(c *gin.Context)
-}
-
-type notifyMsg struct {
-	event string
-	from  primitive.ObjectID
-	to    []primitive.ObjectID
-	data  map[string]string
-}
-
-func NewNotifyMsg(event string, from, to primitive.ObjectID, data map[string]string) NotifyMsg {
-	return &notifyMsg{
-		event: event,
-		from:  from,
-		to:    []primitive.ObjectID{to},
-		data:  data,
-	}
-}
-
-func (msg *notifyMsg) AddTo(to primitive.ObjectID) {
-	for _, existTo := range msg.to {
-		if existTo == to {
-			return
-		}
-	}
-	msg.to = append(msg.to, to)
-}
-
-func (msg *notifyMsg) WriteToHeader(c *gin.Context) {
-	userToSourceIdMap, err := findUserSourceId(append(msg.to, msg.from))
-	if err != nil {
-		fmt.Println("ERROR find user source id:", err)
-		return
-	}
-	from, ok := userToSourceIdMap[msg.from]
-	if !ok {
-		fmt.Println("not found from user: " + msg.from.Hex())
-		return
-	}
-	var notifyTo []string
-	for _, t := range msg.to {
-		tt, ok := userToSourceIdMap[t]
-		if !ok {
-			fmt.Println("not found to user: " + t.Hex())
-			continue
-		}
-		notifyTo = append(notifyTo, tt)
-	}
-	jsonData, err := json.Marshal(struct {
-		Event string            `json:"event"`
-		Data  map[string]string `json:"data"`
-		From  string            `json:"from"`
-		To    []string          `json:"to"`
-	}{
-		Event: msg.event,
-		Data:  msg.data,
-		From:  from,
-		To:    notifyTo,
-	})
-	if err != nil {
-		fmt.Println("ERROR marshaling notification:", err)
-		return
-	}
-
-	encoded := base64.StdEncoding.EncodeToString(jsonData)
-
-	c.Writer.Header().Set(config.APP.NotificationHeaderName, encoded)
-}
 
 func NotificationsCreate(c *gin.Context, notifCode string, userId primitive.ObjectID, message models.NotificationMessage, identifier primitive.ObjectID) {
 	userDetail := GetAuthUser(c)
@@ -115,47 +39,6 @@ func NotificationsCreate(c *gin.Context, notifCode string, userId primitive.Obje
 		NotificationsCreatedBy:  userDetail.UsersId,
 	}
 	config.DB.Collection("Notifications").InsertOne(context.TODO(), insert)
-}
-
-func NotificationWriteHeader(c *gin.Context) {
-	if notif, exists := c.Get(notification_key); exists {
-		var notifSlice []interface{}
-		switch n := notif.(type) {
-		case []interface{}:
-			notifSlice = n
-		default:
-			notifSlice = []interface{}{n}
-		}
-
-		jsonData, err := json.Marshal(notifSlice)
-		if err != nil {
-			fmt.Println("ERROR marshaling notification:", err)
-			return
-		}
-
-		encoded := base64.StdEncoding.EncodeToString(jsonData)
-
-		c.Writer.Header().Set(config.APP.NotificationHeaderName, encoded)
-	}
-}
-
-func findUserSourceId(userIds []primitive.ObjectID) (map[primitive.ObjectID]string, error) {
-	collection := config.DB.Collection("Users")
-
-	var usersDoc []models.Users
-	cursor, err := collection.Find(context.TODO(), bson.M{"_id": bson.M{"$in": userIds}})
-	if err != nil {
-		return nil, err
-	}
-	err = cursor.All(context.TODO(), &usersDoc)
-	if err != nil {
-		return nil, err
-	}
-	result := map[primitive.ObjectID]string{}
-	for _, u := range usersDoc {
-		result[u.UsersId] = u.UsersSourceId
-	}
-	return result, nil
 }
 
 func NotificationFormatEvent(Events models.Events) map[string]any {

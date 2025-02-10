@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/arwoosa/notifaction/helper"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -126,7 +127,7 @@ func (r EventParticipantsRepository) Create(c *gin.Context) {
 	notifyData := map[string]string{
 		"events_name": foundEvent.EventsName,
 	}
-	var notifyMsg helpers.NotifyMsg
+	var notifyMsg helper.NotifyMsg
 	for _, v := range payload.EventParticipantsUser {
 		canInvite := true
 		uID := v
@@ -180,7 +181,13 @@ func (r EventParticipantsRepository) Create(c *gin.Context) {
 			helpers.NotificationsCreate(c, helpers.NOTIFICATION_INVITATION, invitedUser, NotificationMessage, EventParticipants.EventParticipantsId)
 
 			if notifyMsg == nil {
-				notifyMsg = helpers.NewNotifyMsg(helpers.NOTIFICATION_INVITATION, invitedUser, EventParticipants.EventParticipantsId, notifyData)
+				notifyMsg, err = helper.NewNotifyMsg(
+					helpers.NOTIFICATION_INVITATION,
+					invitedUser, EventParticipants.EventParticipantsId,
+					notifyData, helpers.FindUserSourceId)
+				if err != nil {
+					fmt.Println("new notify msg err: " + err.Error())
+				}
 			} else {
 				notifyMsg.AddTo(EventParticipants.EventParticipantsId)
 			}
@@ -189,7 +196,7 @@ func (r EventParticipantsRepository) Create(c *gin.Context) {
 	}
 
 	if notifyMsg != nil {
-		notifyMsg.WriteToHeader(c)
+		notifyMsg.WriteToHeader(c, config.APP.NotificationHeaderName)
 	}
 
 	var EventParticipants []models.EventParticipants

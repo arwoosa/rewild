@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
@@ -9,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/arwoosa/notifaction/helper"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -128,7 +130,7 @@ func (r EventInvitationMessageRepository) Join(c *gin.Context) {
 
 	insertedID := insertResult.InsertedID.(primitive.ObjectID)
 	insertedIdString := insertedID.Hex()
-	// 補充缺失功能 建立通知函式，通知訊息給活動主持人，讓主持人知道有使用者申請加入活動
+
 	NotificationMessage := models.NotificationMessage{
 		Message: "{0}提出加入{1}的申請!",
 		Data: []map[string]interface{}{
@@ -142,7 +144,17 @@ func (r EventInvitationMessageRepository) Join(c *gin.Context) {
 	Data := map[string]string{
 		"events_name": Events.EventsName,
 	}
-	notifyMsg := helpers.NewNotifyMsg(helpers.NOTIFICATION_JOINING_REQUEST, Events.EventsCreatedBy, Events.EventsCreatedBy, Data)
-	notifyMsg.WriteToHeader(c)
+	notifyMsg, err := helper.NewNotifyMsg(
+		helpers.NOTIFICATION_JOINING_REQUEST,
+		userDetail.UsersId,
+		Events.EventsCreatedBy, Data,
+		helpers.FindUserSourceId,
+	)
+	if err != nil {
+		fmt.Println("new notify msg err: " + err.Error())
+	} else {
+		notifyMsg.WriteToHeader(c, config.APP.NotificationHeaderName)
+	}
+
 	helpers.ResponseSuccessMessage(c, "Join request for event submitted")
 }
