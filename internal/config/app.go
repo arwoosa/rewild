@@ -24,7 +24,6 @@ type AppConfig struct {
 	ClourdlareImageDeliveryUrl string
 	OpenWeather                string
 	OpenWeatherApiKey          string
-	NotificationContextKey     string
 	NotificationHeaderName     string
 }
 
@@ -74,7 +73,6 @@ func InitialiseConfig() {
 	APP.ClourdlareImageDeliveryUrl = os.Getenv("CLOURDLARE_IMAGE_DELIVERY_URL")
 	APP.OpenWeather = os.Getenv("OPENWEATHER_API_BASE_URL")
 	APP.OpenWeatherApiKey = os.Getenv("OPENWEATHER_API_KEY")
-	APP.NotificationContextKey = os.Getenv("NOTIFICATION_CONTEXT_KEY")
 	APP.NotificationHeaderName = os.Getenv("NOTIFICATION_HEADER_NAME")
 
 	APP_LIMIT.EventPolaroidLimit = 0

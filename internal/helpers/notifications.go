@@ -31,6 +31,7 @@ var (
 	NOTIFICATION_EVENT_JOIN_DENIED       = "EVENT_JOIN_DENIED"
 	NOTIFICATION_COLOG_PHOTO_UPLOADED    = "COLOG_PHOTO_UPLOADED"
 	NOTIFICATION_COLOG_REMIND            = "COLOG_REMIND"
+	notification_key                     = "NOTIFICATION"
 )
 
 func NotificationsCreate(c *gin.Context, notifCode string, userId primitive.ObjectID, message models.NotificationMessage, identifier primitive.ObjectID) {
@@ -61,10 +62,9 @@ func NotificationAddToContext(c *gin.Context, from primitive.ObjectID, event str
 		"to":    []string{userDocTo.UsersSourceId},
 		"data":  data,
 	}
-
-	existing, exists := c.Get(config.APP.NotificationContextKey)
+	existing, exists := c.Get(notification_key)
 	if !exists {
-		c.Set(config.APP.NotificationContextKey, newNotifPayload)
+		c.Set(notification_key, newNotifPayload)
 		return
 	}
 
@@ -84,21 +84,21 @@ func NotificationAddToContext(c *gin.Context, from primitive.ObjectID, event str
 		if !found {
 			notif = append(notif, newNotifPayload)
 		}
-		c.Set(config.APP.NotificationContextKey, notif)
+		c.Set(notification_key, notif)
 	case map[string]interface{}:
 		if isSameNotification(notif, newNotifPayload) {
 			mergeToField(notif, newNotifPayload)
-			c.Set(config.APP.NotificationContextKey, notif)
+			c.Set(notification_key, notif)
 		} else {
-			c.Set(config.APP.NotificationContextKey, []interface{}{notif, newNotifPayload})
+			c.Set(notification_key, []interface{}{notif, newNotifPayload})
 		}
 	default:
-		c.Set(config.APP.NotificationContextKey, newNotifPayload)
+		c.Set(notification_key, newNotifPayload)
 	}
 }
 
 func NotificationWriteHeader(c *gin.Context) {
-	if notif, exists := c.Get(config.APP.NotificationContextKey); exists {
+	if notif, exists := c.Get(notification_key); exists {
 		var notifSlice []interface{}
 		switch n := notif.(type) {
 		case []interface{}:
