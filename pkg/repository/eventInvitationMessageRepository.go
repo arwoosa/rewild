@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
@@ -9,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/arwoosa/notifaction/helper"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -77,7 +79,10 @@ func (r EventInvitationMessageRepository) Join(c *gin.Context) {
 		return
 	}
 
-	countFilter := bson.D{{Key: "event_participants_event", Value: id}}
+	countFilter := bson.D{
+		{Key: "event_participants_event", Value: id},
+		{Key: "event_participants_status", Value: GetEventParticipantStatus("ACCEPTED")},
+	}
 	opts := options.Count().SetHint("_id_")
 	countParticipant, _ := config.DB.Collection("EventParticipants").CountDocuments(context.TODO(), countFilter, opts)
 
@@ -112,7 +117,7 @@ func (r EventInvitationMessageRepository) Join(c *gin.Context) {
 		EventParticipantsRequestMessage: payload.EventParticipantsRequestMessage,
 	}
 
-	_, inserParticipantErr := config.DB.Collection("EventParticipants").InsertOne(context.TODO(), insertParticipant)
+	insertResult, inserParticipantErr := config.DB.Collection("EventParticipants").InsertOne(context.TODO(), insertParticipant)
 
 	if inserParticipantErr != nil {
 		helpers.ResponseError(c, err.Error())
@@ -121,6 +126,34 @@ func (r EventInvitationMessageRepository) Join(c *gin.Context) {
 
 	if status == GetEventParticipantStatus("ACCEPTED") {
 		EventRepository{}.HandleBadges(c, id)
+	}
+
+	insertedID := insertResult.InsertedID.(primitive.ObjectID)
+	insertedIdString := insertedID.Hex()
+
+	NotificationMessage := models.NotificationMessage{
+		Message: "{0}提出加入{1}的申請!",
+		Data: []map[string]interface{}{
+			helpers.NotificationFormatUser(userDetail),
+			helpers.NotificationFormatEvent(Events),
+			{"event_participants_id": insertedIdString},
+		},
+	}
+	helpers.NotificationsCreate(c, helpers.NOTIFICATION_JOINING_REQUEST, userDetail.UsersId, NotificationMessage, Events.EventsCreatedBy)
+
+	Data := map[string]string{
+		"events_name": Events.EventsName,
+	}
+	notifyMsg, err := helper.NewNotifyMsg(
+		helpers.NOTIFICATION_JOINING_REQUEST,
+		userDetail.UsersId,
+		Events.EventsCreatedBy, Data,
+		helpers.FindUserSourceId,
+	)
+	if err != nil {
+		fmt.Println("new notify msg err: " + err.Error())
+	} else {
+		notifyMsg.WriteToHeader(c, config.APP.NotificationHeaderName)
 	}
 
 	helpers.ResponseSuccessMessage(c, "Join request for event submitted")

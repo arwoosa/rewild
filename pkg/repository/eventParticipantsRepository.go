@@ -7,9 +7,11 @@ import (
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
 	"oosa_rewild/internal/models"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/arwoosa/notifaction/helper"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -100,9 +102,32 @@ func (r EventParticipantsRepository) Create(c *gin.Context) {
 
 	eventId := helpers.StringToPrimitiveObjId(c.Param("id"))
 
+	if Event.EventsParticipantLimit != nil && *Event.EventsParticipantLimit != 0 {
+		countFilter := bson.D{
+			{Key: "event_participants_event", Value: eventId},
+			{Key: "event_participants_status", Value: GetEventParticipantStatus("ACCEPTED")},
+		}
+		acceptedCount, err := config.DB.Collection("EventParticipants").CountDocuments(context.TODO(), countFilter)
+		if err != nil {
+			helpers.ResponseError(c, "Error checking accepted participants count")
+			return
+		}
+		// 若加上這次邀請的數量會超過上限，則回傳錯誤
+		if int(acceptedCount)+len(payload.EventParticipantsUser) > *Event.EventsParticipantLimit {
+			limitMsg := "This event can only be attended by " + strconv.Itoa(*Event.EventsParticipantLimit) + " participants"
+			helpers.ResponseBadRequestError(c, limitMsg)
+			return
+		}
+	}
+
 	var invitedUserMsg []string
 	invitedUserId := make([]primitive.ObjectID, 0)
-
+	var foundEvent models.Events
+	config.DB.Collection("Events").FindOne(context.TODO(), bson.M{"_id": eventId}).Decode(&foundEvent)
+	notifyData := map[string]string{
+		"events_name": foundEvent.EventsName,
+	}
+	var notifyMsg helper.NotifyMsg
 	for _, v := range payload.EventParticipantsUser {
 		canInvite := true
 		uID := v
@@ -154,8 +179,24 @@ func (r EventParticipantsRepository) Create(c *gin.Context) {
 				Data:    []map[string]interface{}{helpers.NotificationFormatUser(userDetail)},
 			}
 			helpers.NotificationsCreate(c, helpers.NOTIFICATION_INVITATION, invitedUser, NotificationMessage, EventParticipants.EventParticipantsId)
+
+			if notifyMsg == nil {
+				notifyMsg, err = helper.NewNotifyMsg(
+					helpers.NOTIFICATION_INVITATION,
+					invitedUser, EventParticipants.EventParticipantsId,
+					notifyData, helpers.FindUserSourceId)
+				if err != nil {
+					fmt.Println("new notify msg err: " + err.Error())
+				}
+			} else {
+				notifyMsg.AddTo(EventParticipants.EventParticipantsId)
+			}
 			EventRepository{}.HandleParticipantFriend(c, eventId)
 		}
+	}
+
+	if notifyMsg != nil {
+		notifyMsg.WriteToHeader(c, config.APP.NotificationHeaderName)
 	}
 
 	var EventParticipants []models.EventParticipants
@@ -165,7 +206,6 @@ func (r EventParticipantsRepository) Create(c *gin.Context) {
 	}
 	participantsCursor, _ := config.DB.Collection("EventParticipants").Find(context.TODO(), eventParticipantFilter)
 	participantsCursor.All(context.TODO(), &EventParticipants)
-
 	if len(invitedUserId) > 0 {
 		c.JSON(http.StatusOK, EventParticipants)
 	} else {

@@ -114,6 +114,8 @@ func (r RewildingRepository) Retrieve(c *gin.Context) {
 }
 
 func (r RewildingRepository) Read(c *gin.Context) {
+	userDetail := helpers.GetAuthUser(c)
+
 	id, _ := primitive.ObjectIDFromHex(c.Param("id"))
 	var Rewilding models.Rewilding
 	err := config.DB.Collection("Rewilding").FindOne(context.TODO(), bson.D{{Key: "_id", Value: id}}).Decode(&Rewilding)
@@ -127,7 +129,48 @@ func (r RewildingRepository) Read(c *gin.Context) {
 		Rewilding.RewildingPhotos = make([]models.RewildingPhotos, 0)
 	}
 
-	c.JSON(200, Rewilding)
+	isBookmarked := false
+
+	if userDetail.UsersId != primitive.NilObjectID {
+		pipeline := mongo.Pipeline{
+			{
+				{Key: "$match", Value: bson.M{"pocket_lists_user": userDetail.UsersId}},
+			},
+			{
+				{Key: "$lookup", Value: bson.M{
+					"from":         "PocketListItems",
+					"localField":   "_id",
+					"foreignField": "pocket_list_items_mst",
+					"as":           "items",
+				}},
+			},
+			{
+				{Key: "$unwind", Value: bson.M{"path": "$items", "preserveNullAndEmptyArrays": true}},
+			},
+			{
+				{Key: "$match", Value: bson.M{"items.pocket_list_items_rewilding": id}},
+			},
+		}
+
+		cursor, err := config.DB.Collection("PocketLists").Aggregate(context.TODO(), pipeline)
+		if err != nil {
+			log.Println("error in pipeline aggregate:", err)
+		} else {
+			defer cursor.Close(context.TODO())
+
+			if cursor.Next(context.TODO()) {
+				isBookmarked = true
+			}
+		}
+	}
+
+	c.JSON(200, struct {
+		models.Rewilding
+		IsBookmarked bool `json:"rewilding_isbookmarked"`
+	}{
+		Rewilding:    Rewilding,
+		IsBookmarked: isBookmarked,
+	})
 }
 
 func (r RewildingRepository) GetOneRewilding(stringId string, Rewilding *models.Rewilding) error {
@@ -533,6 +576,15 @@ func (r RewildingRepository) GooglePlaceToRewilding(c *gin.Context, placeId stri
 	gplaces := helpers.GooglePlaceById(c, placeId)
 
 	if gplaces != nil {
+		var existingRewilding models.Rewilding
+		filter := bson.M{"rewilding_place_id": placeId}
+
+		err := config.DB.Collection("Rewilding").FindOne(c.Request.Context(), filter).Decode(&existingRewilding)
+
+		if err != nil && err != mongo.ErrNoDocuments {
+			log.Printf("db_error: %v", err)
+		}
+
 		location := helpers.GooglePlacesV1ToLocationArray(gplaces.AddressComponents)
 		area, _ := helpers.GooglePlacesV1GetArea(gplaces.AddressComponents, "administrative_area_level_1")
 		_, countryCode := helpers.GooglePlacesV1GetArea(gplaces.AddressComponents, "country")
@@ -542,6 +594,7 @@ func (r RewildingRepository) GooglePlaceToRewilding(c *gin.Context, placeId stri
 		applyOfficial := false
 
 		return models.Rewilding{
+			RewildingID:            existingRewilding.RewildingID,
 			RewildingArea:          area,
 			RewildingLocation:      location,
 			RewildingCountryCode:   countryCode,

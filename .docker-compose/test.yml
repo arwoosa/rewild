@@ -40,5 +40,6 @@ services:
       - LENGTH_EVENT_PARTICIPANT_MESSAGE=50
       - MINIMUM_TOP_RANKING=2
       - APP_BASE_URL=https://dev.oosa.life/api/
+      - NOTIFICATION_HEADER_NAME=X-Notify
     networks:
     - oosa-network
