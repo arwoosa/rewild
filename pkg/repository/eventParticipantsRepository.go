@@ -121,7 +121,12 @@ func (r EventParticipantsRepository) Create(c *gin.Context) {
 
 	var invitedUserMsg []string
 	invitedUserId := make([]primitive.ObjectID, 0)
-
+	var foundEvent models.Events
+	config.DB.Collection("Events").FindOne(context.TODO(), bson.M{"_id": eventId}).Decode(&foundEvent)
+	notifyData := map[string]string{
+		"events_name": foundEvent.EventsName,
+	}
+	var notifyMsg helpers.NotifyMsg
 	for _, v := range payload.EventParticipantsUser {
 		canInvite := true
 		uID := v
@@ -173,14 +178,18 @@ func (r EventParticipantsRepository) Create(c *gin.Context) {
 				Data:    []map[string]interface{}{helpers.NotificationFormatUser(userDetail)},
 			}
 			helpers.NotificationsCreate(c, helpers.NOTIFICATION_INVITATION, invitedUser, NotificationMessage, EventParticipants.EventParticipantsId)
-			var foundEvent models.Events
-			config.DB.Collection("Events").FindOne(context.TODO(), bson.M{"_id": eventId}).Decode(&foundEvent)
-			Data := map[string]interface{}{
-				"events_name": foundEvent.EventsName,
+
+			if notifyMsg == nil {
+				notifyMsg = helpers.NewNotifyMsg(helpers.NOTIFICATION_INVITATION, invitedUser, EventParticipants.EventParticipantsId, notifyData)
+			} else {
+				notifyMsg.AddTo(EventParticipants.EventParticipantsId)
 			}
-			helpers.NotificationAddToContext(c, invitedUser, helpers.NOTIFICATION_INVITATION, EventParticipants.EventParticipantsId, Data)
 			EventRepository{}.HandleParticipantFriend(c, eventId)
 		}
+	}
+
+	if notifyMsg != nil {
+		notifyMsg.WriteToHeader(c)
 	}
 
 	var EventParticipants []models.EventParticipants
@@ -191,7 +200,6 @@ func (r EventParticipantsRepository) Create(c *gin.Context) {
 	participantsCursor, _ := config.DB.Collection("EventParticipants").Find(context.TODO(), eventParticipantFilter)
 	participantsCursor.All(context.TODO(), &EventParticipants)
 	if len(invitedUserId) > 0 {
-		helpers.NotificationWriteHeader(c)
 		c.JSON(http.StatusOK, EventParticipants)
 	} else {
 		helpers.ResponseError(c, strings.Join(invitedUserMsg, ", "))

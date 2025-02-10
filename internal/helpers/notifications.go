@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/models"
-	"reflect"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -34,6 +33,77 @@ var (
 	notification_key                     = "NOTIFICATION"
 )
 
+type NotifyMsg interface {
+	AddTo(to primitive.ObjectID)
+	WriteToHeader(c *gin.Context)
+}
+
+type notifyMsg struct {
+	event string
+	from  primitive.ObjectID
+	to    []primitive.ObjectID
+	data  map[string]string
+}
+
+func NewNotifyMsg(event string, from, to primitive.ObjectID, data map[string]string) NotifyMsg {
+	return &notifyMsg{
+		event: event,
+		from:  from,
+		to:    []primitive.ObjectID{to},
+		data:  data,
+	}
+}
+
+func (msg *notifyMsg) AddTo(to primitive.ObjectID) {
+	for _, existTo := range msg.to {
+		if existTo == to {
+			return
+		}
+	}
+	msg.to = append(msg.to, to)
+}
+
+func (msg *notifyMsg) WriteToHeader(c *gin.Context) {
+	userToSourceIdMap, err := findUserSourceId(append(msg.to, msg.from))
+	if err != nil {
+		fmt.Println("ERROR find user source id:", err)
+		return
+	}
+	from, ok := userToSourceIdMap[msg.from]
+	if !ok {
+		fmt.Println("not found from user: " + msg.from.Hex())
+		return
+	}
+	var notifyTo []string
+	for _, t := range msg.to {
+		tt, ok := userToSourceIdMap[t]
+		if !ok {
+			fmt.Println("not found to user: " + t.Hex())
+			continue
+		}
+		notifyTo = append(notifyTo, tt)
+	}
+	jsonData, err := json.Marshal(struct {
+		Event string            `json:"event"`
+		Data  map[string]string `json:"data"`
+		From  string            `json:"from"`
+		To    []string          `json:"to"`
+	}{
+		Event: msg.event,
+		Data:  msg.data,
+		From:  from,
+		To:    notifyTo,
+	})
+	if err != nil {
+		fmt.Println("ERROR marshaling notification:", err)
+		return
+	}
+
+	encoded := base64.StdEncoding.EncodeToString(jsonData)
+
+	c.Writer.Header().Set(config.APP.NotificationHeaderName, encoded)
+}
+
 func NotificationsCreate(c *gin.Context, notifCode string, userId primitive.ObjectID, message models.NotificationMessage, identifier primitive.ObjectID) {
 	userDetail := GetAuthUser(c)
 	insert := models.Notifications{
@@ -45,56 +115,6 @@ func NotificationsCreate(c *gin.Context, notifCode string, userId primitive.Obje
 		NotificationsCreatedBy:  userDetail.UsersId,
 	}
 	config.DB.Collection("Notifications").InsertOne(context.TODO(), insert)
-}
-
-func NotificationAddToContext(c *gin.Context, from primitive.ObjectID, event string, to primitive.ObjectID, data map[string]interface{}) {
-	userDocFrom, errfrom := findUserSourceId(from)
-	userDocTo, errto := findUserSourceId(to)
-	if errfrom != nil {
-		return
-	}
-	if errto != nil {
-		return
-	}
-	newNotifPayload := map[string]interface{}{
-		"from":  userDocFrom.UsersSourceId,
-		"event": event,
-		"to":    []string{userDocTo.UsersSourceId},
-		"data":  data,
-	}
-	existing, exists := c.Get(notification_key)
-	if !exists {
-		c.Set(notification_key, newNotifPayload)
-		return
-	}
-
-	switch notif := existing.(type) {
-	case []interface{}:
-		found := false
-		for i, n := range notif {
-			if existingNotif, ok := n.(map[string]interface{}); ok {
-				if isSameNotification(existingNotif, newNotifPayload) {
-					mergeToField(existingNotif, newNotifPayload)
-					notif[i] = existingNotif
-					found = true
-					break
-				}
-			}
-		}
-		if !found {
-			notif = append(notif, newNotifPayload)
-		}
-		c.Set(notification_key, notif)
-	case map[string]interface{}:
-		if isSameNotification(notif, newNotifPayload) {
-			mergeToField(notif, newNotifPayload)
-			c.Set(notification_key, notif)
-		} else {
-			c.Set(notification_key, []interface{}{notif, newNotifPayload})
-		}
-	default:
-		c.Set(notification_key, newNotifPayload)
-	}
 }
 
 func NotificationWriteHeader(c *gin.Context) {
@@ -119,59 +139,23 @@ func NotificationWriteHeader(c *gin.Context) {
 	}
 }
 
-func findUserSourceId(userId primitive.ObjectID) (*models.Users, error) {
+func findUserSourceId(userIds []primitive.ObjectID) (map[primitive.ObjectID]string, error) {
 	collection := config.DB.Collection("Users")
 
-	var userDoc models.Users
-	err := collection.FindOne(context.TODO(), bson.M{"_id": userId}).Decode(&userDoc)
+	var usersDoc []models.Users
+	cursor, err := collection.Find(context.TODO(), bson.M{"_id": bson.M{"$in": userIds}})
 	if err != nil {
 		return nil, err
 	}
-	return &userDoc, nil
-}
-
-func isSameNotification(a, b map[string]interface{}) bool {
-	if a["from"] != b["from"] {
-		return false
+	err = cursor.All(context.TODO(), &usersDoc)
+	if err != nil {
+		return nil, err
 	}
-	if a["event"] != b["event"] {
-		return false
+	result := map[primitive.ObjectID]string{}
+	for _, u := range usersDoc {
+		result[u.UsersId] = u.UsersSourceId
 	}
-	return reflect.DeepEqual(a["data"], b["data"])
-}
-
-func mergeToField(existingNotif, newNotif map[string]interface{}) {
-	var existingTo []string
-	if toVal, ok := existingNotif["to"]; ok {
-		if arr, ok2 := toVal.([]string); ok2 {
-			existingTo = arr
-		} else {
-			existingTo = []string{}
-		}
-	}
-	var newTo []string
-	if toVal, ok := newNotif["to"]; ok {
-		if arr, ok2 := toVal.([]string); ok2 {
-			newTo = arr
-		} else {
-			newTo = []string{}
-		}
-	}
-	for _, recipient := range newTo {
-		if !stringInSlice(recipient, existingTo) {
-			existingTo = append(existingTo, recipient)
-		}
-	}
-	existingNotif["to"] = existingTo
-}
-
-func stringInSlice(s string, list []string) bool {
-	for _, v := range list {
-		if v == s {
-			return true
-		}
-	}
-	return false
+	return result, nil
 }
 
 func NotificationFormatEvent(Events models.Events) map[string]any {
