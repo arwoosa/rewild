@@ -136,7 +136,7 @@ func (r EventInvitationMessageRepository) Join(c *gin.Context) {
 			Data: []map[string]interface{}{
 				helpers.NotificationFormatUser(userDetail),
 				helpers.NotificationFormatEvent(Events),
-				{"event_participants_request_message":payload.EventParticipantsRequestMessage}
+				{"event_participants_request_message": payload.EventParticipantsRequestMessage},
 			},
 		}
 		helpers.NotificationsCreate(c, helpers.NOTIFICATION_JOINING_REQUEST, Events.EventsCreatedBy, NotificationMessage, insertedID)
