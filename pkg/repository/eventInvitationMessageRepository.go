@@ -139,7 +139,7 @@ func (r EventInvitationMessageRepository) Join(c *gin.Context) {
 			{"event_participants_id": insertedIdString},
 		},
 	}
-	helpers.NotificationsCreate(c, helpers.NOTIFICATION_JOINING_REQUEST, userDetail.UsersId, NotificationMessage, Events.EventsCreatedBy)
+	helpers.NotificationsCreate(c, helpers.NOTIFICATION_JOINING_REQUEST, Events.EventsCreatedBy, NotificationMessage, insertedID)
 
 	Data := map[string]string{
 		"events_name": Events.EventsName,
