@@ -151,7 +151,6 @@ func (r RewildingRepository) Read(c *gin.Context) {
 				{Key: "$match", Value: bson.M{"items.pocket_list_items_rewilding": id}},
 			},
 		}
-		fmt.Println("pipeline", pipeline)
 		cursor, err := config.DB.Collection("PocketLists").Aggregate(context.TODO(), pipeline)
 		if err != nil {
 			log.Println("error in pipeline aggregate:", err)
