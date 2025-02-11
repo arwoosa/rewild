@@ -114,7 +114,7 @@ func (r RewildingRepository) Retrieve(c *gin.Context) {
 }
 
 func (r RewildingRepository) Read(c *gin.Context) {
-	userDetail := helpers.GetAuthUser(c)
+	userDetail := helpers.GetAuthUserByCheckHeaders(c)
 
 	id, _ := primitive.ObjectIDFromHex(c.Param("id"))
 	var Rewilding models.Rewilding
@@ -151,7 +151,6 @@ func (r RewildingRepository) Read(c *gin.Context) {
 				{Key: "$match", Value: bson.M{"items.pocket_list_items_rewilding": id}},
 			},
 		}
-
 		cursor, err := config.DB.Collection("PocketLists").Aggregate(context.TODO(), pipeline)
 		if err != nil {
 			log.Println("error in pipeline aggregate:", err)

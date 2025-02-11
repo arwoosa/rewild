@@ -1,5 +1,5 @@
 # Get the latest golang image
-FROM golang:1.21 as base
+FROM golang:1.23 as base
 
 # Set the Current Working Directory inside the container
 WORKDIR /go/src/oosa_rewild
