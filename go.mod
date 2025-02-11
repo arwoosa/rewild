@@ -2,6 +2,8 @@ module oosa_rewild
 
 go 1.23.3
 
+toolchain go1.23.6
+
 require (
 	github.com/PuerkitoBio/goquery v1.9.2
 	github.com/arwoosa/notifaction v0.0.1
