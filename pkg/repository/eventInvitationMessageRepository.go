@@ -87,9 +87,6 @@ func (r EventInvitationMessageRepository) Join(c *gin.Context) {
 	countParticipant, _ := config.DB.Collection("EventParticipants").CountDocuments(context.TODO(), countFilter, opts)
 
 	status := GetEventParticipantStatus("ACCEPTED")
-	if *Events.EventsRequiresApproval == 1 {
-		status = GetEventParticipantStatus("APPLIED")
-	}
 
 	if *Events.EventsParticipantLimit != 0 && *Events.EventsParticipantLimit < int(countParticipant+1) {
 		eventParticipantLimit := strconv.Itoa(*Events.EventsParticipantLimit)
@@ -108,6 +105,9 @@ func (r EventInvitationMessageRepository) Join(c *gin.Context) {
 		return
 	}
 
+	if *Events.EventsRequiresApproval == 1 {
+		status = GetEventParticipantStatus("APPLIED")
+	}
 	insertParticipant := models.EventParticipants{
 		EventParticipantsEvent:          id,
 		EventParticipantsUser:           userDetail.UsersId,
@@ -128,30 +128,32 @@ func (r EventInvitationMessageRepository) Join(c *gin.Context) {
 		EventRepository{}.HandleBadges(c, id)
 	}
 
-	insertedID := insertResult.InsertedID.(primitive.ObjectID)
+	if status == GetEventParticipantStatus("APPLIED") {
+		insertedID := insertResult.InsertedID.(primitive.ObjectID)
 
-	NotificationMessage := models.NotificationMessage{
-		Message: "{0}提出加入{1}的申請!",
-		Data: []map[string]interface{}{
-			helpers.NotificationFormatUser(userDetail),
-			helpers.NotificationFormatEvent(Events),
-		},
-	}
-	helpers.NotificationsCreate(c, helpers.NOTIFICATION_JOINING_REQUEST, Events.EventsCreatedBy, NotificationMessage, insertedID)
+		NotificationMessage := models.NotificationMessage{
+			Message: "{0}提出加入{1}的申請!",
+			Data: []map[string]interface{}{
+				helpers.NotificationFormatUser(userDetail),
+				helpers.NotificationFormatEvent(Events),
+			},
+		}
+		helpers.NotificationsCreate(c, helpers.NOTIFICATION_JOINING_REQUEST, Events.EventsCreatedBy, NotificationMessage, insertedID)
 
-	Data := map[string]string{
-		"events_name": Events.EventsName,
-	}
-	notifyMsg, err := helper.NewNotifyMsg(
-		helpers.NOTIFICATION_JOINING_REQUEST,
-		userDetail.UsersId,
-		Events.EventsCreatedBy, Data,
-		helpers.FindUserSourceId,
-	)
-	if err != nil {
-		fmt.Println("new notify msg err: " + err.Error())
-	} else {
-		notifyMsg.WriteToHeader(c, config.APP.NotificationHeaderName)
+		Data := map[string]string{
+			"events_name": Events.EventsName,
+		}
+		notifyMsg, err := helper.NewNotifyMsg(
+			helpers.NOTIFICATION_JOINING_REQUEST,
+			userDetail.UsersId,
+			Events.EventsCreatedBy, Data,
+			helpers.FindUserSourceId,
+		)
+		if err != nil {
+			fmt.Println("new notify msg err: " + err.Error())
+		} else {
+			notifyMsg.WriteToHeader(c, config.APP.NotificationHeaderName)
+		}
 	}
 
 	helpers.ResponseSuccessMessage(c, "Join request for event submitted")
