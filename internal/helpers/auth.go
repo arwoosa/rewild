@@ -10,6 +10,22 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+func GetAuthUserByCheckHeaders(c *gin.Context) models.Users {
+	user := GetAuthUser(c)
+	if !user.UsersId.IsZero() {
+		return user
+	}
+	headerUserId := c.GetHeader("X-User-Id")
+	if headerUserId == "" || headerUserId == "guest" {
+		return user
+	}
+	err := config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "users_source_id", Value: headerUserId}}).Decode(&user)
+	if err != nil {
+		return models.Users{}
+	}
+	return user
+}
+
 func GetAuthUser(c *gin.Context) models.Users {
 	user, exists := c.Get("user")
 	if exists {
