@@ -183,7 +183,7 @@ func (r EventParticipantsRepository) Create(c *gin.Context) {
 			if notifyMsg == nil {
 				notifyMsg, err = helper.NewNotifyMsg(
 					helpers.NOTIFICATION_INVITATION,
-					invitedUser, EventParticipants.EventParticipantsId,
+					userDetail.UsersId, invitedUser,
 					notifyData, helpers.FindUserSourceId)
 				if err != nil {
 					fmt.Println("new notify msg err: " + err.Error())
