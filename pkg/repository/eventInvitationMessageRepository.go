@@ -129,14 +129,12 @@ func (r EventInvitationMessageRepository) Join(c *gin.Context) {
 	}
 
 	insertedID := insertResult.InsertedID.(primitive.ObjectID)
-	insertedIdString := insertedID.Hex()
 
 	NotificationMessage := models.NotificationMessage{
 		Message: "{0}提出加入{1}的申請!",
 		Data: []map[string]interface{}{
 			helpers.NotificationFormatUser(userDetail),
 			helpers.NotificationFormatEvent(Events),
-			{"event_participants_id": insertedIdString},
 		},
 	}
 	helpers.NotificationsCreate(c, helpers.NOTIFICATION_JOINING_REQUEST, Events.EventsCreatedBy, NotificationMessage, insertedID)
