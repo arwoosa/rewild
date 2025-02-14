@@ -68,7 +68,7 @@ func RewildGooglePhotos(c *gin.Context, photos []*places.GoogleMapsPlacesV1Photo
 		// photo := GooglePlacePhoto(c, item.Name)
 		RewildingPhotos = append(RewildingPhotos, models.RewildingPhotos{
 			RewildingPhotosID:   primitive.NewObjectID(),
-			RewildingPhotosPath: fmt.Sprintf(googlePhotoUrlTpl, slice[3], config.APP.GoogleApiTestKey),
+			RewildingPhotosPath: fmt.Sprintf(googlePhotoUrlTpl, slice[3], config.APP.GoogleApiKey),
 		})
 	}
 	return RewildingPhotos
