@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/helpers"
 	"oosa_rewild/internal/models"
@@ -58,4 +60,16 @@ func (r RewildingPhotoRepository) Read(c *gin.Context) {
 	}
 
 	c.Writer.Write(Rewilding.RewildingPhotos[idx].RewildingPhotosData)
+}
+
+func (r RewildingPhotoRepository) FromGoogle(c *gin.Context) {
+	reference := c.Param("referenceId")
+	place := c.Param("placesId")
+
+	photo := helpers.GooglePlacePhoto(c, fmt.Sprintf("places/%s/photos/%s", place, reference))
+	if photo == nil {
+		c.Writer.WriteHeader(http.StatusNotFound)
+		return
+	}
+	c.Redirect(http.StatusSeeOther, photo.PhotoUri)
 }

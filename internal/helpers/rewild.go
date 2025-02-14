@@ -54,21 +54,25 @@ func RewildSaveGooglePhotos(c *gin.Context, photos []*places.GoogleMapsPlacesV1P
 	return RewildingPhotos, nil
 }
 
-const googlePhotoUrlTpl = "https://maps.googleapis.com/maps/api/place/photo?photo_reference=%s&maxwidth=400&key=%s"
+const placePhotoUrlTpl = "%srewilding/places/%s/photos/%s"
+const maxPhotoNum = 3
 
 func RewildGooglePhotos(c *gin.Context, photos []*places.GoogleMapsPlacesV1Photo) []models.RewildingPhotos {
 	var RewildingPhotos []models.RewildingPhotos
-	for _, item := range photos {
+	for i, item := range photos {
+		if i >= maxPhotoNum {
+			break
+		}
 		slice := strings.Split(item.Name, "/")
 		if len(slice) != 4 {
 			continue
 		}
-		// fmt.Println(slice[3])
-		// fmt.Printf(googlePhotoUrlTpl+"\n", slice[3], config.APP.GoogleApiTestKey)
-		// photo := GooglePlacePhoto(c, item.Name)
+		fmt.Println("=====")
+		fmt.Println(item.Name)
+		fmt.Println("=====")
 		RewildingPhotos = append(RewildingPhotos, models.RewildingPhotos{
 			RewildingPhotosID:   primitive.NewObjectID(),
-			RewildingPhotosPath: fmt.Sprintf(googlePhotoUrlTpl, slice[3], config.APP.GoogleApiKey),
+			RewildingPhotosPath: fmt.Sprintf(placePhotoUrlTpl, config.APP.BaseUrl, slice[1], slice[3]),
 		})
 	}
 	return RewildingPhotos

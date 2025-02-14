@@ -27,6 +27,7 @@ func RewildingRoutes(r *gin.Engine) *gin.Engine {
 	rewildingPlaces := rewilding.Group("/places")
 	{
 		rewildingPlaces.GET(":placesId", repoRewilding.Places)
+		rewildingPlaces.GET(":placesId/photos/:referenceId", repoRewildingPhoto.FromGoogle)
 	}
 
 	detail := rewilding.Group("/:id")
