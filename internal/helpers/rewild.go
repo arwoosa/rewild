@@ -3,11 +3,13 @@ package helpers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/models"
 	"sort"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -52,13 +54,21 @@ func RewildSaveGooglePhotos(c *gin.Context, photos []*places.GoogleMapsPlacesV1P
 	return RewildingPhotos, nil
 }
 
+const googlePhotoUrlTpl = "https://maps.googleapis.com/maps/api/place/photo?photo_reference=%s&maxwidth=400&key=%s"
+
 func RewildGooglePhotos(c *gin.Context, photos []*places.GoogleMapsPlacesV1Photo) []models.RewildingPhotos {
 	var RewildingPhotos []models.RewildingPhotos
 	for _, item := range photos {
-		photo := GooglePlacePhoto(c, item.Name)
+		slice := strings.Split(item.Name, "/")
+		if len(slice) != 4 {
+			continue
+		}
+		// fmt.Println(slice[3])
+		// fmt.Printf(googlePhotoUrlTpl+"\n", slice[3], config.APP.GoogleApiTestKey)
+		// photo := GooglePlacePhoto(c, item.Name)
 		RewildingPhotos = append(RewildingPhotos, models.RewildingPhotos{
 			RewildingPhotosID:   primitive.NewObjectID(),
-			RewildingPhotosPath: photo.PhotoUri,
+			RewildingPhotosPath: fmt.Sprintf(googlePhotoUrlTpl, slice[3], config.APP.GoogleApiTestKey),
 		})
 	}
 	return RewildingPhotos
