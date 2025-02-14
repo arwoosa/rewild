@@ -67,9 +67,6 @@ func RewildGooglePhotos(c *gin.Context, photos []*places.GoogleMapsPlacesV1Photo
 		if len(slice) != 4 {
 			continue
 		}
-		fmt.Println("=====")
-		fmt.Println(item.Name)
-		fmt.Println("=====")
 		RewildingPhotos = append(RewildingPhotos, models.RewildingPhotos{
 			RewildingPhotosID:   primitive.NewObjectID(),
 			RewildingPhotosPath: fmt.Sprintf(placePhotoUrlTpl, config.APP.BaseUrl, slice[1], slice[3]),
