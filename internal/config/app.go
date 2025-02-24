@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -25,6 +26,7 @@ type AppConfig struct {
 	OpenWeather                string
 	OpenWeatherApiKey          string
 	NotificationHeaderName     string
+	AllowedPhotoLinks          []string
 }
 
 type AppLimit struct {
@@ -74,6 +76,8 @@ func InitialiseConfig() {
 	APP.OpenWeather = os.Getenv("OPENWEATHER_API_BASE_URL")
 	APP.OpenWeatherApiKey = os.Getenv("OPENWEATHER_API_KEY")
 	APP.NotificationHeaderName = os.Getenv("NOTIFICATION_HEADER_NAME")
+	photoLinks := os.Getenv("ALLOWED_PHOTO_LINKS")
+	APP.AllowedPhotoLinks = strings.Split(photoLinks, ",")
 
 	APP_LIMIT.EventPolaroidLimit = 0
 	APP_LIMIT.EventAccountingLimit = 0

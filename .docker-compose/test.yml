@@ -41,5 +41,6 @@ services:
       - MINIMUM_TOP_RANKING=2
       - APP_BASE_URL=https://dev.oosa.life/api/
       - NOTIFICATION_HEADER_NAME=X-Notify
+      - ALLOWED_PHOTO_LINKS=photos.google.com,icloud.com,flickr.com,mega.com,mega.nz,photos.app.goo.gl
     networks:
     - oosa-network
