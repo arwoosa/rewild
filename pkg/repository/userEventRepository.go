@@ -52,7 +52,8 @@ func (r UserEventRepository) GetEventByUserId(c *gin.Context, userId primitive.O
 	}
 
 	match := bson.M{
-		"EventParticipants.event_participants_user": userId,
+		"EventParticipants.event_participants_user":   userId,
+		"EventParticipants.event_participants_status": 1,
 		"events_deleted": bson.M{"$exists": false},
 	}
 
