@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"oosa_rewild/internal/config"
@@ -96,6 +97,7 @@ func GooglePlacePhoto(c *gin.Context, photoName string) *places.GoogleMapsPlaces
 	placesService := GooglePlacesInitialise(c)
 	if placesService != nil {
 		url := photoName + "/media"
+		fmt.Println(url)
 		placeReq := placesService.Places.Photos.GetMedia(url).SkipHttpRedirect(true).MaxHeightPx(400).MaxWidthPx(400)
 		places, errPlace := placeReq.Do()
 

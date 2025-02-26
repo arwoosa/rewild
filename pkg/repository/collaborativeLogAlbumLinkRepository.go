@@ -135,7 +135,7 @@ func (r CollaborativeLogAlbumLinkRepository) ProcessData(EventAlbumLink *models.
 	EventAlbumLink.EventAlbumLinkAlbumUrl = payload.EventAlbumLinkAlbumUrl
 	EventAlbumLink.EventAlbumLinkVisibility = &payload.EventAlbumLinkVisibility
 
-	allowedString := []string{"photos.google.com", "icloud.com", "flickr.com", "mega.com", "mega.nz"}
+	allowedString := config.APP.AllowedPhotoLinks
 	url, err := helpers.GetDomain(payload.EventAlbumLinkAlbumUrl)
 
 	if err != nil {

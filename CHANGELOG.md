@@ -1,3 +1,8 @@
+# CHANgELOG 1.1.46
+## Changes
+- Add env ALLOWED_PHOTO_LINKS to setting allow user share photo url list
+- GET /event/{id}  add field events_invitation_no
+
 # CHANGELOG 1.1.45
 ## Changes
 - Event participants applied update

@@ -381,6 +381,8 @@ func (r EventRepository) CheckIfFriend(c *gin.Context, user1 primitive.ObjectID,
 	return err
 }
 
+const defaultInvitationNo = "0053"
+
 func (r EventRepository) Read(c *gin.Context) {
 	var Events []models.Events
 	id, _ := primitive.ObjectIDFromHex(c.Param("id"))
@@ -401,7 +403,10 @@ func (r EventRepository) Read(c *gin.Context) {
 		}},
 		bson.D{{Key: "$limit", Value: 1}},
 	}
-
+	type returnData struct {
+		No            string `json:"events_invitation_no"`
+		models.Events `json:",inline"`
+	}
 	cursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), agg)
 	cursor.All(context.TODO(), &Events)
 	// err := r.ReadOne(c, &Events)
@@ -410,7 +415,15 @@ func (r EventRepository) Read(c *gin.Context) {
 			helpers.ResponseNoData(c, "No data")
 		} else {
 			Events = r.RetrieveParticipantDetails(Events)
-			c.JSON(http.StatusOK, Events[0])
+			returnData := returnData{
+				Events: Events[0],
+			}
+			if !Events[0].EventsDeadline.Time().IsZero() {
+				returnData.No = Events[0].EventsDeadline.Time().Format("0102")
+			} else {
+				returnData.No = defaultInvitationNo
+			}
+			c.JSON(http.StatusOK, returnData)
 		}
 	}
 }
