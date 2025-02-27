@@ -31,7 +31,33 @@ func (r UserEventRepository) Retrieve(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, results)
+	type returnData struct {
+		No            string `json:"events_invitation_no"`
+		models.Events `json:",inline"`
+	}
+
+	var responseData []returnData
+
+	for _, event := range results {
+		data := returnData{
+			Events: event,
+		}
+
+		if !event.EventsDeadline.Time().IsZero() {
+			data.No = event.EventsDeadline.Time().Format("0102")
+		} else {
+			data.No = defaultInvitationNo
+		}
+
+		responseData = append(responseData, data)
+	}
+
+	if len(responseData) == 0 {
+		helpers.ResponseNoData(c, "Current login User Don't Have any Event or participant any event")
+		return
+	}
+
+	c.JSON(http.StatusOK, responseData)
 }
 
 func (r UserEventRepository) GetEventByUserId(c *gin.Context, userId primitive.ObjectID, Events *[]models.Events) error {
