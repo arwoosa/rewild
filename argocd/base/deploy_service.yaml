@@ -184,6 +184,16 @@ spec:
             secretKeyRef:
               name: rewild-secrets
               key: APP_BASE_URL
+        - name: NOTIFICATION_HEADER_NAME
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: NOTIFICATION_HEADER_NAME
+        - name: ALLOWED_PHOTO_LINKS
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: ALLOWED_PHOTO_LINKS
       volumes:
         - name: rewild-secrets
           secret:  
