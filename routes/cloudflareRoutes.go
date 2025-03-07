@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func CloudfareRoutes(r *gin.Engine) *gin.Engine {
+func CloudfareRoutes(r gin.IRouter) gin.IRouter {
 	repo := repository.CloudflareRepository{}
 
 	main := r.Group("/cloudflare")

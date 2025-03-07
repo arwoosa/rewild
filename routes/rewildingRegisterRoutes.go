@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RewildingRegisterRoutes(r *gin.Engine) *gin.Engine {
+func RewildingRegisterRoutes(r gin.IRouter) gin.IRouter {
 	repoRegisterRewilding := repository.RewildingRegisterRepository{}
 	repoRegisterRewildingPhoto := repository.RewildingRegisterPhotoRepository{}
 

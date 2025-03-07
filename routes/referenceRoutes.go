@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func ReferenceRoutes(r *gin.Engine) *gin.Engine {
+func ReferenceRoutes(r gin.IRouter) gin.IRouter {
 	repo := repository.ReferenceRepository{}
 
 	main := r.Group("/references")

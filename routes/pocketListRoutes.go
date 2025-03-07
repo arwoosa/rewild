@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func PocketListRoutes(r *gin.Engine) *gin.Engine {
+func PocketListRoutes(r gin.IRouter) gin.IRouter {
 	repo := repository.PocketListRepository{}
 	repoDetail := repository.PocketListItemsRepository{}
 

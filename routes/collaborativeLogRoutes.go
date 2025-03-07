@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func CollaborativeLogRoutes(r *gin.Engine) *gin.Engine {
+func CollaborativeLogRoutes(r gin.IRouter) gin.IRouter {
 	repo := repository.CollaborativeLogRepository{}
 	repoAlbumLink := repository.CollaborativeLogAlbumLinkRepository{}
 	repoPolaroid := repository.CollaborativeLogPolaroidRepository{}
