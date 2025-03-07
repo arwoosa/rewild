@@ -29,16 +29,17 @@ func CheckRegisterMiddleware() gin.HandlerFunc {
 		if err != nil || headerUser.Id == "" {
 			return
 		}
-		var user *models.Users
-		err = config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "users_source_id", Value: headerUser.Id}}).Decode(user)
+		var user models.Users
+		err = config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "users_source_id", Value: headerUser.Id}}).Decode(&user)
 
 		if err != nil && err == mongo.ErrNoDocuments {
-			user, err = saveUserInfo(c, &headerUser)
+			saveduser, err := saveUserInfo(c, &headerUser)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"message": "AUTH01-USER: " + err.Error()})
 				c.Abort()
 				return
 			}
+			user = *saveduser
 		}
 
 		needUpdate := false
@@ -54,7 +55,7 @@ func CheckRegisterMiddleware() gin.HandlerFunc {
 			config.DB.Collection("Users").UpdateByID(c, user.UsersId, bson.D{{Key: "$set", Value: bson.D{{Key: "users_avatar", Value: user.UsersAvatar}, {Key: "users_username", Value: user.UsersUsername}}}})
 		}
 
-		c.Set("user", user)
+		c.Set("user", &user)
 
 	}
 }
