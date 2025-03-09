@@ -4,11 +4,19 @@ metadata:
   name: rewild-app-set
 spec:
   generators:
-    - git:
-        repoURL: https://github.com/arwoosa/rewild.git
-        revision: cd
-        directories:
-        - path: argocd/overlays/*
+    - matrix:
+        generators:
+          # git generator, 'child' #1
+          - git:
+              repoURL: https://github.com/arwoosa/rewild.git
+              revision: cd
+              directories:
+              - path: argocd/overlays/*
+          # cluster generator, 'child' #2
+          - clusters:
+              selector:
+                matchLabels:
+                  type: '{{path.basename}}'
   template: # used to generate Argo CD Application resources
     metadata:
       name: 'app-rewild-{{path.basename}}'
@@ -19,7 +27,7 @@ spec:
         targetRevision: cd
         path: '{{path}}'
       destination:
-        server: https://kubernetes.default.svc
+        server: '{{server}}'
         namespace: 'oosa-app'
       syncPolicy:
         automated:
