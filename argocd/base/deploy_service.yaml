@@ -39,6 +39,11 @@ spec:
           successThreshold: 1
           failureThreshold: 6
         env:
+        - name: GIN_MODE
+          valueFrom:
+            secretKeyRef:
+              name: rewild-secrets
+              key: GIN_MODE
         - name: APP_PORT
           valueFrom:
             secretKeyRef:
