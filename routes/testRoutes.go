@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func TestRoutes(r *gin.Engine) *gin.Engine {
+func TestRoutes(r gin.IRouter) gin.IRouter {
 	repo := repository.TestRepository{}
 
 	main := r.Group("/test")

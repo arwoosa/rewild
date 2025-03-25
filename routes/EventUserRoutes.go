@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func EventUserRoutes(r *gin.Engine) *gin.Engine {
+func EventUserRoutes(r gin.IRouter) gin.IRouter {
 	repo := repository.UserEventRepository{}
 
 	main := r.Group("/my/event", middleware.AuthMiddleware())

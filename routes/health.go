@@ -8,7 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func healthRoutes(r *gin.Engine) *gin.Engine {
+func healthRoutes(r gin.IRouter) gin.IRouter {
 	main := r.Group("/health")
 	{
 		main.GET("alive", aliveHandler)

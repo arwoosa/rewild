@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func FlickrRoutes(r *gin.Engine) *gin.Engine {
+func FlickrRoutes(r gin.IRouter) gin.IRouter {
 	repo := repository.FlickrRepository{}
 
 	main := r.Group("/flickr")

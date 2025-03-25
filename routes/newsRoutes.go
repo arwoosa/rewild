@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewsRoutes(r *gin.Engine) *gin.Engine {
+func NewsRoutes(r gin.IRouter) gin.IRouter {
 	repo := repository.NewsRepository{}
 
 	main := r.Group("/news")

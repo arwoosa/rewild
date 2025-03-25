@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func EventRoutes(r *gin.Engine) *gin.Engine {
+func EventRoutes(r gin.IRouter) gin.IRouter {
 	repo := repository.EventRepository{}
 	repoMessageBoard := repository.EventMessageBoardRepository{}
 	repoAnnouncement := repository.EventAnnouncementRepository{}

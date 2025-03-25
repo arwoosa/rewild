@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AchievementRoutes(r *gin.Engine) *gin.Engine {
+func AchievementRoutes(r gin.IRouter) gin.IRouter {
 	repo := repository.AchievementRepository{}
 
 	main := r.Group("achievement", middleware.AuthMiddleware())
