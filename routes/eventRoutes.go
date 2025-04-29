@@ -83,7 +83,7 @@ func EventRoutes(r *gin.Engine) *gin.Engine {
 	{
 		participants.GET("", repoParticipants.Retrieve)
 		participants.POST("", repoParticipants.Create)
-		// participants.GET("/:accountingId", repoParticipants.Read)
+		participants.GET("/:participantId", repoParticipants.Read)
 		// participants.PUT("/:accountingId", repoParticipants.Update)
 		participants.DELETE("/:participantId", repoParticipants.Delete)
 	}

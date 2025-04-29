@@ -239,6 +239,72 @@ func (r EventParticipantsRepository) Delete(c *gin.Context) {
 	}
 }
 
+func (r EventParticipantsRepository) Read(c *gin.Context) {
+	eventId := helpers.StringToPrimitiveObjId(c.Param("id"))
+
+	var eventParticipant models.EventParticipants
+	err := r.ReadOne(c, &eventParticipant)
+	if err != nil {
+		return
+	}
+
+	// 獲取事件詳細信息
+	var event models.Events
+	eventFilter := bson.D{{Key: "_id", Value: eventId}}
+	errEvent := config.DB.Collection("Events").FindOne(context.TODO(), eventFilter).Decode(&event)
+	if errEvent != nil {
+		helpers.ResponseError(c, "Event not found")
+		return
+	}
+
+	// 獲取參與者詳細信息
+	var participant models.Users
+	participantFilter := bson.D{{Key: "_id", Value: eventParticipant.EventParticipantsUser}}
+	errUser := config.DB.Collection("Users").FindOne(context.TODO(), participantFilter).Decode(&participant)
+	if errUser != nil {
+		helpers.ResponseError(c, "Participant not found")
+		return
+	}
+
+	// 計算當前參與者數量
+	activeParticipantsFilter := bson.D{
+		{Key: "event_participants_event", Value: eventId},
+		{Key: "event_participants_status", Value: GetEventParticipantStatus("ACCEPTED")},
+	}
+	currentCount, _ := config.DB.Collection("EventParticipants").CountDocuments(context.TODO(), activeParticipantsFilter)
+
+	// 構建響應
+	response := gin.H{
+		"id": eventParticipant.EventParticipantsId.Hex(),
+		"event": gin.H{
+			"id":            event.EventsId.Hex(),
+			"name":          event.EventsName,
+			"date":          event.EventsDate.Time().Format("2006-01-02"),
+			"current_count": strconv.FormatInt(currentCount, 10),
+			"max_count": func() string {
+				if event.EventsParticipantLimit != nil {
+					return strconv.Itoa(*event.EventsParticipantLimit)
+				}
+				return "Unlimited"
+			}(),
+		},
+		"participant": gin.H{
+			"id":     participant.UsersId.Hex(),
+			"name":   participant.UsersName,
+			"avatar": participant.UsersAvatar,
+		},
+		"request_message": func() string {
+			if eventParticipant.EventParticipantsInvitation != nil {
+				return eventParticipant.EventParticipantsInvitation.InvitationMessage
+			}
+			return ""
+		}(),
+		"create_at": eventParticipant.EventParticipantsCreatedAt.Time().Format("2006-01-02 15:04:05"),
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
 func (r EventParticipantsRepository) ActiveParticipants(eventId primitive.ObjectID) []models.EventParticipants {
 	var ActiveParticipants []models.EventParticipants
 	activeParticipantsFilter := bson.D{
