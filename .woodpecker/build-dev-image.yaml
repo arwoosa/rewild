@@ -1,0 +1,26 @@
+when:
+  - event: [push, manual]
+
+steps:
+  build-and-push-dev:
+    image: woodpeckerci/plugin-docker-buildx
+    settings:
+      # build_args:
+      #   APP_VERSION: ${CI_COMMIT_SHA:0:8}
+      repo: sjc.vultrcr.com/oosa/app-rewild
+      dockerfile: .docker/Dockerfile.distroless
+      platforms: linux/amd64,linux/arm64
+      registry: https://sjc.vultrcr.com/oosa
+      tag: dev
+      username:
+        from_secret: REGISTRY_USER
+      password:
+        from_secret: REGISTRY_TOKEN
+  notify-with-webhook:
+    image: 94peter/woodpecker-webhook
+    settings:
+      webhooks:
+        - webhook:
+            from_secret: GOOGLE_WEBHOOK_URL
+          provider: google_chat
+      debug: false
