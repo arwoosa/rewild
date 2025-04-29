@@ -2,6 +2,7 @@ package routes
 
 import (
 	_ "oosa_rewild/docs"
+	"oosa_rewild/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"     // swagger embed files
@@ -10,22 +11,25 @@ import (
 
 func RegisterRoutes() *gin.Engine {
 	r := gin.Default()
-	RewildingRoutes(r)
-	RewildingRegisterRoutes(r)
-	PocketListRoutes(r)
-	EventUserRoutes(r)
-	EventRoutes(r)
-	AchievementRoutes(r)
-	EventInvitationRoutes(r)
-	CollaborativeLogRoutes(r)
-	FlickrRoutes(r)
-	CloudfareRoutes(r)
-	LinkRoutes(r)
-	ReferenceRoutes(r)
-	TestRoutes(r)
-	UserRoutes(r)
-	NewsRoutes(r)
-	StaticRoutes(r)
+
+	checkSsoUserGroup := r.Group("", middleware.CheckRegisterMiddleware())
+	RewildingRoutes(checkSsoUserGroup)
+	RewildingRegisterRoutes(checkSsoUserGroup)
+	PocketListRoutes(checkSsoUserGroup)
+	EventUserRoutes(checkSsoUserGroup)
+	EventRoutes(checkSsoUserGroup)
+	AchievementRoutes(checkSsoUserGroup)
+	EventInvitationRoutes(checkSsoUserGroup)
+	CollaborativeLogRoutes(checkSsoUserGroup)
+	FlickrRoutes(checkSsoUserGroup)
+	CloudfareRoutes(checkSsoUserGroup)
+	LinkRoutes(checkSsoUserGroup)
+	ReferenceRoutes(checkSsoUserGroup)
+	TestRoutes(checkSsoUserGroup)
+	UserRoutes(checkSsoUserGroup)
+	NewsRoutes(checkSsoUserGroup)
+	StaticRoutes(checkSsoUserGroup)
+
 	healthRoutes(r)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

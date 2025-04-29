@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func LinkRoutes(r *gin.Engine) *gin.Engine {
+func LinkRoutes(r gin.IRouter) gin.IRouter {
 	repo := repository.LinkRepository{}
 
 	main := r.Group("/link-query")

@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func UserRoutes(r *gin.Engine) *gin.Engine {
+func UserRoutes(r gin.IRouter) gin.IRouter {
 	//repoUser := repository.OosaUserRepository{}
 	repoUserEvent := repository.OosaUserEventRepository{}
 	repoUserAchievement := repository.OosaUserAchievementRepository{}
