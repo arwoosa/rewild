@@ -132,13 +132,16 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 
 	exif.RegisterParsers(mknote.All...)
 	var tm time.Time
+	var photoTime time.Time
 	x, err := exif.Decode(reader)
 	if err != nil {
 		tm = time.Now()
+		photoTime = Events.EventsDate.Time()
 		//helpers.ResponseBadRequestError(c, "EXIF: "+err.Error())
 	} else {
 		lat, lng, _ = x.LatLong()
 		tm, _ = x.DateTime()
+		photoTime = tm
 	}
 
 	fileName := ""
@@ -161,6 +164,7 @@ func (r CollaborativeLogPolaroidRepository) Create(c *gin.Context) {
 		EventPolaroidsTag:       payload.EventPolaroidsTag,
 		EventPolaroidsCreatedBy: userDetail.UsersId,
 		EventPolaroidsCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		EventPolaroidsPhotoDate: primitive.NewDateTimeFromTime(photoTime),
 	}
 
 	radius := helpers.Haversine(lat, lng, Events.EventsLat, Events.EventsLng) * 1000
@@ -260,6 +264,7 @@ func (r CollaborativeLogPolaroidRepository) EventAchievementEligibility(c *gin.C
 				filterOneStars := bson.D{
 					{Key: "event_participants_event", Value: Event.EventsId},
 					{Key: "event_participants_user", Value: bson.M{"$in": oneStarUsers}},
+					{Key: "event_participants_status", Value: GetEventParticipantStatus("ACCEPTED")},
 				}
 				updOneStarType := bson.D{{Key: "$set", Value: map[string]interface{}{
 					"event_participants_star_type":               1,

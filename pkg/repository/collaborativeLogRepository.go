@@ -36,6 +36,7 @@ func (r CollaborativeLogRepository) Retrieve(c *gin.Context) {
 						{"event_participants_user": helpers.StringToPrimitiveObjId(userFilter)},
 					},
 					"event_participants_star_type": bson.M{"$exists": true},
+					"event_participants_status":    GetEventParticipantStatus("ACCEPTED"),
 				},
 			}},
 			bson.D{{
@@ -105,6 +106,7 @@ func (r CollaborativeLogRepository) Retrieve(c *gin.Context) {
 				{"$match": bson.M{
 					"event_participants_user":      userDetail.UsersId,
 					"event_participants_star_type": bson.M{"$exists": true},
+					"event_participants_status":    GetEventParticipantStatus("ACCEPTED"),
 				}},
 			},
 		}}}

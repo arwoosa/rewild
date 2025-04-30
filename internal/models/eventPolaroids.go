@@ -16,5 +16,6 @@ type EventPolaroids struct {
 	EventPolaroidsStarType            int                `bson:"event_polaroids_star_type,omitempty" json:"event_polaroids_star_type"`
 	EventPolaroidsCreatedBy           primitive.ObjectID `bson:"event_polaroids_created_by,omitempty" json:"event_polaroids_created_by"`
 	EventPolaroidsCreatedAt           primitive.DateTime `bson:"event_polaroids_created_at,omitempty" json:"event_polaroids_created_at"`
+	EventPolaroidsPhotoDate           primitive.DateTime `bson:"event_polaroids_photo_date,omitempty" json:"event_polaroids_photo_date"`
 	EventPolaroidsCreatedByUser       *UsersAgg          `bson:"event_polaroids_created_by_user,omitempty" json:"event_polaroids_created_by_user,omitempty"`
 }

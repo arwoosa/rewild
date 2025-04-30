@@ -129,6 +129,17 @@ func (r UserEventRepository) GetEventByUserId(c *gin.Context, userId primitive.O
 			Key: "$unwind", Value: "$events_created_by_user",
 		}},
 		bson.D{{
+			Key: "$lookup", Value: bson.M{
+				"from":         "Rewilding",
+				"localField":   "events_rewilding",
+				"foreignField": "_id",
+				"as":           "events_rewilding_detail",
+			},
+		}},
+		bson.D{{
+			Key: "$unwind", Value: "$events_rewilding_detail",
+		}},
+		bson.D{{
 			Key: "$facet", Value: bson.D{
 				{Key: "data", Value: dataFacet},
 				{Key: "pagination", Value: bson.A{

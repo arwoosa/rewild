@@ -9,6 +9,7 @@ import (
 	"oosa_rewild/internal/models"
 	"strconv"
 
+	"github.com/arwoosa/notifaction/helper"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -178,20 +179,87 @@ func (r EventInvitationRepository) Update(c *gin.Context) {
 		}
 	}
 
-	ActiveParticipants := EventParticipantsRepository{}.ActiveParticipants(results.EventParticipantsEvent)
-
-	for _, v := range ActiveParticipants {
-		NotificationMessage := models.NotificationMessage{
-			Message: "{0}有新的夥伴加入!",
-			Data:    []map[string]interface{}{helpers.NotificationFormatEvent(Event)},
-		}
-		helpers.NotificationsCreate(c, helpers.NOTIFICATION_JOINING_NEW, v.EventParticipantsUser, NotificationMessage, results.EventParticipantsEvent)
-	}
-
+	// 更新參與者狀態
 	results.EventParticipantsStatus = payload.EventParticipantsStatus
 	upd := bson.D{{Key: "$set", Value: results}}
 	config.DB.Collection("EventParticipants").UpdateOne(context.TODO(), filter, upd)
 	EventRepository{}.HandleParticipation(c, userDetail.UsersId, id)
 	EventRepository{}.HandleBadges(c, id)
+
+	// 如果是接受邀請，發送通知給現有參與者
+	if payload.EventParticipantsStatus == GetEventParticipantStatus("ACCEPTED") {
+		ActiveParticipants := EventParticipantsRepository{}.ActiveParticipants(results.EventParticipantsEvent)
+		for _, v := range ActiveParticipants {
+			NotificationMessage := models.NotificationMessage{
+				Message: "{0}有新的夥伴加入!",
+				Data:    []map[string]interface{}{helpers.NotificationFormatEvent(Event)},
+			}
+			helpers.NotificationsCreate(c, helpers.NOTIFICATION_JOINING_NEW, v.EventParticipantsUser, NotificationMessage, results.EventParticipantsEvent)
+		}
+	}
+
+	// 只有在處理申請時才處理申請者通知 (applied == "true")
+	if applied == "true" {
+		// 獲取事件創建者信息
+		var eventCreator models.Users
+		if Event.EventsCreatedByUser != nil {
+			eventCreator.UsersId = Event.EventsCreatedByUser.UsersId
+			eventCreator.UsersName = Event.EventsCreatedByUser.UsersName
+		} else {
+			config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "_id", Value: Event.EventsCreatedBy}}).Decode(&eventCreator)
+		}
+
+		// 準備通知數據
+		notifyData := map[string]string{
+			"events_name":  Event.EventsName,
+			"creator_name": eventCreator.UsersName,
+			"event_id":     Event.EventsId.Hex(),
+		}
+
+		var notificationMessage models.NotificationMessage
+		var notificationCode string
+
+		// 根據操作類型(接受或拒絕)設置不同的通知內容
+		if payload.EventParticipantsStatus == GetEventParticipantStatus("ACCEPTED") {
+			// 接受申請的通知
+			notificationMessage = models.NotificationMessage{
+				Message: "{0}已經同意你加入 {1} 活動",
+				Data: []map[string]interface{}{
+					helpers.NotificationFormatUser(eventCreator),
+					helpers.NotificationFormatEvent(Event),
+				},
+			}
+			notificationCode = helpers.NOTIFICATION_EVENT_JOIN_ACCEPTED
+		} else {
+			// 拒絕申請的通知
+			notificationMessage = models.NotificationMessage{
+				Message: "{0}婉拒你加入 {1} 活動",
+				Data: []map[string]interface{}{
+					helpers.NotificationFormatUser(eventCreator),
+					helpers.NotificationFormatEvent(Event),
+				},
+			}
+			notificationCode = helpers.NOTIFICATION_EVENT_JOIN_DENIED
+		}
+
+		// 發送系統內部通知
+		helpers.NotificationsCreate(c, notificationCode, results.EventParticipantsUser, notificationMessage, results.EventParticipantsEvent)
+
+		// 使用 NotifyMsg 發送通知
+		notifyMsg, err := helper.NewNotifyMsg(
+			notificationCode,
+			Event.EventsCreatedBy,
+			results.EventParticipantsUser,
+			notifyData,
+			helpers.FindUserSourceId,
+		)
+
+		if err != nil {
+			fmt.Println("new notify msg err: " + err.Error())
+		} else {
+			notifyMsg.WriteToHeader(c, config.APP.NotificationHeaderName)
+		}
+	}
+
 	c.JSON(http.StatusOK, results)
 }
