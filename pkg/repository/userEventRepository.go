@@ -152,6 +152,9 @@ func (r UserEventRepository) GetEventByUserId(c *gin.Context, userId primitive.O
 	var EventsPaginated []EventsPaginated
 
 	cursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), pipeline)
+	if err != nil {
+		return err
+	}
 	cursor.All(context.TODO(), &EventsPaginated)
 
 	*Events = EventsPaginated[0].Data
