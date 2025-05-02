@@ -83,10 +83,10 @@ func EventRoutes(r gin.IRouter) gin.IRouter {
 	{
 		participants.GET("", repoParticipants.Retrieve)
 		participants.POST("", repoParticipants.Create)
-		participants.GET("/:participantId", repoParticipants.Read)
 		// participants.PUT("/:accountingId", repoParticipants.Update)
 		participants.DELETE("/:participantId", repoParticipants.Delete)
 	}
+	main.GET("/participants/:participantId", repoParticipants.Read)
 
 	invitation := detail.Group("/invitation", middleware.AuthMiddleware())
 	{
