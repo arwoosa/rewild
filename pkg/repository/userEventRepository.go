@@ -153,16 +153,26 @@ func (r UserEventRepository) GetEventByUserId(c *gin.Context, userId primitive.O
 
 	cursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), pipeline)
 	if err != nil {
+		helpers.ResponseError(c, "資料庫查詢錯誤: "+err.Error())
 		return err
 	}
-	cursor.All(context.TODO(), &EventsPaginated)
+
+	if err := cursor.All(context.TODO(), &EventsPaginated); err != nil {
+		helpers.ResponseError(c, "處理查詢結果錯誤: "+err.Error())
+		return err
+	}
+
+	if len(EventsPaginated) == 0 {
+		helpers.ResponseNoData(c, "查無符合條件的資料")
+		return nil
+	}
 
 	*Events = EventsPaginated[0].Data
 	if len(*Events) > 0 {
 		*Events = EventRepository{}.RetrieveParticipantDetails(*Events)
 	}
 
-	return err
+	return nil
 }
 
 type Pagination struct {

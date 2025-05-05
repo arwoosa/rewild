@@ -285,7 +285,7 @@ func (r EventParticipantsRepository) Read(c *gin.Context) {
 			"date":          event.EventsDate.Time().Format("2006-01-02"),
 			"current_count": strconv.FormatInt(currentCount, 10),
 			"max_count": func() string {
-				if event.EventsParticipantLimit != nil {
+				if event.EventsParticipantLimit != nil && *event.EventsParticipantLimit > 0 {
 					return strconv.Itoa(*event.EventsParticipantLimit)
 				}
 				return "Unlimited"
@@ -297,8 +297,8 @@ func (r EventParticipantsRepository) Read(c *gin.Context) {
 			"avatar": participant.UsersAvatar,
 		},
 		"request_message": func() string {
-			if eventParticipant.EventParticipantsInvitation != nil {
-				return eventParticipant.EventParticipantsInvitation.InvitationMessage
+			if eventParticipant.EventParticipantsRequestMessage != "" {
+				return eventParticipant.EventParticipantsRequestMessage
 			}
 			return ""
 		}(),
