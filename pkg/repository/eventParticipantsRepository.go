@@ -240,17 +240,20 @@ func (r EventParticipantsRepository) Delete(c *gin.Context) {
 }
 
 func (r EventParticipantsRepository) Read(c *gin.Context) {
-	eventId := helpers.StringToPrimitiveObjId(c.Param("id"))
+	participantId := helpers.StringToPrimitiveObjId(c.Param("participantId"))
 
+	// 直接透過參與者 ID 查詢資料
 	var eventParticipant models.EventParticipants
-	err := r.ReadOne(c, &eventParticipant)
+	filter := bson.D{{Key: "_id", Value: participantId}}
+	err := config.DB.Collection("EventParticipants").FindOne(context.TODO(), filter).Decode(&eventParticipant)
 	if err != nil {
+		helpers.ResultEmpty(c, err)
 		return
 	}
 
 	// 獲取事件詳細信息
 	var event models.Events
-	eventFilter := bson.D{{Key: "_id", Value: eventId}}
+	eventFilter := bson.D{{Key: "_id", Value: eventParticipant.EventParticipantsEvent}}
 	errEvent := config.DB.Collection("Events").FindOne(context.TODO(), eventFilter).Decode(&event)
 	if errEvent != nil {
 		helpers.ResponseError(c, "Event not found")
@@ -268,7 +271,7 @@ func (r EventParticipantsRepository) Read(c *gin.Context) {
 
 	// 計算當前參與者數量
 	activeParticipantsFilter := bson.D{
-		{Key: "event_participants_event", Value: eventId},
+		{Key: "event_participants_event", Value: eventParticipant.EventParticipantsEvent},
 		{Key: "event_participants_status", Value: GetEventParticipantStatus("ACCEPTED")},
 	}
 	currentCount, _ := config.DB.Collection("EventParticipants").CountDocuments(context.TODO(), activeParticipantsFilter)
