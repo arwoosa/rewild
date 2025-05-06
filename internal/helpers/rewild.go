@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"oosa_rewild/internal/config"
 	"oosa_rewild/internal/models"
 	"sort"
@@ -28,30 +26,6 @@ func GetRewildByPlaceId(placeId string) (models.Rewilding, bool) {
 		}
 	}
 	return Rewilding, true
-}
-
-func RewildSaveGooglePhotos(c *gin.Context, photos []*places.GoogleMapsPlacesV1Photo) ([]models.RewildingPhotos, error) {
-	var RewildingPhotos []models.RewildingPhotos
-	for _, item := range photos {
-		photo := GooglePlacePhoto(c, item.Name)
-
-		resp, err := http.Get(photo.PhotoUri)
-		if err != nil {
-			//return "", fmt.Errorf("GET error: %v", err)
-			return RewildingPhotos, err
-		}
-		defer resp.Body.Close()
-
-		data, _ := io.ReadAll(resp.Body)
-
-		RwPhoto := models.RewildingPhotos{
-			RewildingPhotosID:   primitive.NewObjectID(),
-			RewildingPhotosData: data,
-			// RewildingPhotosPath:   item.Name,
-		}
-		RewildingPhotos = append(RewildingPhotos, RwPhoto)
-	}
-	return RewildingPhotos, nil
 }
 
 const placePhotoUrlTpl = "%srewilding/places/%s/photos/%s"
