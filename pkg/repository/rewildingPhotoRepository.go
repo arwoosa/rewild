@@ -56,10 +56,18 @@ func (r RewildingPhotoRepository) Read(c *gin.Context) {
 	for p, v := range Rewilding.RewildingPhotos {
 		if v.RewildingPhotosID == photosId {
 			idx = p
+			break
 		}
 	}
 
-	c.Writer.Write(Rewilding.RewildingPhotos[idx].RewildingPhotosData)
+	// 直接使用 RewildingPhotosPath 進行重定向
+	if Rewilding.RewildingPhotos[idx].RewildingPhotosPath != "" {
+		c.Redirect(http.StatusFound, Rewilding.RewildingPhotos[idx].RewildingPhotosPath)
+		return
+	}
+
+	// 如果沒有路徑，返回錯誤
+	c.JSON(http.StatusNotFound, gin.H{"message": "Image URL not found"})
 }
 
 func (r RewildingPhotoRepository) FromGoogle(c *gin.Context) {
