@@ -12,20 +12,30 @@ import (
 type OosaUserAchievementRepository struct{}
 
 func (r OosaUserAchievementRepository) Retrieve(c *gin.Context) {
-	var results []models.AchievementRewilding
+	var results []models.AchievementRewildingV2
 	userIdVal := c.Param("id")
-	userId, _ := primitive.ObjectIDFromHex(userIdVal)
+	userId, _ := primitive.ObjectIDFromHex(userIdVal) // 被查詢者id
+	authUserId := helpers.GetAuthUser(c).UsersId      // 登入者id
 
-	err := AchievementRepository{}.GetAchievementsByUserId(c, userId, &results)
+	var userStatus string
+	if authUserId.IsZero() {
+		userStatus = "stranger" // 未登入
+	} else if authUserId == userId {
+		userStatus = "owner" // 擁有者
+	} else {
+		userStatus = "others" // 查看者(有登入)
+	}
+
+	err := AchievementRepository{}.GetAchievementsByUserIdV2(c, userId, &results)
 	if err != nil {
 		helpers.ResponseError(c, err.Error())
 		return
 	}
 
-	if len(results) == 0 {
-		helpers.ResponseNoData(c, "No Data")
-		return
+	resp := models.AchievementEvent{
+		UserStatus:   userStatus,
+		Achievements: results,
 	}
 
-	c.JSON(http.StatusOK, results)
+	c.JSON(http.StatusOK, resp)
 }
