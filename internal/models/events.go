@@ -64,6 +64,22 @@ type AchievementRewilding struct {
 	AchievementRewildingStarUnlockedAt primitive.DateTime `bson:"rewilding_star_unlocked_at,omitempty" json:"achievement_released_star_unlocked_at"`
 }
 
+type AchievementRewildingV2 struct {
+	AchievementRewildingID         primitive.ObjectID  `bson:"_id,omitempty" json:"achievement_released_id"`
+	AchievementRewildingName       string              `bson:"rewilding_name,omitempty" json:"achievement_released_name"`
+	AchievementRewildingLat        float64             `bson:"rewilding_lat,omitempty" json:"achievement_released_lat"`
+	AchievementRewildingLng        float64             `bson:"rewilding_lng,omitempty" json:"achievement_released_lng"`
+	AchievementRewildingCount      int                 `bson:"rewilding_count,omitempty" json:"achievement_released_count"`
+	AchievementStarStatus          string              `bson:"achievement_star_status,omitempty" json:"achievement_star_status"`
+	AchievementLatestCanUploadTime *primitive.DateTime `bson:"achievement_latest_can_upload_time,omitempty" json:"achievement_latest_can_upload_time"`
+	AchievementShine               bool                `bson:"achievement_shine" json:"achievement_shine"`
+}
+
+type AchievementEvent struct {
+	UserStatus   string                   `json:"user_status"`
+	Achievements []AchievementRewildingV2 `json:"achievements"`
+}
+
 type AchievementPlaces struct {
 	AchievementID    primitive.ObjectID `bson:"_id,omitempty" json:"achievement_released_id"`
 	AchievementType  string             `bson:"ref_achievement_places_type,omitempty" json:"-"`

@@ -12,7 +12,7 @@ func AchievementRoutes(r gin.IRouter) gin.IRouter {
 
 	main := r.Group("achievement", middleware.AuthMiddleware())
 	{
-		main.GET("", repo.Retrieve)
+		main.GET("", repo.Retrieve) // TODO: add deprecated header
 		main.GET("/places", repo.Places)
 	}
 
