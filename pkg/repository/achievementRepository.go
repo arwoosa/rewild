@@ -17,7 +17,10 @@ import (
 
 type AchievementRepository struct{}
 
+// deprecated
 func (t AchievementRepository) Retrieve(c *gin.Context) {
+	c.Header("Deprecation", "true")
+	c.Header("Warning", "299 - 'This API is deprecated, please use /user/{userId}/achievement'")
 	var results []models.AchievementRewilding
 	userDetail := helpers.GetAuthUser(c)
 
