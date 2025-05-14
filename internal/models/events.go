@@ -42,6 +42,12 @@ type Events struct {
 	EventsParticipants                 *EventParticipantObj `bson:"events_participants,omitempty" json:"events_participants,omitempty"`
 	EventsCreatedByUser                *UsersAgg            `bson:"events_created_by_user,omitempty" json:"events_created_by_user,omitempty"`
 	EventsRewildingDetail              *RewildingDetail     `bson:"events_rewilding_detail,omitempty" json:"events_rewilding_detail,omitempty"`
+	EventsActions                      *EventsActions       `bson:"events_actions,omitempty" json:"events_actions,omitempty"`
+}
+
+type EventsActions struct {
+	CanViewDetails  bool `bson:"can_view_details" json:"can_view_details"` // 可查看行程內容
+	UploadPolaroids bool `bson:"upload_polaroids" json:"upload_polaroids"` // 顯示上傳拍立得按鈕
 }
 
 type EventParticipantObj struct {
