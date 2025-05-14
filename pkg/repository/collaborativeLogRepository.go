@@ -17,26 +17,22 @@ import (
 type CollaborativeLogRepository struct{}
 
 func (r CollaborativeLogRepository) Retrieve(c *gin.Context) {
-	userDetail := helpers.GetAuthUser(c)
-	userFilter := c.Query("user")
-	rewildingId := c.Query("rewilding_id")
+	authUserId := helpers.GetAuthUser(c).UsersId            // 查詢者id
+	userId := helpers.StringToPrimitiveObjId(c.Param("id")) // 被查詢者id
+	rewildingId := helpers.StringToPrimitiveObjId(c.Query("rewilding_id"))
 	var results []models.Events
+	currentTime := primitive.NewDateTimeFromTime(time.Now())
 
-	if userFilter != "" {
-		if userFilter == userDetail.UsersId.Hex() {
-			helpers.ResponseBadRequestError(c, "Cannot use own user ID")
-			return
-		}
-
+	if authUserId != userId {
 		agg := mongo.Pipeline{
+			// 撈出共同參與的events
 			bson.D{{
 				Key: "$match", Value: bson.M{
 					"$or": []bson.M{
-						{"event_participants_user": userDetail.UsersId},
-						{"event_participants_user": helpers.StringToPrimitiveObjId(userFilter)},
+						{"event_participants_user": authUserId},
+						{"event_participants_user": userId},
 					},
-					"event_participants_star_type": bson.M{"$exists": true},
-					"event_participants_status":    GetEventParticipantStatus("ACCEPTED"),
+					"event_participants_status": GetEventParticipantStatus("ACCEPTED"),
 				},
 			}},
 			bson.D{{
@@ -56,14 +52,70 @@ func (r CollaborativeLogRepository) Retrieve(c *gin.Context) {
 				Key: "$unset", Value: bson.A{"_id", "count"},
 			}},
 			bson.D{{
-				Key: "$unwind", Value: bson.M{"path": "$Events", "preserveNullAndEmptyArrays": true},
+				Key: "$unwind", Value: bson.M{"path": "$Events"},
 			}},
 			bson.D{{
 				Key: "$replaceRoot", Value: bson.M{"newRoot": "$Events"},
 			}},
+			// 過濾掉已刪除的events，並且留下該rewilding(地點)的events
 			bson.D{{
-				Key: "$match", Value: bson.M{"events_date": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())}},
+				Key: "$match", Value: bson.M{
+					"events_deleted":   bson.M{"$exists": false},
+					"events_rewilding": rewildingId,
+				},
 			}},
+			bson.D{{Key: "$addFields", Value: bson.M{
+				"can_view_details": bson.M{
+					"$lte": []interface{}{
+						bson.M{"$dateTrunc": bson.M{"date": "$events_date_end", "unit": "day"}},
+						bson.M{"$dateTrunc": bson.M{"date": currentTime, "unit": "day"}},
+					},
+				},
+				"upload_polaroids": false, // 查看者他人行程，不顯示上傳拍立得按鈕
+				"sort_group": bson.M{
+					"$switch": bson.M{
+						"branches": []bson.M{
+							// A. 已開放上傳但尚未上傳
+							{
+								"case": bson.M{
+									"$and": []interface{}{
+										bson.M{"$lt": []interface{}{
+											bson.M{"$dateTrunc": bson.M{"date": "$events_date_end", "unit": "day"}},
+											bson.M{"$dateTrunc": bson.M{"date": currentTime, "unit": "day"}},
+										}},
+										bson.M{"$eq": []interface{}{bson.M{"$type": "$event_participants_star_type"}, "missing"}},
+									},
+								},
+								"then": 0,
+							},
+							// B. 尚未開放上傳
+							{
+								"case": bson.M{
+									"$gte": []interface{}{
+										bson.M{"$dateTrunc": bson.M{"date": "$events_date_end", "unit": "day"}},
+										bson.M{"$dateTrunc": bson.M{"date": currentTime, "unit": "day"}},
+									},
+								},
+								"then": 1,
+							},
+							// C. 已上傳
+							{
+								"case": bson.M{
+									"$ne": []interface{}{bson.M{"$type": "$event_participants_star_type"}, "missing"},
+								},
+								"then": 2,
+							},
+						},
+						"default": 3, // 其他情況
+					},
+				},
+			}}},
+			bson.D{{Key: "$addFields", Value: bson.M{
+				"events_actions": bson.M{
+					"can_view_details": "$can_view_details",
+					"upload_polaroids": "$upload_polaroids",
+				},
+			}}},
 			bson.D{{
 				Key: "$lookup", Value: bson.M{
 					"from":         "Users",
@@ -75,6 +127,27 @@ func (r CollaborativeLogRepository) Retrieve(c *gin.Context) {
 			bson.D{{
 				Key: "$unwind", Value: "$events_created_by_user",
 			}},
+			bson.D{{Key: "$addFields", Value: bson.M{
+				"effective_primary_date": bson.M{
+					"$cond": bson.M{
+						"if":   bson.M{"$eq": bson.A{"$sort_group", 2}},
+						"then": "$events_date",     // 已上傳拍立的，以行程開始日期優先排序
+						"else": "$events_date_end", // 未上傳拍立的，以行程結束日期優先排序
+					},
+				},
+				"effective_secondary_date": bson.M{
+					"$cond": bson.M{
+						"if":   bson.M{"$eq": bson.A{"$sort_group", 2}},
+						"then": "$events_date_end",
+						"else": "$events_date",
+					},
+				},
+			}}},
+			bson.D{{Key: "$sort", Value: bson.M{
+				"sort_group":               1,
+				"effective_primary_date":   -1,
+				"effective_secondary_date": -1,
+			}}},
 		}
 
 		cursor, err := config.DB.Collection("EventParticipants").Aggregate(context.TODO(), agg)
@@ -84,14 +157,10 @@ func (r CollaborativeLogRepository) Retrieve(c *gin.Context) {
 			return
 		}
 		cursor.All(context.TODO(), &results)
-	} else {
+	} else { // 原本查自己的query
 		filterEvent := bson.M{
-			"events_date": bson.M{"$lte": primitive.NewDateTimeFromTime(time.Now())},
-			"EventParticipants.event_participants_achievement_eligible": true,
-		}
-
-		if rewildingId != "" {
-			filterEvent["events_rewilding"] = helpers.StringToPrimitiveObjId(rewildingId)
+			"events_deleted":   bson.M{"$exists": false},
+			"events_rewilding": rewildingId,
 		}
 
 		lookupStage := bson.D{{Key: "$lookup", Value: bson.M{
@@ -104,9 +173,8 @@ func (r CollaborativeLogRepository) Retrieve(c *gin.Context) {
 						"$eq": bson.A{"$event_participants_event", "$$event_id"}},
 				}},
 				{"$match": bson.M{
-					"event_participants_user":      userDetail.UsersId,
-					"event_participants_star_type": bson.M{"$exists": true},
-					"event_participants_status":    GetEventParticipantStatus("ACCEPTED"),
+					"event_participants_user":   authUserId,
+					"event_participants_status": GetEventParticipantStatus("ACCEPTED"),
 				}},
 			},
 		}}}
@@ -116,11 +184,68 @@ func (r CollaborativeLogRepository) Retrieve(c *gin.Context) {
 		}
 
 		agg := mongo.Pipeline{
-			lookupStage,
-			unwindStage,
 			bson.D{{
 				Key: "$match", Value: filterEvent,
 			}},
+			lookupStage,
+			unwindStage,
+			bson.D{{Key: "$addFields", Value: bson.M{
+				"can_view_details": bson.M{
+					"$lte": []interface{}{
+						bson.M{"$dateTrunc": bson.M{"date": "$events_date_end", "unit": "day"}},
+						bson.M{"$dateTrunc": bson.M{"date": currentTime, "unit": "day"}},
+					},
+				},
+				"upload_polaroids": bson.M{
+					"$and": []interface{}{
+						bson.M{"$lte": []interface{}{
+							bson.M{"$dateTrunc": bson.M{"date": "$events_date_end", "unit": "day"}},
+							bson.M{"$dateTrunc": bson.M{"date": currentTime, "unit": "day"}},
+						}},
+						bson.M{"$eq": []interface{}{bson.M{"$type": "$EventParticipants.event_participants_star_type"}, "missing"}},
+					},
+				},
+				"sort_group": bson.M{
+					"$switch": bson.M{
+						"branches": []bson.M{
+							{
+								"case": bson.M{
+									"$and": []interface{}{
+										bson.M{"$lt": []interface{}{
+											bson.M{"$dateTrunc": bson.M{"date": "$events_date_end", "unit": "day"}},
+											bson.M{"$dateTrunc": bson.M{"date": currentTime, "unit": "day"}},
+										}},
+										bson.M{"$eq": []interface{}{bson.M{"$type": "$EventParticipants.event_participants_star_type"}, "missing"}},
+									},
+								},
+								"then": 0,
+							},
+							{
+								"case": bson.M{
+									"$gte": []interface{}{
+										bson.M{"$dateTrunc": bson.M{"date": "$events_date_end", "unit": "day"}},
+										bson.M{"$dateTrunc": bson.M{"date": currentTime, "unit": "day"}},
+									},
+								},
+								"then": 1,
+							},
+							{
+								"case": bson.M{
+									"$ne": []interface{}{bson.M{"$type": "$EventParticipants.event_participants_star_type"}, "missing"},
+								},
+								"then": 2,
+							},
+						},
+						"default": 3,
+					},
+				},
+			}}},
+			bson.D{{Key: "$addFields", Value: bson.M{
+				"events_actions": bson.M{
+					"can_view_details": "$can_view_details",
+					"upload_polaroids": "$upload_polaroids",
+				},
+			}}},
 			bson.D{{
 				Key: "$lookup", Value: bson.M{
 					"from":         "Users",
@@ -132,9 +257,27 @@ func (r CollaborativeLogRepository) Retrieve(c *gin.Context) {
 			bson.D{{
 				Key: "$unwind", Value: "$events_created_by_user",
 			}},
-			bson.D{
-				{Key: "$sort", Value: bson.M{"events_date": -1}},
-			},
+			bson.D{{Key: "$addFields", Value: bson.M{
+				"effective_primary_date": bson.M{
+					"$cond": bson.M{
+						"if":   bson.M{"$eq": bson.A{"$sort_group", 2}},
+						"then": "$events_date",
+						"else": "$events_date_end",
+					},
+				},
+				"effective_secondary_date": bson.M{
+					"$cond": bson.M{
+						"if":   bson.M{"$eq": bson.A{"$sort_group", 2}},
+						"then": "$events_date_end",
+						"else": "$events_date",
+					},
+				},
+			}}},
+			bson.D{{Key: "$sort", Value: bson.M{
+				"sort_group":               1,
+				"effective_primary_date":   -1,
+				"effective_secondary_date": -1,
+			}}},
 		}
 		cursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), agg)
 		cursor.All(context.TODO(), &results)

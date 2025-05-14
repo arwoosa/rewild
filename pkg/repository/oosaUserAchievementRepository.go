@@ -6,16 +6,14 @@ import (
 	"oosa_rewild/internal/models"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type OosaUserAchievementRepository struct{}
 
 func (r OosaUserAchievementRepository) Retrieve(c *gin.Context) {
 	var results []models.AchievementRewildingV2
-	userIdVal := c.Param("id")
-	userId, _ := primitive.ObjectIDFromHex(userIdVal) // 被查詢者id
-	authUserId := helpers.GetAuthUser(c).UsersId      // 登入者id
+	userId := helpers.StringToPrimitiveObjId(c.Param("id")) // 被查詢者id
+	authUserId := helpers.GetAuthUser(c).UsersId            // 登入者id
 
 	var userStatus string
 	if authUserId.IsZero() {
