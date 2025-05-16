@@ -63,6 +63,11 @@ func (r CollaborativeLogPolaroidRepository) Retrieve(c *gin.Context) {
 		helpers.ResponseNoData(c, "No Data")
 		return
 	}
+	for i := 0; i < len(EventPolaroids); i++ {
+		if EventPolaroids[i].EventPolaroidsPhotoDate == 0 {
+			EventPolaroids[i].EventPolaroidsPhotoDate = Events.EventsDate
+		}
+	}
 	c.JSON(http.StatusOK, EventPolaroids)
 }
 
