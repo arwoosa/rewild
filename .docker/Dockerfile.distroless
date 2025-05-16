@@ -5,14 +5,14 @@ FROM golang:1.23 AS base
 WORKDIR /go/src/oosa_rewild
 
 # Copy everything from the current directory to the PWD(Present Working Directory) inside the container
-COPY ../../ .
+COPY . .
 
 # Download all the dependencies
 RUN go mod download -x
 
 # Install compile daemon for hot reloading
 # RUN go install -mod=mod github.com/githubnemo/CompileDaemon
-RUN go build -o /main .
+RUN go build -o main .
 
 FROM gcr.io/distroless/static-debian11
 
@@ -24,4 +24,4 @@ EXPOSE 6080
 
 # Command to run the executable
 # ENTRYPOINT CompileDaemon -build="go build main.go" -command="./main"
-CMD ["/main"]
+CMD ["./main"]
