@@ -13,12 +13,12 @@ func UserRoutes(r gin.IRouter) gin.IRouter {
 	repoUserAchievement := repository.OosaUserAchievementRepository{}
 	repoCollaborativeLog := repository.CollaborativeLogRepository{}
 
-	me := r.Group("/user/:id", middleware.AuthMiddleware())
+	me := r.Group("/user/:id")
 	{
 		//me.GET("", repoUser.Read)
-		me.GET("/events", repoUserEvent.Retrieve)
+		me.GET("/events", middleware.AuthMiddleware(), repoUserEvent.Retrieve)
 		me.GET("/achievement", repoUserAchievement.Retrieve)
-		me.GET("/collaborative-log", repoCollaborativeLog.Retrieve)
+		me.GET("/collaborative-log", middleware.AuthMiddleware(), repoCollaborativeLog.Retrieve)
 	}
 
 	return r
