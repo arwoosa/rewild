@@ -1,5 +1,5 @@
 # Get the latest golang image
-FROM golang:1.23 as base
+FROM golang:1.23 AS base
 
 # Set the Current Working Directory inside the container
 WORKDIR /go/src/oosa_rewild
@@ -24,4 +24,4 @@ EXPOSE 6080
 
 # Command to run the executable
 # ENTRYPOINT CompileDaemon -build="go build main.go" -command="./main"
-CMD ["./main"]
+CMD ["/main"]
