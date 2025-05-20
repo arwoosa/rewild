@@ -229,7 +229,8 @@ func (t AchievementRepository) GetAchievementsByUserIdV2(c *gin.Context, userId 
 
 	rewildUnwind := bson.D{{Key: "$unwind", Value: "$RewildingDetail"}}
 
-	addComputedFields := bson.D{{
+	// 第一個 $addFields 階段，計算 achievement_star_status 和 achievement_latest_can_upload_time
+	addPrimaryComputedFields := bson.D{{
 		Key: "$addFields", Value: bson.M{
 			// 所有event皆有star_type=都上傳拍立得 => yellow, 反之則為白色
 			"achievement_star_status": bson.M{
@@ -277,6 +278,12 @@ func (t AchievementRepository) GetAchievementsByUserIdV2(c *gin.Context, userId 
 					},
 				},
 			},
+		},
+	}}
+
+	// 第二個 $addFields 階段，計算 achievement_shine
+	addShineField := bson.D{{
+		Key: "$addFields", Value: bson.M{
 			"achievement_shine": bson.M{
 				"$cond": bson.M{
 					"if":   bson.M{"$ne": bson.A{"$achievement_latest_can_upload_time", nil}},
@@ -309,7 +316,8 @@ func (t AchievementRepository) GetAchievementsByUserIdV2(c *gin.Context, userId 
 		groupStage,   // 依rewilding group event
 		rewildLookup, // lookup rewilding的資料
 		rewildUnwind,
-		addComputedFields, // 轉換邏輯：achievement_latest_can_upload_time及achievement_star_status
+		addPrimaryComputedFields,
+		addShineField,
 		replaceRoot,
 	}
 
