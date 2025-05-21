@@ -262,7 +262,10 @@ func (t AchievementRepository) GetAchievementsByUserIdV2(c *gin.Context, userId 
 								"cond": bson.M{
 									"$and": bson.A{
 										bson.M{"$eq": bson.A{"$$event.star_type", nil}},
-										bson.M{"$lt": bson.A{"$$event.event_end", currentTime}},
+										bson.M{"$lte": []interface{}{
+											bson.M{"$dateTrunc": bson.M{"date": "$$event.event_end", "unit": "day"}},
+											bson.M{"$dateTrunc": bson.M{"date": currentTime, "unit": "day"}},
+										}},
 									},
 								},
 							},
