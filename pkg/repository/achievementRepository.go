@@ -172,6 +172,23 @@ func (t AchievementRepository) GetAchievementsByUserIdV2(c *gin.Context, userId 
 		},
 	}}}
 
+	// Lookup(EventPolaroids) 計算該用戶在每個活動的拍立得數量
+	lookupPolaroids := bson.D{{Key: "$lookup", Value: bson.M{
+		"as":   "EventPolaroids",
+		"from": "EventPolaroids",
+		"let":  bson.M{"event_id": "$_id", "user_id": userId},
+		"pipeline": []bson.M{
+			{"$match": bson.M{
+				"$expr": bson.M{
+					"$and": bson.A{
+						bson.M{"$eq": bson.A{"$event_polaroids_event", "$$event_id"}},
+						bson.M{"$eq": bson.A{"$event_polaroids_created_by", "$$user_id"}},
+					}},
+			}},
+			{"$count": "total"},
+		},
+	}}}
+
 	unwindParticipants := bson.D{{Key: "$unwind", Value: "$EventParticipants"}}
 
 	match := bson.M{}
@@ -184,35 +201,17 @@ func (t AchievementRepository) GetAchievementsByUserIdV2(c *gin.Context, userId 
 		{Key: "$group", Value: bson.M{
 			"_id":             "$events_rewilding",
 			"rewilding_count": bson.M{"$sum": 1},
-			"all_star_types": bson.M{"$push": bson.M{
-				"$cond": bson.M{
-					"if": bson.M{
-						"$and": bson.A{
-							bson.M{"$ne": bson.A{"$EventParticipants.event_participants_star_type", nil}},
-							bson.M{"$ne": bson.A{
-								bson.M{"$type": "$EventParticipants.event_participants_star_type"},
-								"missing",
-							}},
-						},
-					},
-					"then": "$EventParticipants.event_participants_star_type",
-					"else": nil,
+			"all_polaroid_counts": bson.M{"$push": bson.M{
+				"$ifNull": bson.A{
+					bson.M{"$arrayElemAt": bson.A{"$EventPolaroids.total", 0}}, // 取EventPolaroids陣列第一筆的total
+					0, // EventPolaroids為空陣列，回傳0
 				},
 			}},
 			"all_event_ends": bson.M{"$push": bson.M{
-				"star_type": bson.M{
-					"$cond": bson.M{
-						"if": bson.M{
-							"$and": bson.A{
-								bson.M{"$ne": bson.A{"$EventParticipants.event_participants_star_type", nil}},
-								bson.M{"$ne": bson.A{
-									bson.M{"$type": "$EventParticipants.event_participants_star_type"},
-									"missing",
-								}},
-							},
-						},
-						"then": "$EventParticipants.event_participants_star_type",
-						"else": nil,
+				"polaroid_count": bson.M{
+					"$ifNull": bson.A{
+						bson.M{"$arrayElemAt": bson.A{"$EventPolaroids.total", 0}},
+						0,
 					},
 				},
 				"event_end": "$events_date_end",
@@ -232,16 +231,16 @@ func (t AchievementRepository) GetAchievementsByUserIdV2(c *gin.Context, userId 
 	// 第一個 $addFields 階段，計算 achievement_star_status 和 achievement_latest_can_upload_time
 	addPrimaryComputedFields := bson.D{{
 		Key: "$addFields", Value: bson.M{
-			// 所有event皆有star_type=都上傳拍立得 => yellow, 反之則為白色
+			// 所有event皆有拍立得上傳(count > 0) => yellow, 反之則為白色
 			"achievement_star_status": bson.M{
 				"$cond": bson.M{
 					"if": bson.M{
 						"$allElementsTrue": bson.M{
 							"$map": bson.M{
-								"input": "$all_star_types",
-								"as":    "type",
+								"input": "$all_polaroid_counts",
+								"as":    "count",
 								"in": bson.M{
-									"$ne": bson.A{"$$type", nil},
+									"$gt": bson.A{"$$count", 0},
 								},
 							},
 						},
@@ -250,7 +249,7 @@ func (t AchievementRepository) GetAchievementsByUserIdV2(c *gin.Context, userId 
 					"else": "white",
 				},
 			},
-			// 從所有活動中，篩出「未得星星（star_type 為 nil）且活動已結束（event_end < 現在時間）」的活動
+			// 從所有活動中，篩出「未上傳拍立得（polaroid_count = 0）且活動已結束（event_end < 現在日期）」的活動
 			// 找出其中結束時間最晚的一筆。
 			"achievement_latest_can_upload_time": bson.M{
 				"$let": bson.M{
@@ -261,7 +260,7 @@ func (t AchievementRepository) GetAchievementsByUserIdV2(c *gin.Context, userId 
 								"as":    "event",
 								"cond": bson.M{
 									"$and": bson.A{
-										bson.M{"$eq": bson.A{"$$event.star_type", nil}},
+										bson.M{"$eq": bson.A{"$$event.polaroid_count", 0}},
 										bson.M{"$lte": []interface{}{
 											bson.M{"$dateTrunc": bson.M{"date": "$$event.event_end", "unit": "day"}},
 											bson.M{"$dateTrunc": bson.M{"date": currentTime, "unit": "day"}},
@@ -314,8 +313,9 @@ func (t AchievementRepository) GetAchievementsByUserIdV2(c *gin.Context, userId 
 	pipeline := mongo.Pipeline{
 		deletedFilterStage, // 過濾已刪除的 event
 		lookupParticipants, // 留下 擁有者有參加的 event
+		lookupPolaroids,    // 計算該用戶在每個活動的拍立得數量
 		unwindParticipants,
-		filterStage,  // 根據API參數 篩選 country, star_type, achievementType，後兩個是舊規格
+		filterStage,  // 根據API參數 篩選 country
 		groupStage,   // 依rewilding group event
 		rewildLookup, // lookup rewilding的資料
 		rewildUnwind,
