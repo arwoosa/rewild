@@ -136,12 +136,38 @@ func buildCommonAggregationStages(currentTime primitive.DateTime, uploadPolaroid
 		{{Key: "$unwind", Value: "$events_created_by_user"}},
 		// 添加有效日期欄位
 		{{Key: "$addFields", Value: buildEffectiveDateFields()}},
-		// 排序
-		{{Key: "$sort", Value: bson.M{
-			"sort_group":               1,
-			"effective_primary_date":   -1,
-			"effective_secondary_date": -1,
+		// 使用 $facet 來分別處理不同組別的排序
+		{{Key: "$facet", Value: bson.M{
+			"group_0": []bson.M{ // A組：已開放上傳但尚未上傳
+				{"$match": bson.M{"sort_group": 0}},
+				{"$sort": bson.M{
+					"effective_primary_date":   -1, // 大到小
+					"effective_secondary_date": -1,
+				}},
+			},
+			"group_1": []bson.M{ // B組：尚未開放上傳
+				{"$match": bson.M{"sort_group": 1}},
+				{"$sort": bson.M{
+					"effective_primary_date":   1, // 小到大
+					"effective_secondary_date": 1,
+				}},
+			},
+			"group_2": []bson.M{ // C組：已上傳
+				{"$match": bson.M{"sort_group": 2}},
+				{"$sort": bson.M{
+					"effective_primary_date":   -1, // 大到小
+					"effective_secondary_date": -1,
+				}},
+			},
 		}}},
+		// 合併結果並保持組別順序
+		{{Key: "$project", Value: bson.M{
+			"results": bson.M{
+				"$concatArrays": bson.A{"$group_0", "$group_1", "$group_2"},
+			},
+		}}},
+		{{Key: "$unwind", Value: "$results"}},
+		{{Key: "$replaceRoot", Value: bson.M{"newRoot": "$results"}}},
 	}
 }
 
