@@ -21,11 +21,11 @@ steps:
     settings:
       webhooks:
         - webhook:
-            from_secret: GOOGLE_WEBHOOK_URL
-          provider: google_chat
-        - webhook:
             from_secret: PORTAINER_WEBHOOK_URL
           provider: portainer
+        - webhook:
+            from_secret: GOOGLE_WEBHOOK_URL
+          provider: google_chat
       debug: false
   wait-for-deployment:
     image: alpine:latest
@@ -38,6 +38,14 @@ steps:
       APIDOG_ACCESS_TOKEN:
         from_secret: APIDOG_ACCESS_TOKEN
     commands:
-    - apidog run --access-token $APIDOG_ACCESS_TOKEN -f 1014781 -r html,cli --upload-report
-
+    - apidog run --access-token $APIDOG_ACCESS_TOKEN -f 1014781 -r cli --upload-report | tee /dev/stderr | grep -o 'https://app.apidog.com/link/[^ ]*' | sed 's/^/API測試報告連結：/' >> api-testing-msg
+  notify-apitesting-result-webhook:
+    image: 94peter/woodpecker-webhook:v0.0.4
+    settings:
+      webhooks:
+        - webhook:
+            from_secret: GOOGLE_WEBHOOK_URL
+          provider: google_chat
+          msg_file: api-testing-msg
+      debug: false
 
