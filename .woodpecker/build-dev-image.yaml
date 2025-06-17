@@ -27,3 +27,17 @@ steps:
             from_secret: PORTAINER_WEBHOOK_URL
           provider: portainer
       debug: false
+  wait-for-deployment:
+    image: alpine:latest
+    commands:
+    - echo "Waiting for 30 seconds"
+    - sleep 30
+  api-testing:
+    image: 94peter/oosa-apidog-cli-testing:v1.0.0
+    environment:
+      APIDOG_ACCESS_TOKEN:
+        from_secret: APIDOG_ACCESS_TOKEN
+    commands:
+    - apidog run --access-token $APIDOG_ACCESS_TOKEN -f 1014781 -r html,cli --upload-report
+
+
